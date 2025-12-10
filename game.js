@@ -241,7 +241,7 @@ class Game {
     }
     
     resetGame() {
-        this.money = 111110; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.shotsFired = 0; this.shotsHit = 0;
+        this.money = 0; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.shotsFired = 0; this.shotsHit = 0;
         this.castleHealth = 100; this.gameTime = 0; this.isGameOver = false; this.currentRPM = 4.1;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
@@ -434,8 +434,6 @@ class Game {
     start() {
         window.closePiggyModal = this.closePiggyModal.bind(this);
         window.closeShopReminder = this.closeShopReminder.bind(this);
-        this.isPaused = true;
-        document.getElementById('piggy-modal').style.display = 'block';
         this.gameLoop(0);
     }
     
