@@ -176,10 +176,19 @@ export default class Player {
             const progress = this.jumpSquash / 15;
             this.scaleY = 1 - Math.sin(progress * Math.PI) * 0.3;
             this.scaleX = 1 + Math.sin(progress * Math.PI) * 0.3;
-        } else {
+        } else if (this.isOnGround) {
             const bounce = Math.sin(this.game.gameTime * 0.5) * Math.abs(this.vx) * 0.01;
             this.scaleX += (1 - this.scaleX) * 0.1 * tsf;
             this.scaleY += (1 - this.scaleY) * 0.1 * tsf + bounce;
+        } else {
+            const stretch_factor = 0.03;
+            if (this.vy < 0) { // Moving up -> stretch
+                this.scaleY = 1 + Math.abs(this.vy) * stretch_factor;
+                this.scaleX = 1 - Math.abs(this.vy) * stretch_factor * 0.5;
+            } else { // Moving down -> squash
+                this.scaleY = 1 - Math.abs(this.vy) * stretch_factor * 0.5;
+                this.scaleX = 1 + Math.abs(this.vy) * stretch_factor;
+            }
         }
         if (this.game.keys['e'] && !this.keyLock && !this.isControlling) {
             this.game.towers.forEach(t => {

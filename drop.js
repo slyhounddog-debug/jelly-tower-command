@@ -1,4 +1,5 @@
 import Particle from './particle.js';
+import FloatingText from './floatingText.js?v=25';
 
 export default class Drop {
     constructor(game, x, y, type) {
@@ -23,11 +24,20 @@ export default class Drop {
         if (this.y > this.game.height - 80 - this.width) { this.y = this.game.height - 80 - this.width; this.vy *= -0.5; }
 
         if (Math.abs(this.game.player.x - this.x) < 80 && Math.abs(this.game.player.y - this.y) < 80) {
-            if (this.type === 'coin' || this.type === 'lucky_coin') {
+            if (this.type === 'coin') {
                 this.game.money += this.coinValue;
                 this.game.totalMoneyEarned += this.coinValue;
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰'));
             }
-            if (this.type === 'heart') this.game.castleHealth = Math.min(100, this.game.castleHealth + 10);
+            if (this.type === 'lucky_coin') {
+                this.game.money += this.coinValue;
+                this.game.totalMoneyEarned += this.coinValue;
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰💰'));
+            }
+            if (this.type === 'heart') {
+                this.game.castleHealth = Math.min(100, this.game.castleHealth + 10);
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
+            }
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
         }

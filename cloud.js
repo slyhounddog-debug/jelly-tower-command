@@ -4,7 +4,7 @@ export default class Cloud {
         this.x = Math.random() * this.game.width;
         this.y = Math.random() * this.game.height * 0.5;
         this.speed = Math.random() * 0.2 + 0.1;
-        this.size = Math.random() * 50 + 50;
+        this.size = Math.random() * 100 + 100;
     }
 
     update(tsf) {

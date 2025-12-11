@@ -1,12 +1,13 @@
 import Player from './player.js?v=2';
 import Shield from './shield.js';
 import Tower from './tower.js';
-import Missile from './missile.js';
-import Cloud from './cloud.js';
+import Missile from './missile.js?v=25';
+import Cloud from './cloud.js?v=25';
 import ThreatManager from './threatManager.js';
-import { ScreenShake } from './utils.js';
-import Drop from './drop.js';
+import { ScreenShake, darkenColor, lightenColor } from './utils.js?v=25';
+import Drop from './drop.js?v=25';
 import Particle from './particle.js';
+import FloatingText from './floatingText.js?v=25';
 
 class Game {
     constructor(canvas) {
@@ -173,8 +174,11 @@ class Game {
         this.drops = [];
         this.shields = [];
         this.clouds = [];
+        this.floatingTexts = [];
         this.damageSpots = [];
         this.currentRPM = 4.1;
+        this.backgroundCastlePlatforms = [];
+        this.trees = [];
 
         this.player = new Player(this);
         this.threatManager = new ThreatManager(this);
@@ -256,7 +260,7 @@ class Game {
         this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.slapLvl = 0; this.stats.piggyLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = [];
+        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = [];
         this.player.reset();
         this.lastTime = 0;
         document.getElementById('restart-btn').style.display = 'none';
@@ -272,9 +276,14 @@ class Game {
         const castleColor = '#f8c8dc'; // Pastel Pink
         const groundPlatform = { x: 0, y: this.height - 60, width: this.width, height: 60, color: castleColor, type: 'ground' };
         const castlePlatforms = [
-            { x: 50, y: this.height - 160, width: 100, height: 100, color: castleColor, type: 'castle' },
-            { x: this.width - 150, y: this.height - 160, width: 100, height: 100, color: castleColor, type: 'castle' },
-            { x: this.width / 2 - 100, y: this.height - 120, width: 200, height: 60, color: castleColor, type: 'castle' }
+            { x: 50, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
+            { x: this.width - 150, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
+            { x: this.width / 2 - 100, y: this.height - 120, width: 200, height: 120, color: castleColor, type: 'castle' }
+        ];
+
+        this.platforms = [
+            ...castlePlatforms,
+            groundPlatform,
         ];
 
         const floatingPlatforms = [
@@ -283,37 +292,33 @@ class Game {
             { x: 800, y: this.height - 850, width: 180 }, { x: 450, y: this.height - 1100, width: 200 }
         ];
 
-        this.platforms = [
-            ...castlePlatforms,
-            groundPlatform,
-            ...floatingPlatforms.map(cfg => {
-                const platform = { ...cfg, height: 30, type: 'cloud', circles: [] };
-                const baseNumCircles = Math.ceil(platform.width / 40 * 1.5);
-                const minRadius = 23.4375;
-                const maxRadius = 43.75;
+        floatingPlatforms.forEach(cfg => {
+            const platform = { ...cfg, height: 30, type: 'cloud', circles: [] };
+            const baseNumCircles = Math.ceil(platform.width / 40 * 1.5);
+            const minRadius = 23.4375;
+            const maxRadius = 43.75;
 
-                for (let i = 0; i < baseNumCircles; i++) {
-                    const xOffset = (i / (baseNumCircles - 1)) * platform.width;
-                    const mainCircleRadius = minRadius + Math.random() * (maxRadius - minRadius);
+            for (let i = 0; i < baseNumCircles; i++) {
+                const xOffset = (i / (baseNumCircles - 1)) * platform.width;
+                const mainCircleRadius = minRadius + Math.random() * (maxRadius - minRadius);
+                platform.circles.push({
+                    dx: xOffset + (Math.random() - 0.5) * 10,
+                    dy: platform.height / 2 + (Math.random() - 0.5) * 5,
+                    radius: mainCircleRadius,
+                    hasGlare: Math.random() < 0.23
+                });
+                if (Math.random() < 0.7) {
+                    const fillerRadius = minRadius * 0.75 + Math.random() * (minRadius * 0.75);
                     platform.circles.push({
-                        dx: xOffset + (Math.random() - 0.5) * 10,
-                        dy: platform.height / 2 + (Math.random() - 0.5) * 5,
-                        radius: mainCircleRadius,
+                        dx: xOffset + (Math.random() - 0.5) * 20,
+                        dy: platform.height / 2 + (Math.random() - 0.5) * 15,
+                        radius: fillerRadius,
                         hasGlare: Math.random() < 0.23
                     });
-                    if (Math.random() < 0.7) {
-                        const fillerRadius = minRadius * 0.75 + Math.random() * (minRadius * 0.75);
-                        platform.circles.push({
-                            dx: xOffset + (Math.random() - 0.5) * 20,
-                            dy: platform.height / 2 + (Math.random() - 0.5) * 15,
-                            radius: fillerRadius,
-                            hasGlare: Math.random() < 0.23
-                        });
-                    }
                 }
-                return platform;
-            })
-        ];
+            }
+            this.platforms.push(platform);
+        });
 
         this.towers = [
             new Tower(this, 172.4, floatingPlatforms[0].y - 55.2), new Tower(this, 972.4, floatingPlatforms[1].y - 55.2),
@@ -324,6 +329,42 @@ class Game {
         this.clouds = [];
         for (let i = 0; i < 4; i++) {
             this.clouds.push(new Cloud(this));
+        }
+
+        // Background Castle
+        this.backgroundCastlePlatforms = [];
+        const bgCastleColor = darkenColor(castleColor, 15);
+        const bgCastleOffsetX = -75;
+        const bgCastleOffsetY = -38;
+        castlePlatforms.forEach(p => {
+            this.backgroundCastlePlatforms.push({
+                x: p.x + bgCastleOffsetX,
+                y: p.y + bgCastleOffsetY,
+                width: p.width,
+                height: p.height,
+                color: bgCastleColor,
+                type: 'castle'
+            });
+        });
+        const bgGroundPlatform = { x: groundPlatform.x, y: groundPlatform.y + bgCastleOffsetY, width: groundPlatform.width, height: groundPlatform.height, color: bgCastleColor, type: 'ground' };
+        this.backgroundCastlePlatforms.push(bgGroundPlatform);
+
+        // Background Trees
+        this.trees = [];
+        const treeColors = ['#9bf6ff', '#a0c4ff'];
+        const sectionWidth = this.width / 8;
+        for (let i = 0; i < 8; i++) {
+            const z = Math.random();
+            const width = (z * 150) + 75;
+            const height = width * (2.5 + Math.random() * 2);
+            this.trees.push({
+                x: (sectionWidth * i) + (Math.random() * sectionWidth),
+                y: this.height,
+                z: z,
+                width: width,
+                height: height,
+                color: treeColors[i % 2]
+            });
         }
     }
 
@@ -442,297 +483,355 @@ class Game {
         this.gameLoop(0);
     }
     
-    gameLoop(currentTime) {
-        if (!this.lastTime) this.lastTime = currentTime;
-        const deltaTime = currentTime - this.lastTime;
-        this.lastTime = currentTime;
-        const tsf = deltaTime / this.targetFrameTime;
-
-        this.screenShake.update(tsf);
-
-        const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-        skyGradient.addColorStop(0, '#a1c4fd');
-        skyGradient.addColorStop(1, '#ffdde1');
-        this.ctx.fillStyle = skyGradient;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-
-        if (!this.isPaused && !this.isGameOver) {
-            this.gameTime += tsf;
-            this.threatManager.update(tsf);
-
-            if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
-                this.shopReminderShown = true;
-                document.getElementById('shop-reminder').style.display = 'block';
-                this.isPaused = true;
-            }
-
-            this.piggyTimer += tsf;
-            if (this.piggyTimer >= 3600) {
-                this.piggyTimer = 0;
-                this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
-                if (!this.piggyBankSeen) {
-                    this.piggyBankSeen = true;
+        gameLoop(currentTime) {
+            if (!this.lastTime) this.lastTime = currentTime;
+            const deltaTime = currentTime - this.lastTime;
+            this.lastTime = currentTime;
+            const tsf = deltaTime / this.targetFrameTime;
+    
+            this.screenShake.update(tsf);
+    
+            const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+            skyGradient.addColorStop(0, '#a1c4fd');
+            skyGradient.addColorStop(1, '#ffdde1');
+            this.ctx.fillStyle = skyGradient;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+    
+            if (!this.isPaused && !this.isGameOver) {
+                this.gameTime += tsf;
+                this.threatManager.update(tsf);
+    
+                if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
+                    this.shopReminderShown = true;
+                    document.getElementById('shop-reminder').style.display = 'block';
                     this.isPaused = true;
-                    document.getElementById('piggy-modal').style.display = 'block';
                 }
-            }
-
-            this.clouds.forEach(c => c.update(tsf));
-            this.player.update(tsf);
-            this.towers.forEach(t => t.update(tsf));
-            this.shields.forEach(s => s.update(tsf));
-
-            for (let i = this.missiles.length - 1; i >= 0; i--) {
-                const m = this.missiles[i];
-                m.update(tsf);
-                if (m.health <= 0) { this.killMissile(m, i); continue; }
-                let blocked = false;
-                for (let sIdx = this.shields.length - 1; sIdx >= 0; sIdx--) {
-                    const s = this.shields[sIdx];
-                    if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
-                        for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
-                        if (s.takeDamage(10)) { this.shields.splice(sIdx, 1); this.screenShake.trigger(3, 5); } else this.screenShake.trigger(1, 3);
-                        this.killMissile(m, i);
-                        blocked = true;
-                        break;
+    
+                this.piggyTimer += tsf;
+                if (this.piggyTimer >= 3600) {
+                    this.piggyTimer = 0;
+                    this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
+                    if (!this.piggyBankSeen) {
+                        this.piggyBankSeen = true;
+                        this.isPaused = true;
+                        document.getElementById('piggy-modal').style.display = 'block';
                     }
                 }
-                if (blocked) continue;
-                if (m.y > this.height - 80) {
-                    this.castleHealth -= 10; this.missiles.splice(i, 1); this.screenShake.trigger(5, 10);
-                    for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
-                }
-            }
-
-            for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                const p = this.projectiles[i];
-                p.update(tsf);
-                if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
-                for (let j = this.missiles.length - 1; j >= 0; j--) {
-                    const m = this.missiles[j];
-                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-                        const damageDealt = Math.min(p.hp, m.health);
-                        p.hp -= damageDealt;
-                        if (m.takeDamage(damageDealt)) {
+    
+                this.clouds.forEach(c => c.update(tsf));
+                this.player.update(tsf);
+                this.towers.forEach(t => t.update(tsf));
+                this.shields.forEach(s => s.update(tsf));
+    
+                for (let i = this.missiles.length - 1; i >= 0; i--) {
+                    const m = this.missiles[i];
+                    m.update(tsf);
+                    if (m.health <= 0) { this.killMissile(m, i); continue; }
+                    let blocked = false;
+                    for (let sIdx = this.shields.length - 1; sIdx >= 0; sIdx--) {
+                        const s = this.shields[sIdx];
+                        if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
+                            for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
+                            if (s.takeDamage(10)) { this.shields.splice(sIdx, 1); this.screenShake.trigger(3, 5); } else this.screenShake.trigger(1, 3);
+                            this.killMissile(m, i);
+                            blocked = true;
+                            break;
                         }
-                        m.kbVy = -2;
-                        this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
-                        if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
-                        if (p.hp <= 0) { this.projectiles.splice(i, 1); break; }
+                    }
+                    if (blocked) continue;
+                    if (m.y > this.height - 80) {
+                        this.castleHealth -= 10; this.missiles.splice(i, 1); this.screenShake.trigger(5, 10);
+                        for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
                     }
                 }
-            }
-
-            for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
-            for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
-            
-            if (this.castleHealth <= 0) {
-                this.isGameOver = true;
-                document.getElementById('restart-btn').style.display = 'block';
-                document.getElementById('game-over-stats').style.display = 'block';
-                const timeSec = (this.gameTime / 60);
-                const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
-                let mult = 0.5;
-                if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
-                else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                const scoreBase = (timeSec * 5) + (this.enemiesKilled * 10) + (this.totalMoneyEarned * 1);
-                const finalScore = Math.floor(scoreBase * mult);
-                document.getElementById('go-time').innerText = timeSec.toFixed(0) + 's';
-                document.getElementById('go-kills').innerText = this.enemiesKilled;
-                document.getElementById('go-money').innerText = '$' + this.totalMoneyEarned;
-                document.getElementById('go-acc').innerText = (accuracy * 100).toFixed(1) + '%';
-                document.getElementById('go-mult').innerText = mult.toFixed(2) + 'x';
-                document.getElementById('go-score').innerText = finalScore;
-            }
-        }
-
-        const offset = this.screenShake.getOffset();
-        this.ctx.save(); this.ctx.translate(offset.x, offset.y);
-
-        this.clouds.forEach(c => c.draw(this.ctx));
-        this.platforms.forEach(p => {
-            this.ctx.fillStyle = p.color;
-            this.ctx.save();
-            if (p.type === 'cloud') {
-                const pink = [255, 182, 193];
-                const blue = [135, 206, 250];
-                const ratio = (p.y - (this.height - 1100)) / ((this.height - 250) - (this.height - 1100));
-                const invRatio = 1 - Math.max(0, Math.min(1, ratio));
-                const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
-                const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
-                const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
-                const cloudColor = `rgb(${r}, ${g}, ${b})`;
-                const borderWidth = 4;
-                this.ctx.fillStyle = 'white';
-                this.ctx.beginPath();
-                p.circles.forEach(circle => {
-                    this.ctx.moveTo(p.x + circle.dx + circle.radius + borderWidth, p.y + circle.dy);
-                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius + borderWidth, 0, Math.PI * 2);
-                });
-                this.ctx.fill();
-                p.circles.forEach(circle => {
-                    this.ctx.fillStyle = cloudColor;
-                    this.ctx.beginPath();
-                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    if (circle.hasGlare) {
-                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                        this.ctx.beginPath();
-                        this.ctx.ellipse(
-                            p.x + circle.dx - circle.radius * 0.3,
-                            p.y + circle.dy - circle.radius * 0.3,
-                            circle.radius * 0.4,
-                            circle.radius * 0.6,
-                            -0.8, 0, Math.PI * 2
-                        );
-                        this.ctx.fill();
+    
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    const p = this.projectiles[i];
+                    p.update(tsf);
+                    if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
+                    for (let j = this.missiles.length - 1; j >= 0; j--) {
+                        const m = this.missiles[j];
+                        if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+                            const damageDealt = Math.min(p.hp, m.health);
+                            p.hp -= damageDealt;
+                            if (m.takeDamage(damageDealt)) {
+                            }
+                            m.kbVy = -2;
+                            this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                            if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
+                            if (p.hp <= 0) { this.projectiles.splice(i, 1); break; }
+                        }
                     }
-                });
-            } else if (p.type === 'castle') {
-                let visualHeight = p.y === this.height - 120 ? 120 : 160;
-                this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, visualHeight, 10); this.ctx.fill();
-                this.ctx.strokeStyle = 'white';
-                this.ctx.lineWidth = 4;
-                this.ctx.stroke();
-                this.drawPlatformFrosting(p);
-            } else {
-                this.ctx.fillRect(p.x, p.y, p.width, p.height);
-                this.ctx.strokeStyle = 'white';
-                this.ctx.lineWidth = 4;
-                this.ctx.strokeRect(p.x, p.y, p.width, p.height);
-                this.drawPlatformFrosting(p);
+                }
+    
+                for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
+                for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
+                for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+                    this.floatingTexts[i].update(tsf);
+                    if (this.floatingTexts[i].life <= 0) {
+                        this.floatingTexts.splice(i, 1);
+                    }
+                }
+                
+                if (this.castleHealth <= 0) {
+                    this.isGameOver = true;
+                    document.getElementById('restart-btn').style.display = 'block';
+                    document.getElementById('game-over-stats').style.display = 'block';
+                    const timeSec = (this.gameTime / 60);
+                    const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
+                    let mult = 0.5;
+                    if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
+                    else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
+                    const scoreBase = (timeSec * 5) + (this.enemiesKilled * 10) + (this.totalMoneyEarned * 1);
+                    const finalScore = Math.floor(scoreBase * mult);
+                    document.getElementById('go-time').innerText = timeSec.toFixed(0) + 's';
+                    document.getElementById('go-kills').innerText = this.enemiesKilled;
+                    document.getElementById('go-money').innerText = '$' + this.totalMoneyEarned;
+                    document.getElementById('go-acc').innerText = (accuracy * 100).toFixed(1) + '%';
+                    document.getElementById('go-mult').innerText = mult.toFixed(2) + 'x';
+                    document.getElementById('go-score').innerText = finalScore;
+                }
             }
-            this.ctx.restore();
-        });
-        
-        if (!this.isGameOver) {
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 24px Segoe UI';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("[F] SHOP", this.width / 2, this.height - 60);
-        }
-
-        this.towers.forEach(t => t.draw(this.ctx));
-        this.shields.forEach(s => s.draw(this.ctx));
-        this.missiles.forEach(m => m.draw(this.ctx));
-        this.projectiles.forEach(p => p.draw(this.ctx));
-        this.drops.forEach(d => d.draw(this.ctx));
-        this.particles.forEach(p => p.draw(this.ctx));
-        this.player.draw(this.ctx);
-
-        this.ctx.restore();
-
-        if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
-            this.towers.forEach(t => {
-                if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
-                    this.ctx.fillStyle = 'white'; this.ctx.font = '20px Arial'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
+    
+            const offset = this.screenShake.getOffset();
+            this.ctx.save(); this.ctx.translate(offset.x, offset.y);
+    
+            const backgroundElements = [...this.trees, ...this.clouds];
+            backgroundElements.sort((a, b) => (a.z || a.y) - (b.z || b.y));
+            backgroundElements.forEach(elem => {
+                if (elem.z) { // It's a tree
+                    this.drawTree(elem);
+                } else { // It's a cloud
+                    elem.draw(this.ctx);
                 }
             });
-        }
 
-        if (this.placementMode) {
-            this.ctx.globalAlpha = 0.6;
-            if (this.placementMode === 'turret') {
-                this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
-                this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
-            } else if (this.placementMode === 'shield') {
-                this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 22, 43, Math.PI, 0); this.ctx.fill();
-            }
-            this.ctx.globalAlpha = 1.0;
-            this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
-        }
-
-        if (this.sellMode) {
-            let hoverTarget = null;
-            let refundAmount = 0;
-            let targetType = '';
-            for (const t of this.towers) {
-                if (t.isAuto && this.mouse.x > t.x && this.mouse.x < t.x + t.width && this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
-                    hoverTarget = t;
-                    targetType = 'turret';
-                    const costs = [1000, 3000, 5000];
-                    refundAmount = Math.floor(costs[this.stats.turretsBought - 1] * 0.9);
-                    break;
+            this.backgroundCastlePlatforms.forEach(p => {
+                this.ctx.save();
+                this.ctx.fillStyle = p.color;
+                
+                if (p.type === 'castle') { this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill(); } else {
+                    this.ctx.fillRect(p.x, p.y, p.width, p.height);
                 }
+                this.drawPlatformFrosting(p);
+                this.ctx.restore();
+            });
+    
+            this.platforms.forEach(p => {
+                this.ctx.fillStyle = p.color;
+                this.ctx.save();
+                if (p.type === 'cloud') {
+                    const pink = [255, 182, 193];
+                    const blue = [135, 206, 250];
+                    const ratio = (p.y - (this.height - 1100)) / ((this.height - 250) - (this.height - 1100));
+                    const invRatio = 1 - Math.max(0, Math.min(1, ratio));
+                    const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
+                    const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
+                    const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
+                    const cloudColor = `rgb(${r}, ${g}, ${b})`;
+                    const borderWidth = 4;
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.beginPath();
+                    p.circles.forEach(circle => {
+                        this.ctx.moveTo(p.x + circle.dx + circle.radius + borderWidth, p.y + circle.dy);
+                        this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius + borderWidth, 0, Math.PI * 2);
+                    });
+                    this.ctx.fill();
+                    p.circles.forEach(circle => {
+                        this.ctx.fillStyle = cloudColor;
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        if (circle.hasGlare) {
+                            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                            this.ctx.beginPath();
+                            this.ctx.ellipse(
+                                p.x + circle.dx - circle.radius * 0.3,
+                                p.y + circle.dy - circle.radius * 0.3,
+                                circle.radius * 0.4,
+                                circle.radius * 0.6,
+                                -0.8, 0, Math.PI * 2
+                            );
+                            this.ctx.fill();
+                        }
+                    });
+                } else if (p.type === 'castle') {
+                    this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill();
+                    this.drawPlatformFrosting(p);
+                } else {
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
+                    this.ctx.fill();
+                    this.drawPlatformFrosting(p);
+                }
+                this.ctx.restore();
+            });
+            
+            if (!this.isGameOver) {
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = 'bold 24px Segoe UI';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText("[F] SHOP", this.width / 2, this.height - 60);
             }
-            if (!hoverTarget) {
-                for (const s of this.shields) {
-                    if (this.mouse.x > s.x && this.mouse.x < s.x + s.width && this.mouse.y > s.y && this.mouse.y < s.y + s.height) {
-                        hoverTarget = s;
-                        targetType = 'shield';
-                        refundAmount = Math.floor(this.SHIELD_COSTS[this.shields.length - 1] * 0.9);
+    
+            this.towers.forEach(t => t.draw(this.ctx));
+            this.shields.forEach(s => s.draw(this.ctx));
+            this.missiles.forEach(m => m.draw(this.ctx));
+            this.projectiles.forEach(p => p.draw(this.ctx));
+            this.drops.forEach(d => d.draw(this.ctx));
+            this.particles.forEach(p => p.draw(this.ctx));
+            this.player.draw(this.ctx);
+            this.floatingTexts.forEach(ft => ft.draw(this.ctx));
+    
+            this.ctx.restore();
+    
+            if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
+                this.towers.forEach(t => {
+                    if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
+                        this.ctx.fillStyle = 'white'; this.ctx.font = '20px Arial'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
+                    }
+                });
+            }
+    
+            if (this.placementMode) {
+                this.ctx.globalAlpha = 0.6;
+                if (this.placementMode === 'turret') {
+                    this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
+                    this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
+                } else if (this.placementMode === 'shield') {
+                    this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 22, 43, Math.PI, 0); this.ctx.fill();
+                }
+                this.ctx.globalAlpha = 1.0;
+                this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
+            }
+    
+            if (this.sellMode) {
+                let hoverTarget = null;
+                let refundAmount = 0;
+                let targetType = '';
+                for (const t of this.towers) {
+                    if (t.isAuto && this.mouse.x > t.x && this.mouse.x < t.x + t.width && this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
+                        hoverTarget = t;
+                        targetType = 'turret';
+                        const costs = [1000, 3000, 5000];
+                        refundAmount = Math.floor(costs[this.stats.turretsBought - 1] * 0.9);
                         break;
                     }
                 }
-            }
-            if (hoverTarget) {
-                this.ctx.globalAlpha = 0.8;
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
-                this.ctx.fillStyle = '#2ecc71';
-                this.ctx.font = 'bold 24px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
-                this.ctx.globalAlpha = 0.2;
-                this.ctx.fillStyle = 'white';
-                this.ctx.fillRect(hoverTarget.x, hoverTarget.y, hoverTarget.width, hoverTarget.height);
-                this.ctx.globalAlpha = 1.0;
-            }
-            if (this.mouse.isDown && hoverTarget) {
-                this.money += refundAmount;
-                if (targetType === 'turret') {
-                    this.towers.splice(this.towers.indexOf(hoverTarget), 1);
-                    this.stats.turretsBought--;
-                } else if (targetType === 'shield') {
-                    this.shields.splice(this.shields.indexOf(hoverTarget), 1);
+                if (!hoverTarget) {
+                    for (const s of this.shields) {
+                        if (this.mouse.x > s.x && this.mouse.x < s.x + s.width && this.mouse.y > s.y && this.mouse.y < s.y + s.height) {
+                            hoverTarget = s;
+                            targetType = 'shield';
+                            refundAmount = Math.floor(this.SHIELD_COSTS[this.shields.length - 1] * 0.9);
+                            break;
+                        }
+                    }
                 }
-                this.sellMode = null;
-                this.isPaused = false;
-                document.getElementById('notification').innerText = "SOLD!";
-                document.getElementById('notification').style.opacity = 1;
-                setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+                if (hoverTarget) {
+                    this.ctx.globalAlpha = 0.8;
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
+                    this.ctx.fillStyle = '#2ecc71';
+                    this.ctx.font = 'bold 24px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
+                    this.ctx.globalAlpha = 0.2;
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.fillRect(hoverTarget.x, hoverTarget.y, hoverTarget.width, hoverTarget.height);
+                    this.ctx.globalAlpha = 1.0;
+                }
+                if (this.mouse.isDown && hoverTarget) {
+                    this.money += refundAmount;
+                    if (targetType === 'turret') {
+                        this.towers.splice(this.towers.indexOf(hoverTarget), 1);
+                        this.stats.turretsBought--;
+                    } else if (targetType === 'shield') {
+                        this.shields.splice(this.shields.indexOf(hoverTarget), 1);
+                    }
+                    this.sellMode = null;
+                    this.isPaused = false;
+                    document.getElementById('notification').innerText = "SOLD!";
+                    document.getElementById('notification').style.opacity = 1;
+                    setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+                }
             }
+            
+            document.getElementById('money-display').innerText = this.money;
+            if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
+    
+            document.getElementById('health-bar-fill').style.width = Math.max(0, this.castleHealth) + '%';
+            document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/100`;
+            document.getElementById('threat-level').innerText = (40 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+    
+            requestAnimationFrame(() => this.gameLoop(performance.now()));
+        }
+    
+        drawTree(tree) {
+            this.ctx.save();
+            this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
+    
+            const trunkWidth = tree.width * 0.25;
+            const trunkHeight = tree.height;
+            const leafStartY = tree.y - trunkHeight;
+    
+            // Trunk
+            this.ctx.fillStyle = '#A0522D'; // Sienna
+            this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
+            
+            // Leaves
+            this.ctx.fillStyle = tree.color;
+            const R = tree.width * 0.315; // base radius
+
+            // bottom row
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x - R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x + R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+
+            // middle row
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x - R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x + R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+            
+            // top
+            this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*0.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+
+            this.ctx.restore();
         }
         
-        document.getElementById('money-display').innerText = this.money;
-        if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
+        drawPlatformFrosting(platform) {
+            this.ctx.save(); // Save context state
+            this.ctx.beginPath();
+            this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20); // Use the same rounding as the platform
+            this.ctx.clip(); // Clip to this rounded rectangle
 
-        document.getElementById('health-bar-fill').style.width = Math.max(0, this.castleHealth) + '%';
-        document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/100`;
-        document.getElementById('threat-level').innerText = (40 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
-
-        requestAnimationFrame(() => this.gameLoop(performance.now()));
-    }
+            const frostingColor = lightenColor(platform.color, 10);
+            this.ctx.fillStyle = frostingColor;
+            this.ctx.beginPath();
+            let startY = platform.y + 5;
+            this.ctx.moveTo(platform.x, startY);
+            let numDrips = Math.floor(platform.width / 30);
+            let dripHeight = platform.type === 'ground' ? 30 : 20;
+            let dripRandomness = platform.type === 'ground' ? 1.5 : 4;
+            const animSpeed = platform.type === 'ground' ? 82 : 65;
+            const animAmplitude = platform.type === 'ground' ? 11 : 16.5;
     
-    drawPlatformFrosting(platform) {
-        const frostingColor = '#f0a9bb';
-        this.ctx.fillStyle = frostingColor;
-        this.ctx.beginPath();
-        let startY = platform.y + 5;
-        this.ctx.moveTo(platform.x, startY);
-        let numDrips = Math.floor(platform.width / 30);
-        let dripHeight = platform.type === 'ground' ? 30 : 20;
-        let dripRandomness = platform.type === 'ground' ? 1.5 : 4;
-        const animSpeed = platform.type === 'ground' ? 82 : 65;
-        const animAmplitude = platform.type === 'ground' ? 11 : 16.5;
-
-        for (let i = 0; i < numDrips; i++) {
-            let x1 = platform.x + (i / numDrips) * platform.width;
-            let x2 = platform.x + ((i + 0.5) / numDrips) * platform.width;
-            let x3 = platform.x + ((i + 1) / numDrips) * platform.width;
-            let staticDrip = (Math.sin((platform.x + i) * dripRandomness) + 1) * dripHeight;
-            let animatedDrip = (Math.sin(this.gameTime / animSpeed + i * (Math.PI / 2)) + 1) * animAmplitude;
-            let dripY = startY + 10 + staticDrip + animatedDrip;
-            this.ctx.lineTo(x1, startY);
-            this.ctx.quadraticCurveTo(x2, dripY, x3, startY);
-        }
-        this.ctx.lineTo(platform.x + platform.width, startY);
-        this.ctx.lineTo(platform.x + platform.width, platform.y);
-        this.ctx.lineTo(platform.x, platform.y);
-        this.ctx.closePath();
-        this.ctx.fill();
-    }
-}
+            for (let i = 0; i < numDrips; i++) {
+                let x1 = platform.x + (i / numDrips) * platform.width;
+                let x2 = platform.x + ((i + 0.5) / numDrips) * platform.width;
+                let x3 = platform.x + ((i + 1) / numDrips) * platform.width;
+                let staticDrip = (Math.sin((platform.x + i) * dripRandomness) + 1) * dripHeight;
+                let animatedDrip = (Math.sin(this.gameTime / animSpeed + i * (Math.PI / 2)) + 1) * animAmplitude;
+                let dripY = startY + 10 + staticDrip + animatedDrip;
+                this.ctx.lineTo(x1, startY);
+                this.ctx.quadraticCurveTo(x2, dripY, x3, startY);
+            }
+            this.ctx.lineTo(platform.x + platform.width, startY);
+            this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height); // Draw frosting over the whole platform
+            this.ctx.lineTo(platform.x, platform.y + platform.height); //
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.restore(); // Restore context state, removing the clip
+        }}
 
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');

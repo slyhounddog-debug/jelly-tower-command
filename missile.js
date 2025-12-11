@@ -1,4 +1,5 @@
 import Particle from './particle.js';
+import { darkenColor } from './utils.js?v=25';
 
 export default class Missile {
     constructor(game, x, type = 'missile') {
@@ -42,6 +43,26 @@ export default class Missile {
         }
     }
     draw(ctx) {
+        // --- DYNAMIC SHADOW ---
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        if (ground) {
+            const distance = ground.y - (this.y + this.height);
+            const maxShadowDistance = 800;
+
+            if (distance < maxShadowDistance && distance > -this.height) { // Also check if missile is not below ground
+                const shadowFactor = 1 - (distance / maxShadowDistance);
+                const shadowWidth = (this.width * 0.63) * shadowFactor;
+                const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
+                const shadowOpacity = 0.4 * shadowFactor;
+
+                // Use a generic shadow color
+                ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width / 2, ground.y + 2, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
         ctx.save();
         ctx.shadowBlur = 15;
         const color = (this.type === 'piggy') ? '#ff69b4' : this.color;
@@ -89,9 +110,11 @@ export default class Missile {
             ctx.closePath();
 
             ctx.fill();
-            ctx.strokeStyle = 'white';
+            ctx.filter = 'brightness(85%)';
+            ctx.strokeStyle = this.color;
             ctx.lineWidth = 3; // 1.5x original
             ctx.stroke();
+            ctx.filter = 'none';
 
             // Shiny glare
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
