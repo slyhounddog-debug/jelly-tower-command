@@ -596,7 +596,7 @@ class Game {
                     }
                 }
                 
-                if (this.castleHealth <= 0) {
+               if (this.castleHealth <= 0) {
                     this.isGameOver = true;
                     document.getElementById('restart-btn').style.display = 'block';
                     document.getElementById('game-over-stats').style.display = 'block';
@@ -607,7 +607,7 @@ class Game {
                     if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
                     else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
                     
-                    // Calculate component scores first
+                    // Calculate scores
                     const timeScore = timeSec * 5;
                     const killsScore = this.enemiesKilled * 10;
                     const moneyScore = this.totalMoneyEarned * 1;
@@ -615,22 +615,31 @@ class Game {
                     const scoreBase = timeScore + killsScore + moneyScore;
                     const finalScore = Math.floor(scoreBase * mult);
                     
-                    // Update Raw Stats
+                    // --- High Score Logic (NEW) ---
+                    // Get current high score (default to 0)
+                    let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+
+                    // Check for a new high score
+                    if (finalScore > highScore) {
+                        highScore = finalScore;
+                        localStorage.setItem('myGameHighScore', highScore);
+                    }
+                    // --- End High Score Logic ---
+
+                    // Update HTML elements
                     document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
                     document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
                     document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
                     document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
                     
-                    // Update Point Breakdowns
                     document.getElementById('go-time-points').textContent = `(+${Math.floor(timeScore).toLocaleString()})`;
                     document.getElementById('go-kills-points').textContent = `(+${Math.floor(killsScore).toLocaleString()})`;
                     document.getElementById('go-money-points').textContent = `(+${Math.floor(moneyScore).toLocaleString()})`;
-
-                    // NEW: Update Multiplier in Accuracy Row
                     document.getElementById('go-mult-display').textContent = `(${mult.toFixed(2)}x)`;
                     
-                    // Update Final Score
+                    // Display scores
                     document.getElementById('go-score').textContent = finalScore.toLocaleString();
+                    document.getElementById('go-high-score').textContent = highScore.toLocaleString();
                 }
             }
     
