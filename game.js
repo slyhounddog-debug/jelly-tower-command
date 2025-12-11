@@ -177,7 +177,7 @@ class Game {
         this.clouds = [];
         this.floatingTexts = [];
         this.damageSpots = [];
-        this.currentRPM = 4.1;
+        this.currentRPM = 5.5;
         this.backgroundCastlePlatforms = [];
         this.trees = [];
 
@@ -273,8 +273,8 @@ class Game {
     }
     
     resetGame() {
-        this.money = 0; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.castleHealth = 100; this.gameTime = 0; this.isGameOver = false; this.currentRPM = 4.1;
+        this.money = 25; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.shotsFired = 0; this.shotsHit = 0;
+        this.castleHealth = 100; this.gameTime = 0; this.isGameOver = false; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
@@ -291,8 +291,8 @@ class Game {
         this.initLevel();
         this.threatManager.reset();
 
-        document.getElementById('rpm-display').innerText = "4.1";
-        document.getElementById('threat-level').innerText = (40 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+        document.getElementById('rpm-display').innerText = "5.5";
+        document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
     }
 
     initLevel() {
@@ -492,7 +492,7 @@ class Game {
     tryPlaceItem() {
         if (this.money < this.placementItemCost) return;
         if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
-        else if (this.placementMode === 'shield') { this.shields.push(new Shield(this, this.mouse.x - 43, this.mouse.y - 22)); }
+        else if (this.placementMode === 'shield') { this.shields.push(new Shield(this, this.mouse.x - 64, this.mouse.y - 33)); }
         this.money -= this.placementItemCost; this.placementMode = null; this.isPaused = false;
         document.getElementById('notification').innerText = "DEPLOYED";
         document.getElementById('notification').style.opacity = 1;
@@ -749,7 +749,7 @@ class Game {
                     this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
                     this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
                 } else if (this.placementMode === 'shield') {
-                    this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 22, 43, Math.PI, 0); this.ctx.fill();
+                    this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 33, 64, Math.PI, 0); this.ctx.fill();
                 }
                 this.ctx.globalAlpha = 1.0;
                 this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
@@ -812,7 +812,7 @@ class Game {
     
             document.getElementById('health-bar-fill').style.width = Math.max(0, this.castleHealth) + '%';
             document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/100`;
-            document.getElementById('threat-level').innerText = (40 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+            document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
     
             requestAnimationFrame(() => this.gameLoop(performance.now()));
         }

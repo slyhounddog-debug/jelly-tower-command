@@ -3,7 +3,7 @@ import Particle from './particle.js';
 
 export default class Shield extends BaseStructure {
     constructor(game, x, y) {
-        super(x, y, 86, 44);
+        super(x, y, 129, 66);
         this.game = game;
         this.maxHp = this.game.stats.shieldMaxHp;
         this.hp = this.maxHp;
