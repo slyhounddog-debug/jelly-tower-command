@@ -136,7 +136,7 @@ export default class Player {
         this.vx *= (0.85 ** tsf);
 
         if (this.game.keys['s'] && this.isOnGround && this.passThroughTimer <= 0) {
-            const pIdx = this.game.platforms.findIndex((p, i) => i > 0 && this.x < p.x + p.width && this.x + this.width > p.x && this.y + this.height >= p.y - 1 && this.y + this.height <= p.y + 10);
+            const pIdx = this.game.platforms.findIndex(p => p.type === 'cloud' && this.x < p.x + p.width && this.x + this.width > p.x && this.y + this.height >= p.y - 1 && this.y + this.height <= p.y + 10);
             if (pIdx !== -1) { this.isPassingThrough = true; this.y += 10; this.passThroughTimer = 20; this.isOnGround = false; }
         }
         if (this.passThroughTimer > 0) { this.passThroughTimer -= tsf; if (this.passThroughTimer <= 0) this.isPassingThrough = false; }
@@ -160,7 +160,7 @@ export default class Player {
         const wasOnGround = this.isOnGround;
         this.isOnGround = false;
         this.game.platforms.forEach((p, pIdx) => {
-            if (pIdx > 0 && this.isPassingThrough) return;
+            if (p.type === 'cloud' && this.isPassingThrough) return;
             if (this.x < p.x + p.width && this.x + this.width > p.x && this.y + this.height > p.y && this.y < p.y + p.height + 10) {
                 if (this.vy >= 0 && (this.y - (this.vy * tsf)) + this.height <= p.y + 25) {
                     if (!wasOnGround) {

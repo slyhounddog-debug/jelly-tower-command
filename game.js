@@ -1,4 +1,4 @@
-import Player from './player.js';
+import Player from './player.js?v=2';
 import Shield from './shield.js';
 import Tower from './tower.js';
 import Missile from './missile.js';
@@ -34,7 +34,7 @@ class Game {
 
         this.money = 0;
         this.castleHealth = 100;
-        this.isPaused = false;
+        this.isPaused = true;
         this.isShopOpen = false;
         this.isGameOver = false;
         this.gameTime = 0;
@@ -225,6 +225,11 @@ class Game {
             else if (!this.isShopOpen && !this.player.isControlling) this.player.trySlap();
         });
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            document.getElementById('start-game-modal').style.display = 'none';
+            this.isPaused = false;
+        });
+
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
@@ -729,6 +734,8 @@ class Game {
     }
 }
 
-const canvas = document.getElementById('gameCanvas');
-const game = new Game(canvas);
-game.start();
+window.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+    const game = new Game(canvas);
+    game.start();
+});

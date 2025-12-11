@@ -342,6 +342,26 @@
             <button class="modal-close" onclick="document.getElementById('guide-modal').style.display='none'">Close Guide</button>
         </div>
 
+        <!-- Start Game Modal -->
+        <div id="start-game-modal" class="modal" style="display: block;">
+            <h2>Welcome to Jelly Slapper!</h2>
+            <h3>Objective</h3>
+            <p>Protect your castle from the attacking jelly beans for as long as possible.</p>
+            <h3>Controls</h3>
+            <p><strong>A / D:</strong> Move Left / Right</p>
+            <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
+            <p><strong>Mouse:</strong> Aim your glove</p>
+            <p><strong>Click:</strong> Slap</p>
+            <h3>Advanced Moves</h3>
+            <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
+            <h3>The Shop</h3>
+            <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
+            <h3>Get Ready!</h3>
+            <p>The jelly beans get more aggressive and numerous over time. Stay frosty!</p>
+            <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop)</em></p>
+            <button class="modal-close" id="start-game-btn">Start Game</button>
+        </div>
+
         <!-- Piggy Modal -->
         <div id="piggy-modal" class="modal">
             <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
@@ -354,6 +374,6 @@
         <div id="notification" class="notification">Item Placed!</div>
     </div>
 
-    <script type="module" src="game.js"></script>
+    <script type="module" src="game.js?v=2"></script>
 </body>
 </html>
