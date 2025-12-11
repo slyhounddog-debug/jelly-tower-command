@@ -7,9 +7,9 @@ export default class Player {
         this.width = 33.81; this.height = 49.5075; this.color = '#a0c4ff';
         this.scaleX = 1; this.scaleY = 1;
         this.slapCooldown = 0; this.slapAnim = 0;
-        this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 0.968;
-        this.jumpForce = -24.2;
-        this.airJumpForce = -24.2; // Fixed: Same as ground jump
+        this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 1.2;
+        this.jumpForce = -26;
+        this.airJumpForce = -26; // Fixed: Same as ground jump
         this.passThroughTimer = 0;
         this.slapAngle = 0;
         this.dashCooldown = 0;
@@ -32,7 +32,7 @@ export default class Player {
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
             this.vx += this.dashSpeed * direction;
-            this.dashCooldown = 45; // 75% of 1 second cooldown
+            this.dashCooldown = 40; // 75% of 1 second cooldown
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
@@ -46,7 +46,7 @@ export default class Player {
         this.slapAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
         this.slapOffsetX = Math.cos(this.slapAngle) * 50;
         this.slapOffsetY = Math.sin(this.slapAngle) * 50;
-        this.slapAnim = 15; this.slapCooldown = 24;
+        this.slapAnim = 15; this.slapCooldown = 20;
 
         // Hitbox logic
         const impactX = cx + this.slapOffsetX;
@@ -181,7 +181,7 @@ export default class Player {
             this.scaleX += (1 - this.scaleX) * 0.1 * tsf;
             this.scaleY += (1 - this.scaleY) * 0.1 * tsf + bounce;
         } else {
-            const stretch_factor = 0.03;
+            const stretch_factor = 0.02;
             if (this.vy < 0) { // Moving up -> stretch
                 this.scaleY = 1 + Math.abs(this.vy) * stretch_factor;
                 this.scaleX = 1 - Math.abs(this.vy) * stretch_factor * 0.5;

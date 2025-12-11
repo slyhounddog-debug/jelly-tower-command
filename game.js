@@ -20,7 +20,7 @@ class Game {
         this.DAMAGE_TIERS = [10, 15, 20, 25, 35, 45, 55, 70, 85, 100, 118, 137, 160, 180, 200, 250];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
         this.SLAP_DAMAGE_TIERS = [10, 20, 30, 40, 50];
-        this.SLAP_KNOCKBACK_TIERS = [75, 150, 250, 400, 600];
+        this.SLAP_KNOCKBACK_TIERS = [75, 100, 150, 200, 250];
         this.SHIELD_COSTS = [75, 150, 200, 300, 400];
         this.PIGGY_TIERS = [
             { bonus: 0.10, mult: 2 },
@@ -47,6 +47,7 @@ class Game {
 
        this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
+        this.currentScore = 0;
         this.wasRunningBeforeHidden = false; // Tracks if game was running before tab switch
         this.shotsFired = 0;
         this.shotsHit = 0;
@@ -273,7 +274,7 @@ class Game {
     }
     
     resetGame() {
-        this.money = 25; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.shotsFired = 0; this.shotsHit = 0;
+        this.money = 25; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
         this.castleHealth = 100; this.gameTime = 0; this.isGameOver = false; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
@@ -443,25 +444,38 @@ class Game {
         });
     }
 
-    selectShopItem(item) {
-        this.selectedShopItem = item;
-        this.renderShopGrid();
-        document.getElementById('detail-icon').innerText = item.icon;
-        document.getElementById('detail-title').innerText = item.name;
-        document.getElementById('detail-desc').innerText = item.desc;
-        const cost = item.getCost();
-        if (item.type === 'sell') {
-            document.getElementById('buy-btn').disabled = (cost === 'N/A');
-            document.getElementById('buy-btn').innerText = 'SELL';
+   selectShopItem(item) {
+        this.selectedShopItem = item;
+        this.renderShopGrid();
+        document.getElementById('detail-icon').innerText = item.icon;
+        document.getElementById('detail-title').innerText = item.name;
+        document.getElementById('detail-desc').innerText = item.desc;
+        const cost = item.getCost();
+
+        // --- Button Logic ---
+        if (item.type === 'sell') {
+            document.getElementById('buy-btn').disabled = (cost === 'N/A');
+            document.getElementById('buy-btn').innerText = 'SELL';
+        } else {
+            document.getElementById('buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `BUY ($${cost})`;
+            document.getElementById('buy-btn').disabled = !((typeof cost === 'number' && this.money >= cost));
+        }
+        document.getElementById('buy-btn').onclick = () => this.buyItem(item);
+
+        // --- Stat Comparison Logic ---
+        let nextValue = item.getNext();
+        if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
+        else document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
+
+        // --- NEW LEVEL DISPLAY LOGIC ---
+        const levelDisplay = document.getElementById('detail-level-display'); // Get the new element
+        if (item.getLevel) {
+            // Use the getLevel() function to get the current/max level text
+            levelDisplay.innerText = `Level: ${item.getLevel()}`;
         } else {
-            document.getElementById('buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `BUY ($${cost})`;
-            document.getElementById('buy-btn').disabled = !((typeof cost === 'number' && this.money >= cost));
+            levelDisplay.innerText = ''; // Clear the text for items like 'Sell Item' or placeables
         }
-        document.getElementById('buy-btn').onclick = () => this.buyItem(item);
-        let nextValue = item.getNext();
-        if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
-        else document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
-    }
+    }
 
     buyItem(item) {
         const cost = item.getCost();
@@ -567,7 +581,8 @@ class Game {
                         for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
                     }
                 }
-    
+                    this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
+document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
                 for (let i = this.projectiles.length - 1; i >= 0; i--) {
                     const p = this.projectiles[i];
                     p.update(tsf);
@@ -608,8 +623,8 @@ class Game {
                     else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
                     
                     // Calculate scores
-                    const timeScore = timeSec * 5;
-                    const killsScore = this.enemiesKilled * 10;
+                    const timeScore = timeSec * 2;
+                    const killsScore = this.enemiesKilled * 50;
                     const moneyScore = this.totalMoneyEarned * 1;
                     
                     const scoreBase = timeScore + killsScore + moneyScore;
