@@ -45,8 +45,9 @@ class Game {
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
 
-        this.totalMoneyEarned = 0;
+       this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
+        this.wasRunningBeforeHidden = false; // Tracks if game was running before tab switch
         this.shotsFired = 0;
         this.shotsHit = 0;
 
@@ -237,6 +238,8 @@ class Game {
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
+
+        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }
 
     closePiggyModal() {
@@ -247,6 +250,26 @@ class Game {
     closeShopReminder() {
         document.getElementById('shop-reminder').style.display = 'none';
         this.isPaused = false;
+    }
+    handleVisibilityChange() {
+        // document.hidden is true when the tab is not visible/active
+        if (document.hidden) {
+            // Only flag and pause if the game was currently running
+            if (!this.isPaused) {
+                this.isPaused = true;
+                this.wasRunningBeforeHidden = true; 
+            }
+        } else {
+            // The tab is now visible. If the game was paused by us, resume it.
+            if (this.wasRunningBeforeHidden) {
+                this.isPaused = false;
+                this.wasRunningBeforeHidden = false;
+
+                // CRUCIAL: Reset lastTime to prevent a huge deltaTime calculation 
+                // that would launch the player off-screen.
+                this.lastTime = 0; 
+            }
+        }
     }
     
     resetGame() {
@@ -574,23 +597,41 @@ class Game {
                 }
                 
                 if (this.castleHealth <= 0) {
-                    this.isGameOver = true;
-                    document.getElementById('restart-btn').style.display = 'block';
-                    document.getElementById('game-over-stats').style.display = 'block';
-                    const timeSec = (this.gameTime / 60);
-                    const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
-                    let mult = 0.5;
-                    if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
-                    else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                    const scoreBase = (timeSec * 5) + (this.enemiesKilled * 10) + (this.totalMoneyEarned * 1);
-                    const finalScore = Math.floor(scoreBase * mult);
-                    document.getElementById('go-time').innerText = timeSec.toFixed(0) + 's';
-                    document.getElementById('go-kills').innerText = this.enemiesKilled;
-                    document.getElementById('go-money').innerText = '$' + this.totalMoneyEarned;
-                    document.getElementById('go-acc').innerText = (accuracy * 100).toFixed(1) + '%';
-                    document.getElementById('go-mult').innerText = mult.toFixed(2) + 'x';
-                    document.getElementById('go-score').innerText = finalScore;
-                }
+                    this.isGameOver = true;
+                    document.getElementById('restart-btn').style.display = 'block';
+                    document.getElementById('game-over-stats').style.display = 'block';
+                    
+                    const timeSec = (this.gameTime / 60);
+                    const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
+                    let mult = 0.5;
+                    if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
+                    else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
+                    
+                    // Calculate component scores first
+                    const timeScore = timeSec * 5;
+                    const killsScore = this.enemiesKilled * 10;
+                    const moneyScore = this.totalMoneyEarned * 1;
+                    
+                    const scoreBase = timeScore + killsScore + moneyScore;
+                    const finalScore = Math.floor(scoreBase * mult);
+                    
+                    // Update Raw Stats
+                    document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
+                    document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
+                    document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
+                    document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
+                    
+                    // Update Point Breakdowns
+                    document.getElementById('go-time-points').textContent = `(+${Math.floor(timeScore).toLocaleString()})`;
+                    document.getElementById('go-kills-points').textContent = `(+${Math.floor(killsScore).toLocaleString()})`;
+                    document.getElementById('go-money-points').textContent = `(+${Math.floor(moneyScore).toLocaleString()})`;
+
+                    // NEW: Update Multiplier in Accuracy Row
+                    document.getElementById('go-mult-display').textContent = `(${mult.toFixed(2)}x)`;
+                    
+                    // Update Final Score
+                    document.getElementById('go-score').textContent = finalScore.toLocaleString();
+                }
             }
     
             const offset = this.screenShake.getOffset();

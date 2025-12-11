@@ -256,6 +256,10 @@
         #game-over-stats h1 { color: #e74c3c; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; }
         #shop-reminder h1 { color: #f39c12; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; }
         .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+        .stat-points-value {
+            font-size: 14px; /* Smaller font for points */
+            color: #7f8c8d; /* Muted color */
+            margin-left: 10px; /* Separates the raw stat from the points */
         .final-score { font-size: 28px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; }
 
     </style>
@@ -286,15 +290,38 @@
         <!-- Zoomed out resolution -->
         <canvas id="gameCanvas" width="1200" height="1500"></canvas>
         
-        <div id="game-over-stats">
-            <h1>Mission Failed</h1>
-            <div class="stat-row"><span>Time Survived:</span><span id="go-time">0s</span></div>
-            <div class="stat-row"><span>Enemies Killed:</span><span id="go-kills">0</span></div>
-            <div class="stat-row"><span>Money Earned:</span><span id="go-money">$0</span></div>
-            <div class="stat-row"><span>Accuracy:</span><span id="go-acc">0%</span></div>
-            <div class="stat-row" style="font-size: 14px; color: #7f8c8d;"><span>Multiplier:</span><span id="go-mult">1.0x</span></div>
-            <div class="final-score">SCORE: <span id="go-score">0</span></div>
-        </div>
+       <div id="game-over-stats">
+    <h1>Mission Failed</h1>
+    <div class="stat-row">
+        <span>Time Survived:</span>
+        <span>
+            <span id="go-time">0s</span>
+            <span id="go-time-points" class="stat-points-value"></span>
+        </span>
+    </div>
+    <div class="stat-row">
+        <span>Enemies Killed:</span>
+        <span>
+            <span id="go-kills">0</span>
+            <span id="go-kills-points" class="stat-points-value"></span>
+        </span>
+    </div>
+    <div class="stat-row">
+        <span>Money Earned:</span>
+        <span>
+            <span id="go-money">$0</span>
+            <span id="go-money-points" class="stat-points-value"></span>
+        </span>
+    </div>
+    <div class="stat-row">
+        <span>Accuracy:</span>
+        <span>
+            <span id="go-acc">0%</span>
+            <span id="go-mult-display" class="stat-points-value">(1.0x)</span>
+        </span>
+    </div>
+    <div class="final-score">SCORE: <span id="go-score">0</span></div>
+</div>
         <div id="shop-reminder">
             <h1>Shop Unlocked!</h1>
             <p>Press 'F' to open the shop and buy upgrades.</p>
@@ -344,28 +371,27 @@
 
         <!-- Start Game Modal -->
         <div id="start-game-modal" class="modal" style="display: block;">
-            <h2>Welcome to Jelly Slapper!</h2>
+            <h2>Welcome to Jelly Tower Command!</h2>
             <h3>Objective</h3>
-            <p>Protect your castle from the attacking jelly beans for as long as possible.</p>
+            <p>Protect your castle from the mean, sometimes green, jelly beans for as long as possible.</p>
             <h3>Controls</h3>
             <p><strong>A / D:</strong> Move Left / Right</p>
             <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
             <p><strong>Mouse:</strong> Aim your glove</p>
             <p><strong>Click:</strong> Slap</p>
-            <h3>Advanced Moves</h3>
             <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
             <h3>The Shop</h3>
             <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
-            <h3>Get Ready!</h3>
-            <p>The jelly beans get more aggressive and numerous over time. Stay frosty!</p>
-            <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop)</em></p>
+            <h3>Prepare your Butts!</h3>
+            <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
+            <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
             <button class="modal-close" id="start-game-btn">Start Game</button>
         </div>
 
         <!-- Piggy Modal -->
         <div id="piggy-modal" class="modal">
             <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
-            <p>That flying pig is a <strong>Piggy Bank</strong>!</p>
+            <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
             <p>It appears once every minute.</p>
             <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
             <button class="modal-close" onclick="closePiggyModal()">Understood!</button>
