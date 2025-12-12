@@ -151,6 +151,23 @@
         }
         #help-btn:hover { background: #2980b9; transform: scale(1.1); }
 
+        #stats-btn {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #3498db;
+            color: white;
+            border: none;
+            width: 80px;
+            height: 40px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #stats-btn:hover { background: #2980b9; transform: scale(1.1); }
+
         #shop-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
         
         #shop-details {
@@ -262,6 +279,64 @@
             margin-left: 10px; /* Separates the raw stat from the points */
         .final-score { font-size: 28px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; }
 
+        #open-emporium-btn {
+            background: #9b59b6; color: white; border: none; padding: 10px 20px;
+            font-size: 18px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            margin-top: 20px;
+            box-shadow: 0 4px 0 #8e44ad;
+        }
+        #open-emporium-btn:hover {
+            background: #a569bd;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #8e44ad;
+        }
+
+        /* Emporium Styles */
+        #emporium-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 201;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+        }
+        #emporium-currency {
+            text-align: right;
+            font-size: 28px;
+            color: #9b59b6; 
+            margin-bottom: 10px;
+            font-weight: bold;
+            padding: 5px 15px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            border: 1px solid #9b59b6;
+            align-self: flex-end; 
+        }
+        #emporium-header {
+            text-align: center; font-size: 32px; color: #8e44ad; margin-bottom: 20px;
+            text-transform: uppercase; letter-spacing: 2px;
+            border-bottom: 2px solid #8e44ad; padding-bottom: 10px;
+        }
+        #emporium-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
+        #emporium-details {
+            flex: 2; background: rgba(0, 0, 0, 0.03); border-radius: 8px;
+            padding: 20px; display: flex; align-items: center; justify-content: center;
+            gap: 40px; border: 1px solid #ddd;
+        }
+        #emporium-grid {
+            flex: 3; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px; padding: 10px; overflow-y: auto;
+        }
+        #emporium-buy-btn {
+            background: #9b59b6; color: white; border: none; padding: 15px 40px;
+            font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
+            box-shadow: 0 4px 0 #8e44ad;
+        }
+        #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
+        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
     </style>
 </head>
 <body>
@@ -329,6 +404,7 @@
     <span>High Score:</span>
     <span id="go-high-score">0</span>
 </div>
+<button id="open-emporium-btn">Open Emporium</button>
 </div>
         <div id="shop-reminder">
             <h1>Shop Unlocked!</h1>
@@ -342,6 +418,7 @@
                 CURRENT FUNDS: $<span id="shop-money-display">0</span>
             </div>
             <div id="shop-header">
+                <button id="stats-btn">Stats</button>
                 Tactical Supply Depot
                 <button id="help-btn">?</button>
             </div>
@@ -363,6 +440,29 @@
             <div style="text-align: center; color: #777; margin-top: 10px;">Press F or ESC to Close</div>
         </div>
 
+        <div id="emporium-overlay" style="display: none;">
+            <div id="emporium-currency">
+                ICE CREAM SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
+            </div>
+            <div id="emporium-header">
+                The Emporium
+            </div>
+            <div id="emporium-content">
+                <div id="emporium-details">
+                    <div class="detail-icon" id="emporium-detail-icon">⭐</div>
+                    <div class="detail-info">
+                        <h2 id="emporium-detail-title">Select an Upgrade</h2>
+                        <p id="emporium-detail-desc">Purchase persistent upgrades.</p>
+                        <div class="stat-comparison" id="emporium-detail-stats"></div>
+                        <div id="emporium-detail-level-display" style="font-size: 1.2em; margin-bottom: 10px; font-weight: bold;"></div>
+                        <button id="emporium-buy-btn">UPGRADE</button>
+                    </div>
+                </div>
+                <div id="emporium-grid"></div>
+            </div>
+            <div style="text-align: center; color: #777; margin-top: 10px;">Press ESC to Close</div>
+        </div>
+
         <!-- Guide Modal -->
         <div id="guide-modal" class="modal">
             <h2>Field Manual & Mechanics</h2>
@@ -380,12 +480,36 @@
             <button class="modal-close" onclick="document.getElementById('guide-modal').style.display='none'">Close Guide</button>
         </div>
 
+        <!-- Stats Modal -->
+        <div id="stats-modal" class="modal">
+            <h2>Current Stats</h2>
+            <p><strong>Shot Damage:</strong> <span id="stat-shot-damage"></span></p>
+            <p><strong>Fire Rate:</strong> <span id="stat-fire-rate"></span></p>
+            <p><strong>Projectile Speed:</strong> <span id="stat-projectile-speed"></span></p>
+            <p><strong>Range:</strong> <span id="stat-range"></span></p>
+            <p><strong>Slap Damage:</strong> <span id="stat-slap-damage"></span></p>
+            <p><strong>Slap Knockback:</strong> <span id="stat-slap-knockback"></span></p>
+            <p><strong>Enemy Health:</strong> <span id="stat-enemy-health"></span></p>
+            <p><strong>Castle Max Health:</strong> <span id="stat-castle-max-health"></span></p>
+            <p><strong>Shield Regeneration:</strong> <span id="stat-shield-regen"></span></p>
+            <p><strong>Shield Health:</strong> <span id="stat-shield-health"></span></p>
+            <p><strong>Big Coin Drop Chance:</strong> <span id="stat-big-coin-chance"></span></p>
+            <p><strong>Big Coin Cash Amount:</strong> <span id="stat-big-coin-cash"></span></p>
+            <p><strong>Heart Drop Chance:</strong> <span id="stat-heart-chance"></span></p>
+            <p><strong>Heart Heal Amount:</strong> <span id="stat-heart-heal"></span></p>
+            <p><strong>Piggy Bank Bonus %:</strong> <span id="stat-piggy-bonus"></span></p>
+            <p><strong>Piggy Bank Kill Multiplier:</strong> <span id="stat-piggy-multiplier"></span></p>
+            <p><strong>Piggy Bank Cooldown:</strong> <span id="stat-piggy-cooldown"></span></p>
+            <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
+            <button class="modal-close" onclick="document.getElementById('stats-modal').style.display='none'">Close Stats</button>
+        </div>
+
         <!-- Start Game Modal -->
         <div id="start-game-modal" class="modal" style="display: block;">
             <h2>Welcome to Jelly Tower Command!</h2>
             <p class="high-score-text">🏆 High Score: <span id="start-high-score">0</span> (Those are rookie numbers)</p>
-            <h3>Objective</h3>
-            <p>Protect your castle from the mean, sometimes green, jelly beans for as long as possible.</p>
+            <h3>WARNING!</h3>
+            <p>Ahh Sugar Honey Iced Tea! Why are jelly beans attacking? Protect your castle from the mean, sometimes green, jelly beans for as long as possible! </p>
             <h3>Controls</h3>
             <p><strong>A / D:</strong> Move Left / Right</p>
             <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
@@ -404,7 +528,7 @@
         <div id="piggy-modal" class="modal">
             <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
             <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
-            <p>It appears once every minute.</p>
+            <p id="piggy-cooldown-text">It appears once every minute.</p>
             <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
             <button class="modal-close" onclick="closePiggyModal()">Understood!</button>
         </div>
@@ -412,6 +536,7 @@
         <div id="notification" class="notification">Item Placed!</div>
     </div>
 
+    <script src="emporium.js"></script>
     <script type="module" src="game.js?v=2"></script>
 </body>
 </html>

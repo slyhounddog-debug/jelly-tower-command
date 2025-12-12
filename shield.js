@@ -10,7 +10,9 @@ export default class Shield extends BaseStructure {
     }
     update(tsf) {
         if (this.hp < this.maxHp) {
-            this.hp += (this.maxHp * 0.01) * (tsf / 60); // 1% Regen
+            const shieldRegenLevel = this.game.emporiumUpgrades.shield_regen.level;
+            const regenPercent = this.game.emporiumUpgrades.shield_regen.values[shieldRegenLevel];
+            this.hp += (this.maxHp * (regenPercent / 100)) * (tsf / 60); // Regen based on upgrade
             if (this.hp > this.maxHp) this.hp = this.maxHp;
             if (Math.random() < 0.2) {
                 const angle = Math.random() * Math.PI;

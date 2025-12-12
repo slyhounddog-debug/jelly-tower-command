@@ -9,7 +9,11 @@ export default class Drop {
         this.gravity = 0.3;
         this.life = 1200; // Longer life
         this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : 30);
-        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
+        
+        const bigCoinLevel = this.game.emporiumUpgrades.big_coin_value.level;
+        const bigCoinValue = this.game.emporiumUpgrades.big_coin_value.values[bigCoinLevel];
+        this.coinValue = (type === 'lucky_coin') ? bigCoinValue : (type === 'coin' ? 25 : 0);
+        
         this.rot = 0;
     }
     update(tsf) {
@@ -35,8 +39,16 @@ export default class Drop {
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰💰'));
             }
             if (this.type === 'heart') {
-                this.game.castleHealth = Math.min(100, this.game.castleHealth + 10);
+                const heartHealLevel = this.game.emporiumUpgrades.heart_heal.level;
+                const healAmount = this.game.emporiumUpgrades.heart_heal.values[heartHealLevel];
+                const castleHealthLevel = this.game.emporiumUpgrades.castle_health.level;
+                const maxHealth = this.game.emporiumUpgrades.castle_health.values[castleHealthLevel];
+                this.game.castleHealth = Math.min(maxHealth, this.game.castleHealth + healAmount);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
+            }
+            if (this.type === 'ice_cream_scoop') {
+                this.game.iceCreamScoops++;
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+🍦'));
             }
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
@@ -50,10 +62,14 @@ export default class Drop {
             ctx.fillStyle = this.type === 'lucky_coin' ? '#ffe082' : '#f1c40f';
             ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#000'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center'; ctx.fillText('$', 0, 4);
-        } else {
+        } else if (this.type === 'heart') {
             const scale = 1 + Math.sin(this.rot * 3) * 0.2;
             ctx.scale(scale, scale);
             ctx.fillStyle = '#e74c3c'; ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('♥', 0, 8);
+        } else { // ice_cream_scoop
+            const scale = 1 + Math.sin(this.rot * 3) * 0.2;
+            ctx.scale(scale, scale);
+            ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('🍦', 0, 8);
         }
         ctx.restore();
     }

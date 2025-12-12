@@ -45,6 +45,9 @@ class Game {
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
 
+        this.isEmporiumOpen = false;
+        this.selectedEmporiumItem = null;
+
        this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
         this.currentScore = 0;
@@ -54,6 +57,10 @@ class Game {
 
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
+
+        this.iceCreamScoops = 0;
+        this.emporiumUpgrades = {}; // Will be populated by loadEmporiumUpgrades
+        this.emporiumItems = []; // Will be defined below
 
         this.stats = {
             damageLvl: 0,
@@ -165,6 +172,72 @@ class Game {
         ];
         this.selectedShopItem = this.shopItems[0];
 
+        this.emporiumItems = [
+            { 
+                id: 'starting_money', name: 'Initial Funding', icon: '💰', 
+                desc: 'Increases the amount of money you start each run with.',
+                getCost: () => (this.emporiumUpgrades.starting_money.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.starting_money.level],
+                getValue: () => `$${this.emporiumUpgrades.starting_money.values[this.emporiumUpgrades.starting_money.level]}`,
+                getNext: () => (this.emporiumUpgrades.starting_money.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `$${this.emporiumUpgrades.starting_money.values[this.emporiumUpgrades.starting_money.level + 1]}`,
+                getLevel: () => `${this.emporiumUpgrades.starting_money.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.starting_money.level++; }
+            },
+            { 
+                id: 'piggy_cooldown', name: 'Piggy Bank Timer', icon: '🐷', 
+                desc: 'Reduces the cooldown for Piggy Bank spawns.',
+                getCost: () => (this.emporiumUpgrades.piggy_cooldown.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.piggy_cooldown.level],
+                getValue: () => `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level]}s`,
+                getNext: () => (this.emporiumUpgrades.piggy_cooldown.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level + 1]}s`,
+                getLevel: () => `${this.emporiumUpgrades.piggy_cooldown.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.piggy_cooldown.level++; }
+            },
+            { 
+                id: 'castle_health', name: 'Castle Durability', icon: '🏰', 
+                desc: 'Increases the starting health of your castle.',
+                getCost: () => (this.emporiumUpgrades.castle_health.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.castle_health.level],
+                getValue: () => `${this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level]} HP`,
+                getNext: () => (this.emporiumUpgrades.castle_health.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level + 1]} HP`,
+                getLevel: () => `${this.emporiumUpgrades.castle_health.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.castle_health.level++; }
+            },
+            { 
+                id: 'heart_heal', name: 'Heart Heal Amount', icon: '❤️', 
+                desc: 'Increases the amount of health restored by hearts.',
+                getCost: () => (this.emporiumUpgrades.heart_heal.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.heart_heal.level],
+                getValue: () => `+${this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level]} HP`,
+                getNext: () => (this.emporiumUpgrades.heart_heal.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `+${this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level + 1]} HP`,
+                getLevel: () => `${this.emporiumUpgrades.heart_heal.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.heart_heal.level++; }
+            },
+            { 
+                id: 'big_coin_value', name: 'Big Coin Value', icon: '🪙', 
+                desc: 'Increases the value of Big Coins.',
+                getCost: () => (this.emporiumUpgrades.big_coin_value.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.big_coin_value.level],
+                getValue: () => `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level]}`,
+                getNext: () => (this.emporiumUpgrades.big_coin_value.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level + 1]}`,
+                getLevel: () => `${this.emporiumUpgrades.big_coin_value.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.big_coin_value.level++; }
+            },
+            { 
+                id: 'ice_cream_chance', name: 'Ice Cream Scoop Chance', icon: '🍦', 
+                desc: 'Increases the drop chance of Ice Cream Scoops from enemies and piggy banks.',
+                getCost: () => (this.emporiumUpgrades.ice_cream_chance.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.ice_cream_chance.level],
+                getValue: () => `${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level][0]}% / ${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level][1]}%`,
+                getNext: () => (this.emporiumUpgrades.ice_cream_chance.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level + 1][0]}% / ${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level + 1][1]}%`,
+                getLevel: () => `${this.emporiumUpgrades.ice_cream_chance.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.ice_cream_chance.level++; }
+            },
+            { 
+                id: 'shield_regen', name: 'Shield Regen', icon: '🛡️', 
+                desc: 'Increases the regeneration rate of shields.',
+                getCost: () => (this.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.shield_regen.level],
+                getValue: () => `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level]}%`,
+                getNext: () => (this.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level + 1]}%`,
+                getLevel: () => `${this.emporiumUpgrades.shield_regen.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.emporiumUpgrades.shield_regen.level++; }
+            }
+        ];
+
         this.keys = {};
         this.mouse = { x: 0, y: 0, isDown: false };
 
@@ -186,8 +259,14 @@ class Game {
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
         
+        this.loadEmporiumUpgrades();
         this.initListeners();
         this.resetGame();
+    }
+
+    loadEmporiumUpgrades() {
+        this.emporiumUpgrades = loadEmporiumUpgrades();
+        this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
     }
 
     initListeners() {
@@ -198,10 +277,12 @@ class Game {
             if (k === 'f') this.toggleShop();
             if (k === 'escape') {
                 if (document.getElementById('guide-modal').style.display === 'block') document.getElementById('guide-modal').style.display = 'none';
+                else if (document.getElementById('stats-modal').style.display === 'block') document.getElementById('stats-modal').style.display = 'none';
                 else if (document.getElementById('piggy-modal').style.display === 'block') this.closePiggyModal();
                 else if (this.placementMode) this.cancelPlacement();
                 else if (this.sellMode) this.cancelSell();
                 else if (this.isShopOpen) this.toggleShop();
+                else if (this.isEmporiumOpen) this.toggleEmporium();
             }
             if (k === 'a') {
                 if (Date.now() - this.player.lastAPress < 300) {
@@ -239,6 +320,11 @@ class Game {
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
+        document.getElementById('stats-btn').addEventListener('click', () => {
+            this.updateStatsWindow();
+            document.getElementById('stats-modal').style.display = 'block';
+        });
+        document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggleEmporium());
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }
@@ -274,8 +360,16 @@ class Game {
     }
     
     resetGame() {
-        this.money = 25; this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.castleHealth = 100; this.gameTime = 0; this.isGameOver = false; this.currentRPM = 5.5;
+        const startingMoneyLevel = this.emporiumUpgrades.starting_money.level;
+        this.money = this.emporiumUpgrades.starting_money.values[startingMoneyLevel];
+
+        const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
+        this.castleHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
+        const maxHealth = this.castleHealth;
+        document.getElementById('health-text').innerText = `${this.castleHealth}/${maxHealth}`;
+        
+        this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
+        this.gameTime = 0; this.isGameOver = false; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
@@ -288,6 +382,7 @@ class Game {
         this.player.reset();
         this.lastTime = 0;
         document.getElementById('restart-btn').style.display = 'none';
+        document.getElementById('open-emporium-btn').style.display = 'none';
         document.getElementById('game-over-stats').style.display = 'none';
         this.initLevel();
         this.threatManager.reset();
@@ -409,6 +504,13 @@ class Game {
             this.drops.push(new Drop(this, m.x, m.y, 'coin'));
             if (Math.random() * 100 < this.stats.luckHeart) this.drops.push(new Drop(this, m.x, m.y, 'heart'));
             if (Math.random() * 100 < this.stats.luckCoin) this.drops.push(new Drop(this, m.x, m.y, 'lucky_coin'));
+
+            const iceCreamChanceLevel = this.emporiumUpgrades.ice_cream_chance.level;
+            const chances = this.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+            const dropChance = (m.type === 'piggy') ? chances[1] : chances[0];
+            if (Math.random() * 100 < dropChance) {
+                this.drops.push(new Drop(this, m.x, m.y, 'ice_cream_scoop'));
+            }
         }
         for (let k = 0; k < 20; k++) this.particles.push(new Particle(m.x, m.y, (m.type === 'piggy' ? '#ff69b4' : m.color), 'smoke'));
     }
@@ -499,6 +601,91 @@ class Game {
         }
         document.getElementById('shop-money-display').innerText = this.money;
     }
+
+    toggleEmporium() {
+        this.isEmporiumOpen = !this.isEmporiumOpen;
+        document.getElementById('emporium-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
+        if (this.isEmporiumOpen) {
+            document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+            this.renderEmporiumGrid();
+            this.selectEmporiumItem(this.emporiumItems[0]);
+        }
+    }
+
+    renderEmporiumGrid() {
+        document.getElementById('emporium-grid').innerHTML = '';
+        this.emporiumItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            if (this.selectedEmporiumItem === item) div.classList.add('selected');
+            const cost = item.getCost();
+            div.innerHTML = `
+                <div class="shop-item-icon">${item.icon}</div>
+                <div class="shop-item-name">${item.name}</div>
+                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
+                ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
+            `;
+            div.onclick = () => this.selectEmporiumItem(item);
+            document.getElementById('emporium-grid').appendChild(div);
+        });
+    }
+
+    selectEmporiumItem(item) {
+        this.selectedEmporiumItem = item;
+        this.renderEmporiumGrid();
+        document.getElementById('emporium-detail-icon').innerText = item.icon;
+        document.getElementById('emporium-detail-title').innerText = item.name;
+        document.getElementById('emporium-detail-desc').innerText = item.desc;
+        const cost = item.getCost();
+
+        document.getElementById('emporium-buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `UPGRADE (🍦${cost})`;
+        document.getElementById('emporium-buy-btn').disabled = !((typeof cost === 'number' && this.iceCreamScoops >= cost));
+        document.getElementById('emporium-buy-btn').onclick = () => this.buyEmporiumItem(item);
+
+        let nextValue = item.getNext();
+        if (nextValue === "MAX") document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
+        else document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
+
+        const levelDisplay = document.getElementById('emporium-detail-level-display');
+        if (item.getLevel) {
+            levelDisplay.innerText = `Level: ${item.getLevel()}`;
+        } else {
+            levelDisplay.innerText = '';
+        }
+    }
+
+    buyEmporiumItem(item) {
+        const cost = item.getCost();
+        if (typeof cost === 'number' && this.iceCreamScoops >= cost) {
+            this.iceCreamScoops -= cost;
+            item.action();
+            this.selectEmporiumItem(item);
+        }
+        document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+    }
+
+    updateStatsWindow() {
+        document.getElementById('stat-shot-damage').innerText = this.stats.damage;
+        document.getElementById('stat-fire-rate').innerText = `${(60/this.stats.fireRate).toFixed(1)}/s`;
+        document.getElementById('stat-projectile-speed').innerText = this.stats.projectileSpeed.toFixed(1);
+        document.getElementById('stat-range').innerText = this.stats.range;
+        document.getElementById('stat-slap-damage').innerText = this.stats.slapDamage;
+        document.getElementById('stat-slap-knockback').innerText = this.stats.slapKnockback;
+        document.getElementById('stat-enemy-health').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+        document.getElementById('stat-castle-max-health').innerText = this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level];
+        document.getElementById('stat-shield-regen').innerText = `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level]}%`;
+        document.getElementById('stat-shield-health').innerText = this.stats.shieldMaxHp;
+        document.getElementById('stat-big-coin-chance').innerText = `${this.stats.luckCoin}%`;
+        document.getElementById('stat-big-coin-cash').innerText = `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level]}`;
+        document.getElementById('stat-heart-chance').innerText = `${this.stats.luckHeart}%`;
+        document.getElementById('stat-heart-heal').innerText = this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level];
+        document.getElementById('stat-piggy-bonus').innerText = `${(this.stats.piggyStats.bonus*100).toFixed(0)}%`;
+        document.getElementById('stat-piggy-multiplier').innerText = `${this.stats.piggyStats.mult}x`;
+        document.getElementById('stat-piggy-cooldown').innerText = `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level]}s`;
+        const iceCreamChanceLevel = this.emporiumUpgrades.ice_cream_chance.level;
+        const iceCreamChances = this.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+        document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
+    }
     
     cancelPlacement() { this.placementMode = null; this.isPaused = false; document.getElementById('notification').style.opacity = 0; }
     cancelSell() { this.sellMode = null; this.isPaused = false; document.getElementById('notification').style.opacity = 0; }
@@ -544,13 +731,18 @@ class Game {
                     this.isPaused = true;
                 }
     
+                const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
+                const piggyCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel] * 60; // convert to frames
                 this.piggyTimer += tsf;
-                if (this.piggyTimer >= 3600) {
+                if (this.piggyTimer >= piggyCooldown) {
                     this.piggyTimer = 0;
                     this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
                     if (!this.piggyBankSeen) {
                         this.piggyBankSeen = true;
                         this.isPaused = true;
+                        const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
+                        const currentCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel];
+                        document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${currentCooldown} seconds.`;
                         document.getElementById('piggy-modal').style.display = 'block';
                     }
                 }
@@ -613,8 +805,12 @@ document.getElementById('score-display').textContent = this.currentScore.toFixed
                 
                if (this.castleHealth <= 0) {
                     this.isGameOver = true;
+                    document.getElementById('open-emporium-btn').style.display = 'block';
                     document.getElementById('restart-btn').style.display = 'block';
                     document.getElementById('game-over-stats').style.display = 'block';
+
+                    saveEmporiumUpgrades(this.emporiumUpgrades);
+                    localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
                     
                     const timeSec = (this.gameTime / 60);
                     const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
@@ -825,8 +1021,10 @@ document.getElementById('score-display').textContent = this.currentScore.toFixed
             document.getElementById('money-display').innerText = this.money;
             if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
     
-            document.getElementById('health-bar-fill').style.width = Math.max(0, this.castleHealth) + '%';
-            document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/100`;
+            const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
+            const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
+            document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / maxHealth) * 100) + '%';
+            document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${maxHealth}`;
             document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
     
             requestAnimationFrame(() => this.gameLoop(performance.now()));
