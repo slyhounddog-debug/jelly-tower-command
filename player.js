@@ -4,7 +4,7 @@ export default class Player {
     constructor(game) {
         this.game = game;
         this.reset();
-        this.width = 33.81; this.height = 49.5075; this.color = '#a0c4ff';
+        this.width = 33.81; this.height = 49.5075; this.color = '#ffadad';
         this.scaleX = 1; this.scaleY = 1;
         this.slapCooldown = 0; this.slapAnim = 0;
         this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 1.2;
@@ -253,9 +253,9 @@ export default class Player {
                 const darkB = Math.floor(platformColor.b * 0.5);
                 
                 const shadowFactor = 1 - (distance / maxShadowDistance);
-                const shadowWidth = (this.width * 0.8) * shadowFactor;
+                const shadowWidth = (this.width * 0.5) * shadowFactor;
                 const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
-                const shadowOpacity = 0.5 * shadowFactor;
+                const shadowOpacity = 0.4 * shadowFactor;
 
                 ctx.fillStyle = `rgba(${darkR}, ${darkG}, ${darkB}, ${shadowOpacity})`;
                 ctx.beginPath();

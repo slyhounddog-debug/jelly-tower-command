@@ -8,6 +8,7 @@ import { ScreenShake, darkenColor, lightenColor } from './utils.js?v=25';
 import Drop from './drop.js?v=25';
 import Particle from './particle.js';
 import FloatingText from './floatingText.js?v=25';
+import DamageSpot from './damageSpot.js';
 
 class Game {
     constructor(canvas) {
@@ -103,7 +104,7 @@ class Game {
             { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
               getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
-              getNext: () => `${(60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.85, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
+              getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.85, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/15`,
               action: () => this.stats.fireRateLvl++ 
             },
@@ -265,11 +266,30 @@ class Game {
     }
 
     loadEmporiumUpgrades() {
-        this.emporiumUpgrades = loadEmporiumUpgrades();
+        const initialUpgrades = getInitialEmporiumUpgrades();
+        const savedUpgrades = loadEmporiumUpgrades();
+        // Deep merge of initial and saved upgrades
+        for (let key in initialUpgrades) {
+            if (savedUpgrades[key]) {
+                initialUpgrades[key] = { ...initialUpgrades[key], ...savedUpgrades[key] };
+            }
+        }
+        this.emporiumUpgrades = initialUpgrades;
         this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
     }
 
+    resizeModals() {
+        const modals = document.querySelectorAll('.modal');
+        const canvasWidth = this.canvas.clientWidth;
+        modals.forEach(modal => {
+            modal.style.width = `${canvasWidth}px`;
+        });
+    }
+
     initListeners() {
+        this.resizeModals();
+        window.addEventListener('resize', () => this.resizeModals());
+
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
@@ -325,8 +345,38 @@ class Game {
             document.getElementById('stats-modal').style.display = 'block';
         });
         document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggleEmporium());
+        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.resetEmporiumUpgrades());
+        document.getElementById('stats-btn-emporium').addEventListener('click', () => {
+            this.updateStatsWindow();
+            document.getElementById('stats-modal').style.display = 'block';
+        });
+        document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    }
+
+    resetEmporiumUpgrades() {
+        let refundedScoops = 0;
+        for (const key in this.emporiumUpgrades) {
+            const upgrade = this.emporiumUpgrades[key];
+            const costs = EMPORIUM_UPGRADE_COSTS;
+            for (let i = 0; i < upgrade.level; i++) {
+                refundedScoops += costs[i];
+            }
+        }
+
+        this.iceCreamScoops += refundedScoops;
+        this.emporiumUpgrades = getInitialEmporiumUpgrades();
+
+        saveEmporiumUpgrades(this.emporiumUpgrades);
+        localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
+
+        // Refresh the emporium display
+        this.renderEmporiumGrid();
+        if (this.selectedEmporiumItem) {
+            this.selectEmporiumItem(this.selectedEmporiumItem);
+        }
+        document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
     }
 
     closePiggyModal() {
@@ -369,7 +419,7 @@ class Game {
         document.getElementById('health-text').innerText = `${this.castleHealth}/${maxHealth}`;
         
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.gameTime = 0; this.isGameOver = false; this.currentRPM = 5.5;
+        this.gameTime = 0; this.isGameOver = false; this.isPaused = false; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
@@ -519,7 +569,15 @@ class Game {
         if (this.placementMode) { this.cancelPlacement(); return; }
         if (this.isGameOver) return;
         this.isShopOpen = !this.isShopOpen; this.isPaused = this.isShopOpen;
-        if (this.isShopOpen) this.shopOpenedFirstTime = true;
+        const gamePausedIndicator = document.getElementById('game-paused-indicator');
+        gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
+
+        if (this.isShopOpen) {
+            this.shopOpenedFirstTime = true;
+            document.getElementById('notification').innerText = 'Game Paused';
+            document.getElementById('notification').style.opacity = 1;
+            setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+        }
         document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
         if (this.isShopOpen) { 
             document.getElementById('shop-money-display').innerText = this.money; 
@@ -603,12 +661,27 @@ class Game {
     }
 
     toggleEmporium() {
+        // Only allow opening if game is over
+        if (!this.isEmporiumOpen && !this.isGameOver) {
+            return;
+        }
+
         this.isEmporiumOpen = !this.isEmporiumOpen;
-        document.getElementById('emporium-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
+        const gamePausedIndicator = document.getElementById('game-paused-indicator');
+
         if (this.isEmporiumOpen) {
+            this.isPaused = true; // Always pause when emporium is open
+            gamePausedIndicator.style.display = 'block';
             document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
             this.renderEmporiumGrid();
-            this.selectEmporiumItem(this.emporiumItems[0]);
+            document.getElementById('emporium-overlay').style.display = 'block';
+        } else {
+            // When closing, if game is over, remain paused. Otherwise, unpause.
+            if (!this.isGameOver) {
+                this.isPaused = false;
+            }
+            gamePausedIndicator.style.display = 'none';
+            document.getElementById('emporium-overlay').style.display = 'none';
         }
     }
 
@@ -660,8 +733,10 @@ class Game {
             this.iceCreamScoops -= cost;
             item.action();
             this.selectEmporiumItem(item);
+            document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+            saveEmporiumUpgrades(this.emporiumUpgrades);
+            localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
         }
-        document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
     }
 
     updateStatsWindow() {
@@ -707,394 +782,422 @@ class Game {
         this.gameLoop(0);
     }
     
-        gameLoop(currentTime) {
-            if (!this.lastTime) this.lastTime = currentTime;
-            const deltaTime = currentTime - this.lastTime;
-            this.lastTime = currentTime;
-            const tsf = deltaTime / this.targetFrameTime;
-    
-            this.screenShake.update(tsf);
-    
-            const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-            skyGradient.addColorStop(0, '#a1c4fd');
-            skyGradient.addColorStop(1, '#ffdde1');
-            this.ctx.fillStyle = skyGradient;
-            this.ctx.fillRect(0, 0, this.width, this.height);
-    
-            if (!this.isPaused && !this.isGameOver) {
-                this.gameTime += tsf;
-                this.threatManager.update(tsf);
-    
-                if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
-                    this.shopReminderShown = true;
-                    document.getElementById('shop-reminder').style.display = 'block';
+    gameLoop(currentTime) {
+        if (!this.lastTime) this.lastTime = currentTime;
+        const deltaTime = currentTime - this.lastTime;
+        this.lastTime = currentTime;
+        const tsf = deltaTime / this.targetFrameTime;
+
+        this.screenShake.update(tsf);
+
+        const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        skyGradient.addColorStop(0, '#a1c4fd');
+        skyGradient.addColorStop(1, '#ffdde1');
+        this.ctx.fillStyle = skyGradient;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        if (!this.isPaused && !this.isGameOver) {
+            this.gameTime += tsf;
+            this.threatManager.update(tsf);
+
+            if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
+                this.shopReminderShown = true;
+                document.getElementById('shop-reminder').style.display = 'block';
+                this.isPaused = true;
+            }
+
+            const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
+            const piggyCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel] * 60; // convert to frames
+            this.piggyTimer += tsf;
+            if (this.piggyTimer >= piggyCooldown) {
+                this.piggyTimer = 0;
+                this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
+                if (!this.piggyBankSeen) {
+                    this.piggyBankSeen = true;
                     this.isPaused = true;
+                    const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
+                    const currentCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel];
+                    document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${currentCooldown} seconds.`;
+                    document.getElementById('piggy-modal').style.display = 'block';
                 }
-    
-                const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
-                const piggyCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel] * 60; // convert to frames
-                this.piggyTimer += tsf;
-                if (this.piggyTimer >= piggyCooldown) {
-                    this.piggyTimer = 0;
-                    this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
-                    if (!this.piggyBankSeen) {
-                        this.piggyBankSeen = true;
-                        this.isPaused = true;
-                        const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
-                        const currentCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel];
-                        document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${currentCooldown} seconds.`;
-                        document.getElementById('piggy-modal').style.display = 'block';
-                    }
-                }
-    
-                this.clouds.forEach(c => c.update(tsf));
-                this.player.update(tsf);
-                this.towers.forEach(t => t.update(tsf));
-                this.shields.forEach(s => s.update(tsf));
-    
-                for (let i = this.missiles.length - 1; i >= 0; i--) {
-                    const m = this.missiles[i];
-                    m.update(tsf);
-                    if (m.health <= 0) { this.killMissile(m, i); continue; }
-                    let blocked = false;
-                    for (let sIdx = this.shields.length - 1; sIdx >= 0; sIdx--) {
-                        const s = this.shields[sIdx];
-                        if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
-                            for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
-                            if (s.takeDamage(10)) { this.shields.splice(sIdx, 1); this.screenShake.trigger(3, 5); } else this.screenShake.trigger(1, 3);
-                            this.killMissile(m, i);
-                            blocked = true;
-                            break;
-                        }
-                    }
-                    if (blocked) continue;
-                    if (m.y > this.height - 80) {
-                        this.castleHealth -= 10; this.missiles.splice(i, 1); this.screenShake.trigger(5, 10);
-                        for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
-                    }
-                }
-                    this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
-document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
-                for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                    const p = this.projectiles[i];
-                    p.update(tsf);
-                    if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
-                    for (let j = this.missiles.length - 1; j >= 0; j--) {
-                        const m = this.missiles[j];
-                        if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-                            const damageDealt = Math.min(p.hp, m.health);
-                            p.hp -= damageDealt;
-                            if (m.takeDamage(damageDealt)) {
-                            }
-                            m.kbVy = -2;
-                            this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
-                            if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
-                            if (p.hp <= 0) { this.projectiles.splice(i, 1); break; }
-                        }
-                    }
-                }
-    
-                for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
-                for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
-                for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
-                    this.floatingTexts[i].update(tsf);
-                    if (this.floatingTexts[i].life <= 0) {
-                        this.floatingTexts.splice(i, 1);
-                    }
-                }
-                
-               if (this.castleHealth <= 0) {
-                    this.isGameOver = true;
-                    document.getElementById('open-emporium-btn').style.display = 'block';
-                    document.getElementById('restart-btn').style.display = 'block';
-                    document.getElementById('game-over-stats').style.display = 'block';
-
-                    saveEmporiumUpgrades(this.emporiumUpgrades);
-                    localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
-                    
-                    const timeSec = (this.gameTime / 60);
-                    const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
-                    let mult = 0.5;
-                    if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
-                    else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                    
-                    // Calculate scores
-                    const timeScore = timeSec * 2;
-                    const killsScore = this.enemiesKilled * 50;
-                    const moneyScore = this.totalMoneyEarned * 1;
-                    
-                    const scoreBase = timeScore + killsScore + moneyScore;
-                    const finalScore = Math.floor(scoreBase * mult);
-                    
-                    // --- High Score Logic (NEW) ---
-                    // Get current high score (default to 0)
-                    let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
-
-                    // Check for a new high score
-                    if (finalScore > highScore) {
-                        highScore = finalScore;
-                        localStorage.setItem('myGameHighScore', highScore);
-                    }
-                    // --- End High Score Logic ---
-
-                    // Update HTML elements
-                    document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
-                    document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
-                    document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
-                    document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
-                    
-                    document.getElementById('go-time-points').textContent = `(+${Math.floor(timeScore).toLocaleString()})`;
-                    document.getElementById('go-kills-points').textContent = `(+${Math.floor(killsScore).toLocaleString()})`;
-                    document.getElementById('go-money-points').textContent = `(+${Math.floor(moneyScore).toLocaleString()})`;
-                    document.getElementById('go-mult-display').textContent = `(${mult.toFixed(2)}x)`;
-                    
-                    // Display scores
-                    document.getElementById('go-score').textContent = finalScore.toLocaleString();
-                    document.getElementById('go-high-score').textContent = highScore.toLocaleString();
-                }
             }
-    
-            const offset = this.screenShake.getOffset();
-            this.ctx.save(); this.ctx.translate(offset.x, offset.y);
-    
-            const backgroundElements = [...this.trees, ...this.clouds];
-            backgroundElements.sort((a, b) => (a.z || a.y) - (b.z || b.y));
-            backgroundElements.forEach(elem => {
-                if (elem.z) { // It's a tree
-                    this.drawTree(elem);
-                } else { // It's a cloud
-                    elem.draw(this.ctx);
-                }
-            });
 
-            this.backgroundCastlePlatforms.forEach(p => {
-                this.ctx.save();
-                this.ctx.fillStyle = p.color;
-                
-                if (p.type === 'castle') { this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill(); } else {
-                    this.ctx.fillRect(p.x, p.y, p.width, p.height);
-                }
-                this.drawPlatformFrosting(p);
-                this.ctx.restore();
-            });
-    
-            this.platforms.forEach(p => {
-                this.ctx.fillStyle = p.color;
-                this.ctx.save();
-                if (p.type === 'cloud') {
-                    const pink = [255, 182, 193];
-                    const blue = [135, 206, 250];
-                    const ratio = (p.y - (this.height - 1100)) / ((this.height - 250) - (this.height - 1100));
-                    const invRatio = 1 - Math.max(0, Math.min(1, ratio));
-                    const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
-                    const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
-                    const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
-                    const cloudColor = `rgb(${r}, ${g}, ${b})`;
-                    const borderWidth = 4;
-                    this.ctx.fillStyle = 'white';
-                    this.ctx.beginPath();
-                    p.circles.forEach(circle => {
-                        this.ctx.moveTo(p.x + circle.dx + circle.radius + borderWidth, p.y + circle.dy);
-                        this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius + borderWidth, 0, Math.PI * 2);
-                    });
-                    this.ctx.fill();
-                    p.circles.forEach(circle => {
-                        this.ctx.fillStyle = cloudColor;
-                        this.ctx.beginPath();
-                        this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius, 0, Math.PI * 2);
-                        this.ctx.fill();
-                        if (circle.hasGlare) {
-                            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                            this.ctx.beginPath();
-                            this.ctx.ellipse(
-                                p.x + circle.dx - circle.radius * 0.3,
-                                p.y + circle.dy - circle.radius * 0.3,
-                                circle.radius * 0.4,
-                                circle.radius * 0.6,
-                                -0.8, 0, Math.PI * 2
-                            );
-                            this.ctx.fill();
-                        }
-                    });
-                } else if (p.type === 'castle') {
-                    this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill();
-                    this.drawPlatformFrosting(p);
-                } else {
-                    this.ctx.beginPath();
-                    this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
-                    this.ctx.fill();
-                    this.drawPlatformFrosting(p);
-                }
-                this.ctx.restore();
-            });
-            
-            if (!this.isGameOver) {
-                this.ctx.fillStyle = 'white';
-                this.ctx.font = 'bold 24px Segoe UI';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText("[F] SHOP", this.width / 2, this.height - 60);
-            }
-    
-            this.towers.forEach(t => t.draw(this.ctx));
-            this.shields.forEach(s => s.draw(this.ctx));
-            this.missiles.forEach(m => m.draw(this.ctx));
-            this.projectiles.forEach(p => p.draw(this.ctx));
-            this.drops.forEach(d => d.draw(this.ctx));
-            this.particles.forEach(p => p.draw(this.ctx));
-            this.player.draw(this.ctx);
-            this.floatingTexts.forEach(ft => ft.draw(this.ctx));
-    
-            this.ctx.restore();
-    
-            if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
-                this.towers.forEach(t => {
-                    if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
-                        this.ctx.fillStyle = 'white'; this.ctx.font = '20px Arial'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
-                    }
-                });
-            }
-    
-            if (this.placementMode) {
-                this.ctx.globalAlpha = 0.6;
-                if (this.placementMode === 'turret') {
-                    this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
-                    this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
-                } else if (this.placementMode === 'shield') {
-                    this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 33, 64, Math.PI, 0); this.ctx.fill();
-                }
-                this.ctx.globalAlpha = 1.0;
-                this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
-            }
-    
-            if (this.sellMode) {
-                let hoverTarget = null;
-                let refundAmount = 0;
-                let targetType = '';
-                for (const t of this.towers) {
-                    if (t.isAuto && this.mouse.x > t.x && this.mouse.x < t.x + t.width && this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
-                        hoverTarget = t;
-                        targetType = 'turret';
-                        const costs = [1000, 3000, 5000];
-                        refundAmount = Math.floor(costs[this.stats.turretsBought - 1] * 0.9);
+            this.clouds.forEach(c => c.update(tsf));
+            this.player.update(tsf);
+            this.towers.forEach(t => t.update(tsf));
+            this.shields.forEach(s => s.update(tsf));
+
+            for (let i = this.missiles.length - 1; i >= 0; i--) {
+                const m = this.missiles[i];
+                m.update(tsf);
+                if (m.health <= 0) { this.killMissile(m, i); continue; }
+                let blocked = false;
+                for (let sIdx = this.shields.length - 1; sIdx >= 0; sIdx--) {
+                    const s = this.shields[sIdx];
+                    if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
+                        for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
+                        if (s.takeDamage(10)) { this.shields.splice(sIdx, 1); this.screenShake.trigger(3, 5); } else this.screenShake.trigger(1, 3);
+                        this.killMissile(m, i);
+                        blocked = true;
                         break;
                     }
                 }
-                if (!hoverTarget) {
-                    for (const s of this.shields) {
-                        if (this.mouse.x > s.x && this.mouse.x < s.x + s.width && this.mouse.y > s.y && this.mouse.y < s.y + s.height) {
-                            hoverTarget = s;
-                            targetType = 'shield';
-                            refundAmount = Math.floor(this.SHIELD_COSTS[this.shields.length - 1] * 0.9);
-                            break;
+                if (blocked) continue;
+                if (m.y > this.height - 80) {
+                    this.castleHealth -= 10;
+                    this.missiles.splice(i, 1);
+                    this.screenShake.trigger(5, 10);
+                    for (let k = 0; k < 15; k++) {
+                        this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
+                    }
+
+                    const numSpots = 5;
+                    for (let j = 0; j < numSpots; j++) {
+                        const castlePlatforms = this.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
+                        const randomPlatform = castlePlatforms[Math.floor(Math.random() * castlePlatforms.length)];
+                        const spotX = randomPlatform.x + Math.random() * randomPlatform.width;
+                        const spotY = randomPlatform.y + Math.random() * randomPlatform.height;
+                        const spotRadius = Math.random() * 5 + 5;
+                        const spotColor = darkenColor('#f8c8dc', 20);
+                        this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor));
+                    }
+                }
+            }
+            this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
+            document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+                p.update(tsf);
+                if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
+                for (let j = this.missiles.length - 1; j >= 0; j--) {
+                    const m = this.missiles[j];
+                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+                        const damageDealt = Math.min(p.hp, m.health);
+                        p.hp -= damageDealt;
+                        if (m.takeDamage(damageDealt)) {
                         }
+                        m.kbVy = -2;
+                        this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                        if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
+                        if (p.hp <= 0) { this.projectiles.splice(i, 1); break; }
                     }
                 }
-                if (hoverTarget) {
-                    this.ctx.globalAlpha = 0.8;
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
-                    this.ctx.fillStyle = '#2ecc71';
-                    this.ctx.font = 'bold 24px Arial';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
-                    this.ctx.globalAlpha = 0.2;
-                    this.ctx.fillStyle = 'white';
-                    this.ctx.fillRect(hoverTarget.x, hoverTarget.y, hoverTarget.width, hoverTarget.height);
-                    this.ctx.globalAlpha = 1.0;
+            }
+
+            for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
+            for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
+            for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+                this.floatingTexts[i].update(tsf);
+                if (this.floatingTexts[i].life <= 0) {
+                    this.floatingTexts.splice(i, 1);
                 }
-                if (this.mouse.isDown && hoverTarget) {
-                    this.money += refundAmount;
-                    if (targetType === 'turret') {
-                        this.towers.splice(this.towers.indexOf(hoverTarget), 1);
-                        this.stats.turretsBought--;
-                    } else if (targetType === 'shield') {
-                        this.shields.splice(this.shields.indexOf(hoverTarget), 1);
-                    }
-                    this.sellMode = null;
-                    this.isPaused = false;
-                    document.getElementById('notification').innerText = "SOLD!";
-                    document.getElementById('notification').style.opacity = 1;
-                    setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+            }
+
+            for (let i = this.damageSpots.length - 1; i >= 0; i--) {
+                this.damageSpots[i].update(tsf);
+                if (this.damageSpots[i].opacity <= 0) {
+                    this.damageSpots.splice(i, 1);
                 }
             }
             
-            document.getElementById('money-display').innerText = this.money;
-            if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
-    
-            const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
-            const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
-            document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / maxHealth) * 100) + '%';
-            document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${maxHealth}`;
-            document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
-    
-            requestAnimationFrame(() => this.gameLoop(performance.now()));
+            if (this.castleHealth <= 0) {
+                this.isGameOver = true;
+                document.getElementById('open-emporium-btn').style.display = 'block';
+                document.getElementById('restart-btn').style.display = 'block';
+                document.getElementById('game-over-stats').style.display = 'block';
+
+                saveEmporiumUpgrades(this.emporiumUpgrades);
+                localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
+                
+                const timeSec = (this.gameTime / 60);
+                const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
+                let mult = 0.5;
+                if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
+                else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
+                
+                // Calculate scores
+                const timeScore = timeSec * 2;
+                const killsScore = this.enemiesKilled * 50;
+                const moneyScore = this.totalMoneyEarned * 1;
+                
+                const scoreBase = timeScore + killsScore + moneyScore;
+                const finalScore = Math.floor(scoreBase * mult);
+                
+                // --- High Score Logic (NEW) ---
+                // Get current high score (default to 0)
+                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+
+                // Check for a new high score
+                if (finalScore > highScore) {
+                    highScore = finalScore;
+                    localStorage.setItem('myGameHighScore', highScore);
+                }
+                // --- End High Score Logic ---
+
+                // Update HTML elements
+                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
+                document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
+                document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
+                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
+                
+                document.getElementById('go-time-points').textContent = `(+${Math.floor(timeScore).toLocaleString()})`;
+                document.getElementById('go-kills-points').textContent = `(+${Math.floor(killsScore).toLocaleString()})`;
+                document.getElementById('go-money-points').textContent = `(+${Math.floor(moneyScore).toLocaleString()})`;
+                document.getElementById('go-mult-display').textContent = `(${mult.toFixed(2)}x)`;
+                
+                // Display scores
+                document.getElementById('go-score').textContent = finalScore.toLocaleString();
+                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
+            }
         }
-    
-        drawTree(tree) {
+
+        const offset = this.screenShake.getOffset();
+        this.ctx.save(); this.ctx.translate(offset.x, offset.y);
+
+        const backgroundElements = [...this.trees, ...this.clouds];
+        backgroundElements.sort((a, b) => (a.z || a.y) - (b.z || b.y));
+        backgroundElements.forEach(elem => {
+            if (elem.z) { // It's a tree
+                this.drawTree(elem);
+            } else { // It's a cloud
+                elem.draw(this.ctx);
+            }
+        });
+
+        this.backgroundCastlePlatforms.forEach(p => {
             this.ctx.save();
-            this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
-    
-            const trunkWidth = tree.width * 0.25;
-            const trunkHeight = tree.height;
-            const leafStartY = tree.y - trunkHeight;
-    
-            // Trunk
-            this.ctx.fillStyle = '#A0522D'; // Sienna
-            this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
+            this.ctx.fillStyle = p.color;
             
-            // Leaves
-            this.ctx.fillStyle = tree.color;
-            const R = tree.width * 0.315; // base radius
-
-            // bottom row
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x - R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x + R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-
-            // middle row
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x - R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x + R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-            
-            // top
-            this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*0.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-
+            if (p.type === 'castle') { this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill(); } else {
+                this.ctx.fillRect(p.x, p.y, p.width, p.height);
+            }
+            this.drawPlatformFrosting(p);
             this.ctx.restore();
+        });
+
+        this.platforms.forEach(p => {
+            this.ctx.fillStyle = p.color;
+            this.ctx.save();
+            if (p.type === 'cloud') {
+                const pink = [255, 182, 193];
+                const blue = [135, 206, 250];
+                const ratio = (p.y - (this.height - 1100)) / ((this.height - 250) - (this.height - 1100));
+                const invRatio = 1 - Math.max(0, Math.min(1, ratio));
+                const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
+                const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
+                const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
+                const cloudColor = `rgb(${r}, ${g}, ${b})`;
+                const borderWidth = 4;
+                this.ctx.fillStyle = 'white';
+                this.ctx.beginPath();
+                p.circles.forEach(circle => {
+                    this.ctx.moveTo(p.x + circle.dx + circle.radius + borderWidth, p.y + circle.dy);
+                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius + borderWidth, 0, Math.PI * 2);
+                });
+                this.ctx.fill();
+                p.circles.forEach(circle => {
+                    this.ctx.fillStyle = cloudColor;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    if (circle.hasGlare) {
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                        this.ctx.beginPath();
+                        this.ctx.ellipse(
+                            p.x + circle.dx - circle.radius * 0.3,
+                            p.y + circle.dy - circle.radius * 0.3,
+                            circle.radius * 0.4,
+                            circle.radius * 0.6,
+                            -0.8, 0, Math.PI * 2
+                        );
+                        this.ctx.fill();
+                    }
+                });
+            } else if (p.type === 'castle') {
+                this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill();
+                this.drawPlatformFrosting(p);
+            } else {
+                this.ctx.beginPath();
+                this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
+                this.ctx.fill();
+                this.drawPlatformFrosting(p);
+            }
+            this.ctx.restore();
+        });
+
+        for (const spot of this.damageSpots) {
+            spot.draw(this.ctx);
         }
         
-        drawPlatformFrosting(platform) {
-            this.ctx.save(); // Save context state
-            this.ctx.beginPath();
-            this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20); // Use the same rounding as the platform
-            this.ctx.clip(); // Clip to this rounded rectangle
+        if (!this.isGameOver) {
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = 'bold 24px Segoe UI';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText("[F] SHOP", this.width / 2, this.height - 60);
+        }
 
-            const frostingColor = lightenColor(platform.color, 10);
-            this.ctx.fillStyle = frostingColor;
-            this.ctx.beginPath();
-            let startY = platform.y + 5;
-            this.ctx.moveTo(platform.x, startY);
-            let numDrips = Math.floor(platform.width / 30);
-            let dripHeight = platform.type === 'ground' ? 30 : 20;
-            let dripRandomness = platform.type === 'ground' ? 1.5 : 4;
-            const animSpeed = platform.type === 'ground' ? 82 : 65;
-            const animAmplitude = platform.type === 'ground' ? 11 : 16.5;
-    
-            for (let i = 0; i < numDrips; i++) {
-                let x1 = platform.x + (i / numDrips) * platform.width;
-                let x2 = platform.x + ((i + 0.5) / numDrips) * platform.width;
-                let x3 = platform.x + ((i + 1) / numDrips) * platform.width;
-                let staticDrip = (Math.sin((platform.x + i) * dripRandomness) + 1) * dripHeight;
-                let animatedDrip = (Math.sin(this.gameTime / animSpeed + i * (Math.PI / 2)) + 1) * animAmplitude;
-                let dripY = startY + 10 + staticDrip + animatedDrip;
-                this.ctx.lineTo(x1, startY);
-                this.ctx.quadraticCurveTo(x2, dripY, x3, startY);
+        this.towers.forEach(t => t.draw(this.ctx));
+        this.shields.forEach(s => s.draw(this.ctx));
+        this.missiles.forEach(m => m.draw(this.ctx));
+        this.projectiles.forEach(p => p.draw(this.ctx));
+        this.drops.forEach(d => d.draw(this.ctx));
+        this.particles.forEach(p => p.draw(this.ctx));
+        this.player.draw(this.ctx);
+        this.floatingTexts.forEach(ft => ft.draw(this.ctx));
+
+        this.ctx.restore();
+
+        if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
+            this.towers.forEach(t => {
+                if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
+                    this.ctx.fillStyle = 'white'; this.ctx.font = '20px Arial'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
+                }
+            });
+        }
+
+        if (this.placementMode) {
+            this.ctx.globalAlpha = 0.6;
+            if (this.placementMode === 'turret') {
+                this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
+                this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
+            } else if (this.placementMode === 'shield') {
+                this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 33, 64, Math.PI, 0); this.ctx.fill();
             }
-            this.ctx.lineTo(platform.x + platform.width, startY);
-            this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height); // Draw frosting over the whole platform
-            this.ctx.lineTo(platform.x, platform.y + platform.height); //
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.restore(); // Restore context state, removing the clip
-        }}
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center';
+            this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
+        }
+
+        if (this.sellMode) {
+            let hoverTarget = null;
+            let refundAmount = 0;
+            let targetType = '';
+            for (const t of this.towers) {
+                if (t.isAuto && this.mouse.x > t.x && this.mouse.x < t.x + t.width && this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
+                    hoverTarget = t;
+                    targetType = 'turret';
+                    const costs = [1000, 3000, 5000];
+                    refundAmount = Math.floor(costs[this.stats.turretsBought - 1] * 0.9);
+                    break;
+                }
+            }
+            if (!hoverTarget) {
+                for (const s of this.shields) {
+                    if (this.mouse.x > s.x && this.mouse.x < s.x + s.width && this.mouse.y > s.y && this.mouse.y < s.y + s.height) {
+                        hoverTarget = s;
+                        targetType = 'shield';
+                        refundAmount = Math.floor(this.SHIELD_COSTS[this.shields.length - 1] * 0.9);
+                        break;
+                    }
+                }
+            }
+            if (hoverTarget) {
+                this.ctx.globalAlpha = 0.8;
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
+                this.ctx.fillStyle = '#2ecc71';
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
+                this.ctx.globalAlpha = 0.2;
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillRect(hoverTarget.x, hoverTarget.y, hoverTarget.width, hoverTarget.height);
+                this.ctx.globalAlpha = 1.0;
+            }
+            if (this.mouse.isDown && hoverTarget) {
+                this.money += refundAmount;
+                if (targetType === 'turret') {
+                    this.towers.splice(this.towers.indexOf(hoverTarget), 1);
+                    this.stats.turretsBought--;
+                } else if (targetType === 'shield') {
+                    this.shields.splice(this.shields.indexOf(hoverTarget), 1);
+                }
+                this.sellMode = null;
+                this.isPaused = false;
+                document.getElementById('notification').innerText = "SOLD!";
+                document.getElementById('notification').style.opacity = 1;
+                setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+            }
+        }
+        
+        document.getElementById('money-display').innerText = this.money;
+        if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
+
+        const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
+        const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
+        document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / maxHealth) * 100) + '%';
+        document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${maxHealth}`;
+        document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+
+        requestAnimationFrame(() => this.gameLoop(performance.now()));
+    }
+
+    drawTree(tree) {
+        this.ctx.save();
+        this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
+
+        const trunkWidth = tree.width * 0.25;
+        const trunkHeight = tree.height;
+        const leafStartY = tree.y - trunkHeight;
+
+        // Trunk
+        this.ctx.fillStyle = '#A0522D'; // Sienna
+        this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
+        
+        // Leaves
+        this.ctx.fillStyle = tree.color;
+        const R = tree.width * 0.315; // base radius
+
+        // bottom row
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x - R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x + R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+
+        // middle row
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x - R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x + R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+        
+        // top
+        this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*0.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+
+        this.ctx.restore();
+    }
+    
+    drawPlatformFrosting(platform) {
+        this.ctx.save(); // Save context state
+        this.ctx.beginPath();
+        this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20); // Use the same rounding as the platform
+        this.ctx.clip(); // Clip to this rounded rectangle
+
+        const frostingColor = lightenColor(platform.color, 10);
+        this.ctx.fillStyle = frostingColor;
+        this.ctx.beginPath();
+        let startY = platform.y + 5;
+        this.ctx.moveTo(platform.x, startY);
+        let numDrips = Math.floor(platform.width / 30);
+        let dripHeight = platform.type === 'ground' ? 30 : 20;
+        let dripRandomness = platform.type === 'ground' ? 1.5 : 4;
+        const animSpeed = platform.type === 'ground' ? 82 : 65;
+        const animAmplitude = platform.type === 'ground' ? 11 : 16.5;
+
+        for (let i = 0; i < numDrips; i++) {
+            let x1 = platform.x + (i / numDrips) * platform.width;
+            let x2 = platform.x + ((i + 0.5) / numDrips) * platform.width;
+            let x3 = platform.x + ((i + 1) / numDrips) * platform.width;
+            let staticDrip = (Math.sin((platform.x + i) * dripRandomness) + 1) * dripHeight;
+            let animatedDrip = (Math.sin(this.gameTime / animSpeed + i * (Math.PI / 2)) + 1) * animAmplitude;
+            let dripY = startY + 10 + staticDrip + animatedDrip;
+            this.ctx.lineTo(x1, startY);
+            this.ctx.quadraticCurveTo(x2, dripY, x3, startY);
+        }
+        this.ctx.lineTo(platform.x + platform.width, startY);
+        this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height); // Draw frosting over the whole platform
+        this.ctx.lineTo(platform.x, platform.y + platform.height); //
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.restore(); // Restore context state, removing the clip
+    }
+}
 
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');

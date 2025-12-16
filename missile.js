@@ -1,5 +1,6 @@
 import Particle from './particle.js';
 import { darkenColor } from './utils.js?v=25';
+import DamageSpot from './damageSpot.js';
 
 export default class Missile {
     constructor(game, x, type = 'missile') {
@@ -24,9 +25,19 @@ export default class Missile {
         this.health = (type === 'piggy') ? (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1)) * 2 : 40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1);
         this.maxHealth = this.health;
         this.kbVy = 0; // Knockback velocity Y
+        this.damageSpots = [];
     }
     takeDamage(amount) {
         this.health -= amount;
+        const numSpots = Math.floor(amount / 5);
+        for (let i = 0; i < numSpots; i++) {
+            const spotX = (this.width / 2) + (Math.random() - 0.5) * (this.width * 0.5);
+            const spotY = (this.height / 2) + (Math.random() - 0.5) * (this.height * 0.5);
+            const spotRadius = Math.random() * 3 + 2;
+            const color = (this.type === 'piggy') ? '#ff69b4' : this.color;
+            const spotColor = darkenColor(color, 20);
+            this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor, this));
+        }
         return this.health <= 0;
     }
     update(tsf) {
@@ -41,6 +52,13 @@ export default class Missile {
                 this.game.particles.push(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
             }
         }
+
+        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
+            this.damageSpots[i].update(tsf);
+            if (this.damageSpots[i].opacity <= 0) {
+                this.damageSpots.splice(i, 1);
+            }
+        }
     }
     draw(ctx) {
         // --- DYNAMIC SHADOW ---
@@ -51,9 +69,9 @@ export default class Missile {
 
             if (distance < maxShadowDistance && distance > -this.height) { // Also check if missile is not below ground
                 const shadowFactor = 1 - (distance / maxShadowDistance);
-                const shadowWidth = (this.width * 0.63) * shadowFactor;
+                const shadowWidth = (this.width * 0.5) * shadowFactor;
                 const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
-                const shadowOpacity = 0.4 * shadowFactor;
+                const shadowOpacity = 0.3 * shadowFactor;
 
                 // Use a generic shadow color
                 ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
@@ -130,5 +148,9 @@ export default class Missile {
         ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x, this.y - 10, this.width, 4);
         ctx.fillStyle = '#2ecc71'; ctx.fillRect(this.x, this.y - 10, this.width * pct, 4);
         ctx.restore();
+
+        for (const spot of this.damageSpots) {
+            spot.draw(ctx);
+        }
     }
 }

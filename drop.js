@@ -1,5 +1,5 @@
 import Particle from './particle.js';
-import FloatingText from './floatingText.js?v=25';
+import FloatingText from './floatingText.js';
 
 export default class Drop {
     constructor(game, x, y, type) {
@@ -8,24 +8,20 @@ export default class Drop {
         this.vy = -5; this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
         this.life = 1200; // Longer life
-        this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : 30);
-        
-        const bigCoinLevel = this.game.emporiumUpgrades.big_coin_value.level;
-        const bigCoinValue = this.game.emporiumUpgrades.big_coin_value.values[bigCoinLevel];
-        this.coinValue = (type === 'lucky_coin') ? bigCoinValue : (type === 'coin' ? 25 : 0);
-        
+        this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 120 : 30));
+        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
         this.rot = 0;
     }
     update(tsf) {
         this.vy += this.gravity * tsf;
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
-        this.rot += 0.1 * tsf;
+        this.rot += 0.05 * tsf;
         this.vx *= 0.95;
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
-        if (this.y > this.game.height - 80 - this.width) { this.y = this.game.height - 80 - this.width; this.vy *= -0.5; }
+        if (this.y > this.game.height - 80 - this.width / 2) { this.y = this.game.height - 80 - this.width / 2; this.vy *= -0.5; }
 
         if (Math.abs(this.game.player.x - this.x) < 80 && Math.abs(this.game.player.y - this.y) < 80) {
             if (this.type === 'coin') {
@@ -39,22 +35,47 @@ export default class Drop {
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰💰'));
             }
             if (this.type === 'heart') {
-                const heartHealLevel = this.game.emporiumUpgrades.heart_heal.level;
-                const healAmount = this.game.emporiumUpgrades.heart_heal.values[heartHealLevel];
-                const castleHealthLevel = this.game.emporiumUpgrades.castle_health.level;
-                const maxHealth = this.game.emporiumUpgrades.castle_health.values[castleHealthLevel];
-                this.game.castleHealth = Math.min(maxHealth, this.game.castleHealth + healAmount);
+                this.game.castleHealth = Math.min(100, this.game.castleHealth + 10);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
+                const spotsToRemove = Math.floor(this.game.damageSpots.length / 5);
+                for (let i = 0; i < spotsToRemove; i++) {
+                    if (this.game.damageSpots.length > 0) {
+                        this.game.damageSpots.splice(Math.floor(Math.random() * this.game.damageSpots.length), 1);
+                    }
+                }
             }
             if (this.type === 'ice_cream_scoop') {
                 this.game.iceCreamScoops++;
-                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+🍦'));
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
             }
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
         }
     }
     draw(ctx) {
+        // --- DYNAMIC SHADOW ---
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        if (ground) {
+            const distance = ground.y - (this.y + this.width);
+            const maxShadowDistance = 800;
+
+            if (distance < maxShadowDistance && distance > -this.width) { // Also check if drop is not below ground
+                const shadowFactor = 1 - (distance / maxShadowDistance);
+                let shadowWidth = (this.width * 0.5) * shadowFactor;
+                if (this.type === 'ice_cream_scoop') {
+                    shadowWidth = (this.width * 0.18) * shadowFactor;
+                }
+                const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
+                const shadowOpacity = 0.2 * shadowFactor;
+
+                // Use a generic shadow color
+                ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width / 2, ground.y + 2, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
         const radius = this.width / 2;
         ctx.save(); ctx.translate(this.x + radius, this.y + radius);
         if (this.type === 'coin' || this.type === 'lucky_coin') {
@@ -66,10 +87,11 @@ export default class Drop {
             const scale = 1 + Math.sin(this.rot * 3) * 0.2;
             ctx.scale(scale, scale);
             ctx.fillStyle = '#e74c3c'; ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('♥', 0, 8);
-        } else { // ice_cream_scoop
+        } else if (this.type === 'ice_cream_scoop') {
             const scale = 1 + Math.sin(this.rot * 3) * 0.2;
             ctx.scale(scale, scale);
-            ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('🍦', 0, 8);
+            ctx.fillStyle = '#fff';
+            ctx.font = '48px Arial'; ctx.textAlign = 'center'; ctx.fillText('🍦', 0, 8);
         }
         ctx.restore();
     }
