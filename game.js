@@ -59,6 +59,11 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
+        this.gummyWormSpawnThreshold = 6;
+        this.gummyWormSeen = false;
+        this.marshmallowSpawnThreshold = 8;
+        this.marshmallowSeen = false;
+
         this.iceCreamScoops = 0;
         this.emporiumUpgrades = {}; // Will be populated by loadEmporiumUpgrades
         this.emporiumItems = []; // Will be defined below
@@ -296,8 +301,10 @@ class Game {
             this.keys[k] = true;
             if (k === 'f') this.toggleShop();
             if (k === 'escape') {
-                if (document.getElementById('guide-modal').style.display === 'block') document.getElementById('guide-modal').style.display = 'none';
-                else if (document.getElementById('stats-modal').style.display === 'block') document.getElementById('stats-modal').style.display = 'none';
+                if (document.getElementById('guide-modal').style.display === 'flex') document.getElementById('guide-modal').style.display = 'none';
+                else if (document.getElementById('stats-modal').style.display === 'flex') document.getElementById('stats-modal').style.display = 'none';
+                else if (document.getElementById('gummy-worm-modal').style.display === 'flex') this.closeGummyWormModal();
+                else if (document.getElementById('marshmallow-modal').style.display === 'flex') this.closeMarshmallowModal();
                 else if (document.getElementById('piggy-modal').style.display === 'block') this.closePiggyModal();
                 else if (this.placementMode) this.cancelPlacement();
                 else if (this.sellMode) this.cancelSell();
@@ -339,10 +346,10 @@ class Game {
 
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
-        document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
+        document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'flex');
         document.getElementById('stats-btn').addEventListener('click', () => {
             this.updateStatsWindow();
-            document.getElementById('stats-modal').style.display = 'block';
+            document.getElementById('stats-modal').style.display = 'flex';
         });
         document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggleEmporium());
         document.getElementById('emporium-reset-btn').addEventListener('click', () => this.resetEmporiumUpgrades());
@@ -376,11 +383,21 @@ class Game {
         if (this.selectedEmporiumItem) {
             this.selectEmporiumItem(this.selectedEmporiumItem);
         }
-        document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+        document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
     }
 
     closePiggyModal() {
         document.getElementById('piggy-modal').style.display = 'none';
+        this.isPaused = false;
+    }
+
+    closeGummyWormModal() {
+        document.getElementById('gummy-worm-modal').style.display = 'none';
+        this.isPaused = false;
+    }
+
+    closeMarshmallowModal() {
+        document.getElementById('marshmallow-modal').style.display = 'none';
         this.isPaused = false;
     }
 
@@ -538,6 +555,30 @@ class Game {
     }
 
     killMissile(m, index) {
+        // Splitting logic for marshmallows
+        if (m.type === 'marshmallow_large') {
+            this.missiles.splice(index, 1);
+            for (let i = 0; i < 2; i++) {
+                // Spawn two medium marshmallows with a bit of horizontal offset
+                const newMissile = new Missile(this, m.x + (i * 30) - 15, 'marshmallow_medium', m.y);
+                this.missiles.push(newMissile);
+            }
+            for (let k = 0; k < 20; k++) this.particles.push(new Particle(m.x, m.y, m.color, 'smoke'));
+            return; // Skip loot drop
+        }
+
+        if (m.type === 'marshmallow_medium') {
+            this.missiles.splice(index, 1);
+            for (let i = 0; i < 2; i++) {
+                // Spawn two small marshmallows
+                const newMissile = new Missile(this, m.x + (i * 20) - 10, 'marshmallow_small', m.y);
+                this.missiles.push(newMissile);
+            }
+            for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, m.color, 'smoke'));
+            return; // Skip loot drop
+        }
+
+        // Default kill logic for all other enemies (including small marshmallow)
         this.missiles.splice(index, 1);
         const pStats = this.stats.piggyStats;
         const count = (m.type === 'piggy') ? pStats.mult : 1;
@@ -580,7 +621,7 @@ class Game {
         }
         document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
         if (this.isShopOpen) { 
-            document.getElementById('shop-money-display').innerText = this.money; 
+            document.getElementById('shop-money-display').innerText = '$' + this.money; 
             this.renderShopGrid(); 
             this.selectShopItem(this.shopItems[0]); 
         }
@@ -657,7 +698,7 @@ class Game {
                 this.money -= cost; item.action(); this.selectShopItem(item);
             }
         }
-        document.getElementById('shop-money-display').innerText = this.money;
+        document.getElementById('shop-money-display').innerText = '$' + this.money;
     }
 
     toggleEmporium() {
@@ -671,10 +712,10 @@ class Game {
 
         if (this.isEmporiumOpen) {
             this.isPaused = true; // Always pause when emporium is open
-            gamePausedIndicator.style.display = 'block';
-            document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+            gamePausedIndicator.style.display = 'flex';
+            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
             this.renderEmporiumGrid();
-            document.getElementById('emporium-overlay').style.display = 'block';
+            document.getElementById('emporium-overlay').style.display = 'flex';
         } else {
             // When closing, if game is over, remain paused. Otherwise, unpause.
             if (!this.isGameOver) {
@@ -733,7 +774,7 @@ class Game {
             this.iceCreamScoops -= cost;
             item.action();
             this.selectEmporiumItem(item);
-            document.getElementById('emporium-scoops-display').innerText = this.iceCreamScoops;
+            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
             saveEmporiumUpgrades(this.emporiumUpgrades);
             localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
         }
@@ -778,6 +819,8 @@ class Game {
 
     start() {
         window.closePiggyModal = this.closePiggyModal.bind(this);
+        window.closeGummyWormModal = this.closeGummyWormModal.bind(this);
+        window.closeMarshmallowModal = this.closeMarshmallowModal.bind(this);
         window.closeShopReminder = this.closeShopReminder.bind(this);
         this.gameLoop(0);
     }
@@ -1121,7 +1164,7 @@ class Game {
         }
         
         document.getElementById('money-display').innerText = this.money;
-        if (this.isShopOpen) document.getElementById('shop-money-display').innerText = this.money;
+        if (this.isShopOpen) document.getElementById('shop-money-display').innerText = '$' + this.money;
 
         const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
         const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
