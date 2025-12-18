@@ -4,7 +4,7 @@ export default class Player {
     constructor(game) {
         this.game = game;
         this.reset();
-        this.width = 33.81; this.height = 49.5075; this.color = '#ffadad';
+        this.width = 37.191; this.height = 54.45825; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
         this.slapCooldown = 0; this.slapAnim = 0;
         this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 1.2;
@@ -67,7 +67,7 @@ export default class Player {
             if (hitByHand || hitByPlayer) {
                 m.takeDamage(this.game.stats.slapDamage);
                 // Smooth Knockback application
-                m.kbVy = -this.game.stats.slapKnockback * 0.1; // Initial impulse
+                m.kbVy = -this.game.stats.slapKnockback * 0.3; // Initial impulse
                 this.game.screenShake.trigger(4, 10); // Increased
                 // More particles
                 for (let i = 0; i < 15; i++) { // Increased particle count
@@ -269,6 +269,40 @@ export default class Player {
         ctx.scale(this.scaleX, this.scaleY); ctx.translate(-cx, -cy);
         ctx.fillStyle = this.color;
         ctx.beginPath(); ctx.roundRect(this.x, this.y, this.width, this.height, 5); ctx.fill();
+
+        // Jello Effect
+        const darkerColor = `rgba(0, 0, 0, 0.1)`;
+        ctx.fillStyle = darkerColor;
+        ctx.beginPath();
+        ctx.roundRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10, 5);
+        ctx.fill();
+
+        // Air bubbles
+        ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
+        const bubble1X = this.x + this.width / 2 + Math.sin(this.game.gameTime / 20) * (this.width / 3);
+        const bubble1Y = this.y + this.height / 2 + Math.cos(this.game.gameTime / 20) * (this.height / 3);
+        ctx.beginPath();
+        ctx.arc(bubble1X, bubble1Y, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bubble2X = this.x + this.width / 2 + Math.cos(this.game.gameTime / 15) * (this.width / 4);
+        const bubble2Y = this.y + this.height / 2 + Math.sin(this.game.gameTime / 15) * (this.height / 4);
+        ctx.beginPath();
+        ctx.arc(bubble2X, bubble2Y, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bubble3X = this.x + this.width / 2 + Math.sin(this.game.gameTime / 25) * (this.width / 3.5);
+        const bubble3Y = this.y + this.height / 2 + Math.cos(this.game.gameTime / 25) * (this.height / 3.5);
+        ctx.beginPath();
+        ctx.arc(bubble3X, bubble3Y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bubble4X = this.x + this.width / 2 + Math.cos(this.game.gameTime / 10) * (this.width / 4.5);
+        const bubble4Y = this.y + this.height / 2 + Math.sin(this.game.gameTime / 10) * (this.height / 4.5);
+        ctx.beginPath();
+        ctx.arc(bubble4X, bubble4Y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+		
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
@@ -313,34 +347,60 @@ export default class Player {
             ctx.scale(scale, scale);
             ctx.rotate(angle);
 
-            // --- Boxing Glove Drawing Logic (remains unchanged) ---
-            // 1. White Wrist Cuff
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.roundRect(-20, -10, 12, 20, 3);
-            ctx.fill();
+            // --- Gummy Gauntlet Drawing Logic ---
+            const slapLevel = this.game.stats.slapLvl;
+            const maxSlapLevel = this.game.SLAP_DAMAGE_TIERS.length;
 
-            // 2. Main Red Glove Body & Thumb
-            ctx.fillStyle = '#e74c3c'; // Red
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            // Fist
-            ctx.beginPath();
-            ctx.arc(0, 0, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            // Thumb
-            ctx.beginPath();
-            ctx.arc(-5, -12, 7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
+            if (slapLevel >= maxSlapLevel - 1) {
+                // Max Level: Marshmallow fist with licorice straps
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2); // Larger fist
+                ctx.fill();
 
-            // 3. Shiny Glare
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.beginPath();
-            ctx.ellipse(3, -5, 4, 8, -0.5, 0, Math.PI * 2);
-            ctx.fill();
-            // --- End of Glove Drawing ---
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-10, -15);
+                ctx.lineTo(10, 15);
+                ctx.moveTo(-10, 15);
+                ctx.lineTo(10, -15);
+                ctx.stroke();
+
+            } else if (slapLevel >= Math.floor(maxSlapLevel / 2)) {
+                // Mid Level: Gummy hand with spikes
+                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = '#ff69b4'; // Gummy pink
+                ctx.beginPath();
+                ctx.arc(0, 0, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                
+                // Spikes
+                ctx.fillStyle = 'white';
+                for(let i=0; i<5; i++) {
+                    const angle = i * (Math.PI * 2 / 5);
+                    ctx.save();
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(14, 0);
+                    ctx.lineTo(20, -3);
+                    ctx.lineTo(20, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+            } else {
+                // Level 1+: Soft, translucent gummy hand
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = '#ff69b4'; // Gummy pink
+                ctx.beginPath();
+                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+            // --- End of Gummy Gauntlet Drawing ---
             
             ctx.restore();
         }

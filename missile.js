@@ -1,6 +1,7 @@
 import Particle from './particle.js';
 import { darkenColor } from './utils.js?v=25';
 import DamageSpot from './damageSpot.js';
+import FloatingText from './floatingText.js';
 
 export default class Missile {
     constructor(game, x, type = 'missile', y = -60) {
@@ -65,11 +66,18 @@ export default class Missile {
         this.hitTimer = 0;
         this.stretch = 1;
         this.squash = 1;
+        this.damageText = null;
+        this.damageTextTimer = 0;
     }
     takeDamage(amount) {
-        this.health -= amount;
+        const roundedAmount = amount;
+        this.health -= roundedAmount;
         this.hitTimer = 10; // Start the hit blink animation
-        const numSpots = Math.floor(amount / 5);
+        this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount}`, 'red'));
+        this.damageText = `${this.health.toFixed(0)}/${this.maxHealth.toFixed(0)}`;
+        this.damageTextTimer = 30; // 0.5 seconds
+
+        const numSpots = Math.floor(roundedAmount / 5);
         for (let i = 0; i < numSpots; i++) {
             const spotX = (this.width / 2) + (Math.random() - 0.5) * (this.width * 0.5);
             const spotY = (this.height / 2) + (Math.random() - 0.5) * (this.height * 0.5);
@@ -78,11 +86,14 @@ export default class Missile {
             const spotColor = darkenColor(color, 20);
             this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor, this));
         }
-        return this.health <= 0;
+        return this.health <= 0.5;
     }
     update(tsf) {
         if (this.hitTimer > 0) {
             this.hitTimer -= tsf;
+        }
+        if (this.damageTextTimer > 0) {
+            this.damageTextTimer -= tsf;
         }
 
         const stretch_factor = 0.2;
@@ -155,14 +166,17 @@ export default class Missile {
         ctx.fillStyle = color;
 
         if (this.type === 'piggy') {
+            const piggyLevel = this.game.stats.piggyLvl;
+            const sizeMultiplier = 1 + (piggyLevel * 0.15); // Increased size multiplier
+
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
 
             ctx.save();
             ctx.translate(cx, cy);
-            ctx.scale(1.1 * this.squash, 1.1 * this.stretch); // Scale by 10%
+            ctx.scale(1.1 * this.squash * sizeMultiplier, 1.1 * this.stretch * sizeMultiplier); // Apply size multiplier
 
-            // Re-create the original drawing, but centered around (0,0)
+            // Original piggy drawing, centered
             ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
             ctx.fillStyle = '#ffb7b2';
@@ -173,6 +187,21 @@ export default class Missile {
             ctx.fillStyle = color;
             ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-15, -20); ctx.lineTo(-5, -15); ctx.fill();
             ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(15, -20); ctx.lineTo(5, -15); ctx.fill();
+
+            // Golden shimmer effect
+            if (piggyLevel > 0) {
+                ctx.globalAlpha = 0.6 + Math.sin(this.game.gameTime / 8) * 0.4;
+                ctx.fillStyle = 'gold';
+                for (let i = 0; i < piggyLevel * 2; i++) { // Doubled the gold particles
+                    const shimmerAngle = (this.game.gameTime / 15) + (i * Math.PI * 2 / (piggyLevel * 2));
+                    const shimmerX = Math.cos(shimmerAngle) * 12;
+                    const shimmerY = Math.sin(shimmerAngle) * 8;
+                    ctx.beginPath();
+                    ctx.arc(shimmerX, shimmerY, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1.0;
+            }
 
             ctx.restore();
         } else if (this.type === 'gummy_worm') {
@@ -330,6 +359,20 @@ export default class Missile {
             ctx.beginPath();
             ctx.roundRect(this.x, barY, this.width * pct, 4, barRadius);
             ctx.fill();
+
+            if (this.damageTextTimer > 0) {
+                const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = 'grey';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.strokeText(this.damageText, this.x + this.width / 2, barY + 3);
+                ctx.fillText(this.damageText, this.x + this.width / 2, barY + 3);
+                ctx.restore();
+            }
         }
         ctx.restore();
 

@@ -8,15 +8,18 @@ export default class Drop {
         this.vy = -5; this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
         this.life = 1200; // Longer life
-        this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 120 : 30));
+       // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
+this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 120 : 30));
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
         this.rot = 0;
+        this.glow = 0;
     }
     update(tsf) {
         this.vy += this.gravity * tsf;
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
         this.rot += 0.05 * tsf;
+        this.glow = (Math.sin(this.rot) + 1) / 2; // Cycle glow with rotation
         this.vx *= 0.95;
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
@@ -93,6 +96,13 @@ export default class Drop {
             ctx.fillStyle = '#fff';
             ctx.font = '48px Arial'; ctx.textAlign = 'center'; ctx.fillText('🍦', 0, 8);
         }
+
+        // Glow effect
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.glow * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
     }
 }

@@ -59,7 +59,7 @@ export default class Tower extends BaseStructure {
         const ty = cy + Math.sin(this.barrelAngle) * 30 * this.scale;
         const damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
         const projectileSpeed = this.game.stats.projectileSpeed; // get the speed
-        const radius = this.isAuto ? 9 : 15;
+        const radius = (this.isAuto ? 7 : 12) + (this.game.stats.damageLvl * 0.5);
         const projectile = new Projectile(this.game, tx, ty, this.barrelAngle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius); // pass it
         this.game.projectiles.push(projectile);
 
@@ -78,7 +78,7 @@ export default class Tower extends BaseStructure {
                         // The main loop will handle the missile removal
                     }
                     // Apply knockback
-                    m.kbVy = -2;
+                    m.kbVy += -2;
                     // Create particles
                     this.game.particles.push(new Particle(missileCx, missileCy, '#fff', 'spark'));
                     if (!projectile.hasHit) {
@@ -129,8 +129,22 @@ export default class Tower extends BaseStructure {
         ctx.fillStyle = this.isAuto ? '#a1c4fd' : '#ecf0f1';
         ctx.beginPath(); ctx.roundRect(-halfWidth, -halfHeight, this.width, this.height, 10); ctx.fill();
 
+        const damageLevel = this.game.stats.damageLvl;
+        const icingColors = ['#ffc1cc', '#ff99b3', '#ff7399', '#ff4d80', '#ff2666', '#ff004d', '#e60044', '#cc003b', '#b30033', '#99002a', '#800022'];
+        const icingColor = icingColors[Math.min(damageLevel, icingColors.length - 1)];
+
+        // Damage particle effect
+        if (damageLevel > 0 && Math.random() < damageLevel * 0.05) {
+            this.game.particles.push(new Particle(
+                this.x + this.width / 2 + (Math.random() - 0.5) * this.width,
+                this.y + this.height / 2 + (Math.random() - 0.5) * this.height,
+                icingColor,
+                'spark'
+            ));
+        }
+		
         // FROSTING LAYER
-        ctx.fillStyle = '#f0a9bb'; // Matching castle frosting color
+        ctx.fillStyle = icingColor; // Matching castle frosting color
         ctx.beginPath();
         let startY = -halfHeight + 5;
         ctx.moveTo(-halfWidth, startY);
@@ -158,6 +172,94 @@ export default class Tower extends BaseStructure {
 
         ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
+        // Reload Speed Visuals
+        const fireRateLevel = this.game.stats.fireRateLvl;
+        if (fireRateLevel > 0) {
+            const maxLevel = this.game.shopItems.find(item => item.id === 'rate').getLevel().split('/')[1];
+            const levelRatio = fireRateLevel / maxLevel;
+
+            // Powdered sugar "steam" effect
+            if (Math.random() < levelRatio * 0.3) { // Increased emission rate
+                this.game.particles.push(new Particle(
+                    this.x + this.width / 2 + (Math.random() - 0.5) * 30,
+                    this.y - 15,
+                    `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.3})`,
+                    'steam'
+                ));
+            }
+
+            if (fireRateLevel >= 5) {
+                // Level 5+: Spinning carousel of wafer pipes
+                const numPipes = 6;
+                for (let i = 0; i < numPipes; i++) {
+                    const angle = (this.game.gameTime / 400) + (i * (Math.PI * 2 / numPipes));
+                    const x = Math.cos(angle) * 20;
+                    const y = Math.sin(angle) * 7 - 25;
+                    ctx.fillStyle = '#d2b48c'; // Wafer color
+                    ctx.beginPath();
+                    ctx.roundRect(-halfWidth / 2 + x, -halfHeight - 20 + y, 10, 20, 4); // Bigger pipes
+                    ctx.fill();
+                }
+            } else {
+                // Level 1-4: Single icing tip
+                const numNozzles = fireRateLevel;
+                for (let i = 0; i < numNozzles; i++) {
+                    ctx.fillStyle = '#c0c0c0'; // Silver
+                    ctx.beginPath();
+                    ctx.roundRect(-halfWidth / 2 + (i * 12), -halfHeight - 15, 7, 15, 3); // Bigger nozzles
+                    ctx.fill();
+                }
+            }
+        }
+
+
+        const rangeLevel = this.game.stats.rangeLvl;
+        if (rangeLevel > 0) {
+            ctx.save();
+            ctx.translate(0, -halfHeight - 10); // Position on top of the tower
+
+            if (rangeLevel >= 8) {
+                // Late: Candy cane antenna
+                const antennaHeight = 30;
+                ctx.beginPath();
+                for (let i = 0; i < antennaHeight; i++) {
+                    ctx.strokeStyle = (i % 8 < 4) ? '#ffffff' : '#ff0000';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -i);
+                    ctx.lineTo(0, -i - 1);
+                    ctx.stroke();
+                }
+                ctx.lineWidth = 1;
+
+                // Pulsing sugar-ring
+                const pulse = (Math.sin(this.game.gameTime / 200) + 1) / 2;
+                ctx.strokeStyle = `rgba(130, 180, 200, ${1 - pulse})`;
+                ctx.lineWidth = 2 + pulse * 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 10 + pulse * 15, 0, Math.PI * 2);
+                ctx.stroke();
+
+            } else if (rangeLevel >= 4) {
+                // Mid: Rotating stroopwafel radar
+                ctx.rotate(this.game.gameTime / 1000);
+                ctx.fillStyle = '#d2b48c'; // Stroopwafel color
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                // Early: Wafer stick
+                ctx.fillStyle = '#d2b48c'; // Wafer color
+                ctx.beginPath();
+                ctx.roundRect(-15, -5, 30, 10, 4);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
         ctx.save();
         ctx.translate(0, -11); // Barrel pivot point relative to tower center
         ctx.rotate(this.barrelAngle);
@@ -178,7 +280,7 @@ export default class Tower extends BaseStructure {
         ctx.beginPath(); ctx.roundRect(0, -6.5, 28, 13, 5); ctx.fill();
 
         // BARREL FROSTING
-        ctx.fillStyle = '#f0a9bb'; // Matching castle frosting color
+        ctx.fillStyle = icingColor; // Matching castle frosting color
         ctx.beginPath();
         let barrelFrostingY = -6.5 + 2; // Start a bit lower
         ctx.moveTo(0, barrelFrostingY);

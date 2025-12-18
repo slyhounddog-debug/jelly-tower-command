@@ -22,7 +22,7 @@ class Game {
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
         this.SLAP_DAMAGE_TIERS = [10, 20, 30, 40, 50];
         this.SLAP_KNOCKBACK_TIERS = [75, 100, 150, 200, 250];
-        this.SHIELD_COSTS = [75, 150, 200, 300, 400];
+        this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [
             { bonus: 0.10, mult: 2 },
             { bonus: 0.12, mult: 3 },
@@ -59,10 +59,11 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 6;
+        this.gummyWormSpawnThreshold = 12;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 8;
+        this.marshmallowSpawnThreshold = 20;
         this.marshmallowSeen = false;
+        this.thermometerWarn = false;
 
         this.iceCreamScoops = 0;
         this.emporiumUpgrades = {}; // Will be populated by loadEmporiumUpgrades
@@ -153,30 +154,43 @@ class Game {
               },
               getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
-            },
-            { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Placeable defense.', type: 'item',
-              getCost: () => { const costs = [1000, 3000, 5000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; }, 
-              getValue: () => `${this.stats.turretsBought}/3 Owned`, 
-              getNext: () => "Place on Map", 
-              getLevel: () => `${this.stats.turretsBought}/3`,
-              action: () => { } 
-            },
-            { id: 'buy_shield', name: 'Barrier', icon: '🧱', desc: 'Placeable regenerative shield. Max 5.', type: 'item',
-              getCost: () => this.shields.length < 5 ? this.SHIELD_COSTS[Math.min(this.shields.length, 4)] : 'MAX', 
-              getValue: () => `${this.shields.length}/5 Active`, 
-              getNext: () => "Place on Map", 
-              getLevel: () => `${this.shields.length}/5`,
-              action: () => { }
-            },
-            { id: 'sell_item', name: 'Sell Item', icon: '♻️', desc: 'Sell a placed turret or barrier for 90% of its cost.', type: 'sell',
-              getCost: () => (this.stats.turretsBought > 0 || this.shields.length > 0) ? 'SELECT' : 'N/A',
-              getValue: () => `${this.stats.turretsBought + this.shields.length} Items`,
-              getNext: () => "Select on Map",
-              getLevel: () => ``,
-              action: () => {}
             }
         ];
         this.selectedShopItem = this.shopItems[0];
+
+        this.actionButtons = [
+            {
+                id: 'buy_shield',
+                icon: '🧱',
+                x: this.width / 2 - 80, // Increased spacing
+                y: this.height - 50,
+                radius: 37.5, // 25% bigger
+                hovered: false,
+                getCost: () => this.shields.length < 5 ? this.SHIELD_COSTS[Math.min(this.shields.length, 4)] : 'MAX',
+                errorShake: 0,
+            },
+            {
+                id: 'buy_turret',
+                icon: '🤖',
+                x: this.width / 2,
+                y: this.height - 50,
+                radius: 37.5, // 25% bigger
+                hovered: false,
+                getCost: () => { const costs = [1000, 3000, 5000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+                errorShake: 0,
+            },
+            {
+                id: 'sell_item',
+                icon: '🗑️',
+                x: this.width / 2 + 80, // Increased spacing
+                y: this.height - 50,
+                radius: 37.5, // 25% bigger
+                hovered: false,
+                getCost: () => (this.stats.turretsBought > 0 || this.shields.length > 0) ? 'SELL' : 'N/A',
+                errorShake: 0,
+            }
+        ];
+
 
         this.emporiumItems = [
             { 
@@ -291,6 +305,86 @@ class Game {
         });
     }
 
+    drawShieldIcon(ctx, x, y, radius) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale((radius / 64) * 0.85, (radius / 64) * 0.85);
+        ctx.fillStyle = '#3498db';
+        ctx.beginPath();
+        ctx.arc(0, 33, 64, Math.PI, 0);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawTurretIcon(ctx, x, y, radius) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(radius / 46, radius / 46);
+        ctx.fillStyle = '#a1c4fd';
+        ctx.beginPath();
+        ctx.roundRect(-23, -23, 46, 46, 10);
+        ctx.fill();
+        const gradient = ctx.createLinearGradient(0, 0, 28, 0);
+        gradient.addColorStop(0, 'lightblue');
+        gradient.addColorStop(1, 'lightpink');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(0, -11.5, 28, 13, 5);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawActionButtons(ctx) {
+        if (this.isGameOver) return;
+        this.actionButtons.forEach(button => {
+            if (button.errorShake > 0) {
+                button.errorShake--;
+            }
+            const shakeX = button.errorShake > 0 ? Math.sin(button.errorShake * 2) * 5 : 0;
+            const radius = button.radius * (button.hovered ? 1.1 : 1);
+            ctx.save();
+            ctx.translate(button.x + shakeX, button.y);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            if (button.id === 'buy_shield') {
+                this.drawShieldIcon(ctx, 0, 0, radius);
+            } else if (button.id === 'buy_turret') {
+                this.drawTurretIcon(ctx, 0, 0, radius);
+            } else {
+                ctx.font = `${radius * 0.8}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#333';
+                ctx.fillText(button.icon, 0, 0);
+            }
+
+            if (button.hovered || button.errorShake > 0) {
+                const cost = button.getCost();
+                if (cost !== 'MAX' && cost !== 'N/A' && cost !== 'SELL') {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fill();
+                    ctx.fillStyle = button.errorShake > 0 ? 'red' : '#fff';
+                    ctx.font = `bold ${radius * 0.5}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`$${cost}`, 0, 0);
+                    ctx.restore();
+                }
+            }
+            ctx.restore();
+        });
+    }
+
     initListeners() {
         this.resizeModals();
         window.addEventListener('resize', () => this.resizeModals());
@@ -332,11 +426,60 @@ class Game {
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
             this.mouse.y = (e.clientY - rect.top) * scaleY;
+
+            this.actionButtons.forEach(button => {
+                const dist = Math.hypot(this.mouse.x - button.x, this.mouse.y - button.y);
+                button.hovered = dist < button.radius;
+            });
         });
         this.canvas.addEventListener('mousedown', () => {
             this.mouse.isDown = true;
-            if (this.placementMode) this.tryPlaceItem();
-            else if (!this.isShopOpen && !this.player.isControlling) this.player.trySlap();
+            let buttonClicked = false;
+        
+            // Allow clicking buttons if game is running, or to place an item if paused
+            if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
+                
+                // Handle button clicks only if not in placement/sell mode already
+                if (!this.placementMode && !this.sellMode) {
+                    this.actionButtons.forEach(button => {
+                        if (button.hovered) {
+                            buttonClicked = true;
+                            const cost = button.getCost();
+        
+                            if (typeof cost === 'number' && this.money >= cost) {
+                                if (button.id === 'buy_turret' || button.id === 'buy_shield') {
+                                    this.placementMode = (button.id === 'buy_turret' ? 'turret' : 'shield');
+                                    this.placementItemCost = cost;
+                                    this.isPaused = true;
+                                    document.getElementById('notification').innerText = `Click to Place ${this.placementMode.toUpperCase()} | ESC to Cancel`;
+                                    document.getElementById('notification').style.opacity = 1;
+                                    setTimeout(() => { if (this.placementMode) document.getElementById('notification').style.opacity = 0; }, 2000);
+                                }
+                            } else if (button.id === 'sell_item' && cost !== 'N/A') {
+                                this.sellMode = true;
+                                this.isPaused = true; // Also pause for sell mode
+                                document.getElementById('notification').innerText = `Click an item to Sell | ESC to Cancel`;
+                                document.getElementById('notification').style.opacity = 1;
+                                setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
+                            } else if (cost !== 'MAX' && cost !== 'SELL' && cost !== 'N/A') { // Not enough money
+                                button.errorShake = 15;
+                            }
+                        }
+                    });
+                }
+        
+                // This part handles placing item OR slapping.
+                // If a button was clicked to enter a mode, this part should be skipped.
+                if (!buttonClicked) {
+                    if (this.placementMode) {
+                        this.tryPlaceItem();
+                    } else if (this.sellMode) {
+                        // The logic for selling is handled within the gameLoop's sellMode block
+                    } else if (!this.isShopOpen && !this.player.isControlling) {
+                        this.player.trySlap();
+                    }
+                }
+            }
         });
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
         document.getElementById('start-game-btn').addEventListener('click', () => {
@@ -451,12 +594,9 @@ class Game {
         document.getElementById('restart-btn').style.display = 'none';
         document.getElementById('open-emporium-btn').style.display = 'none';
         document.getElementById('game-over-stats').style.display = 'none';
-        this.initLevel();
-        this.threatManager.reset();
-
-        document.getElementById('rpm-display').innerText = "5.5";
-        document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
-    }
+                this.initLevel();
+                this.threatManager.reset();
+            }
 
     initLevel() {
         const castleColor = '#f8c8dc'; // Pastel Pink
@@ -817,6 +957,90 @@ class Game {
         document.getElementById('shop-money-display').innerText = this.money;
     }
 
+    drawThermometer(ctx) {
+        const x = this.width - 60;
+        const y = this.height / 2 - 225;
+        const width = 30;
+        const height = 450;
+        const bulbRadius = 30;
+        const neckY = y + height - bulbRadius;
+
+        // Thermometer glass
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height - bulbRadius, 15);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + width / 2, neckY, bulbRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Jam level
+        const totalThreat = this.currentRPM;
+        const bulbCapacity = 25;
+        const neckCapacity = 100 - bulbCapacity;
+
+        const bulbLevel = Math.min(1, totalThreat / bulbCapacity);
+        const neckLevel = Math.max(0, (totalThreat - bulbCapacity) / neckCapacity);
+        
+        ctx.fillStyle = 'rgba(255, 105, 180, 0.8)'; // Lighter magenta
+
+        // Fill bulb
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + width / 2, neckY, bulbRadius, 0, Math.PI * 2);
+        ctx.clip();
+        const bulbFillHeight = bulbLevel * bulbRadius * 2;
+        ctx.fillRect(x - bulbRadius, neckY + bulbRadius - bulbFillHeight, bulbRadius * 2, bulbFillHeight);
+        ctx.restore();
+
+        // Fill neck
+        const jamHeight = (height - bulbRadius) * neckLevel;
+        if (neckLevel > 0) {
+            ctx.fillRect(x, neckY - jamHeight, width, jamHeight);
+        }
+
+        // Wavey top
+        const topOfJam = neckLevel > 0 ? neckY - jamHeight : neckY + bulbRadius - bulbFillHeight;
+        ctx.beginPath();
+        ctx.moveTo(x, topOfJam);
+        for (let i = 0; i < width; i++) {
+            ctx.lineTo(x + i, topOfJam + Math.sin(i * 0.5 + this.gameTime) * 2);
+        }
+        ctx.lineTo(x + width, y + height);
+        ctx.lineTo(x, y + height);
+        ctx.fill();
+
+
+        // Bubbles
+        const jamFillTotalHeight = (height - bulbRadius) * neckLevel + bulbRadius * 2 * bulbLevel;
+        for (let i = 0; i < 5; i++) {
+            const bubbleX = x + Math.random() * width;
+            const bubbleY = y + height - (Math.random() * jamFillTotalHeight);
+            const bubbleRadius = Math.random() * 4 + 1;
+            ctx.beginPath();
+            ctx.arc(bubbleX, bubbleY, bubbleRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fill();
+        }
+
+        // Tick marks
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        for (let i = 1; i <= 10; i++) {
+            const tickY = y + height - bulbRadius - (i * ((height-bulbRadius) / 10));
+            ctx.beginPath();
+            ctx.moveTo(x - 5, tickY);
+            ctx.lineTo(x, tickY);
+            ctx.stroke();
+        }
+
+        // Glare
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(x + width / 2, y + (height - bulbRadius) / 2, width / 2.5, (height - bulbRadius) / 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     start() {
         window.closePiggyModal = this.closePiggyModal.bind(this);
         window.closeGummyWormModal = this.closeGummyWormModal.bind(this);
@@ -908,24 +1132,46 @@ class Game {
             }
             this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
             document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
-            for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                const p = this.projectiles[i];
-                p.update(tsf);
-                if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
-                for (let j = this.missiles.length - 1; j >= 0; j--) {
-                    const m = this.missiles[j];
-                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-                        const damageDealt = Math.min(p.hp, m.health);
-                        p.hp -= damageDealt;
-                        if (m.takeDamage(damageDealt)) {
-                        }
-                        m.kbVy = -2;
-                        this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
-                        if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
-                        if (p.hp <= 0) { this.projectiles.splice(i, 1); break; }
-                    }
-                }
+           // --- PASTE THIS INSTEAD ---
+for (let i = this.projectiles.length - 1; i >= 0; i--) {
+    const p = this.projectiles[i];
+    p.update(tsf);
+
+    // Remove if off-screen
+    if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { 
+        this.projectiles.splice(i, 1); 
+        continue; 
+    }
+
+    for (let j = this.missiles.length - 1; j >= 0; j--) {
+        const m = this.missiles[j];
+
+        // Check for hit
+        if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+            
+            // Apply damage from projectile to enemy
+            const isDead = m.takeDamage(p.hp || 10);
+            
+            // Visual feedback
+            m.kbVy = -2;
+            this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+
+            if (!p.hasHit) { 
+                p.hasHit = true; 
+                this.shotsHit++; 
             }
+
+            // CRITICAL FIX: If enemy is dead, kill it immediately
+            if (isDead) {
+                this.killMissile(m, j);
+            }
+
+            // Remove the projectile so it doesn't hit again
+            this.projectiles.splice(i, 1);
+            break; 
+        }
+    }
+}
 
             for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
             for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
@@ -1085,10 +1331,14 @@ class Game {
         this.projectiles.forEach(p => p.draw(this.ctx));
         this.drops.forEach(d => d.draw(this.ctx));
         this.particles.forEach(p => p.draw(this.ctx));
+        this.drawThermometer(this.ctx);
         this.player.draw(this.ctx);
         this.floatingTexts.forEach(ft => ft.draw(this.ctx));
 
+        this.drawActionButtons(this.ctx);
+
         this.ctx.restore();
+
 
         if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
             this.towers.forEach(t => {
@@ -1170,7 +1420,7 @@ class Game {
         const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
         document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / maxHealth) * 100) + '%';
         document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${maxHealth}`;
-        document.getElementById('threat-level').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
+
 
         requestAnimationFrame(() => this.gameLoop(performance.now()));
     }

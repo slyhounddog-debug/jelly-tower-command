@@ -14,7 +14,6 @@ export default class ThreatManager {
         if (this.diffTimer >= 150) {
             this.game.currentRPM += 0.1;
             this.diffTimer = 0;
-            document.getElementById('rpm-display').innerText = this.game.currentRPM.toFixed(1);
         }
 
         this.spawnTimer += tsf;
@@ -28,6 +27,7 @@ export default class ThreatManager {
                 if (!this.game.marshmallowSeen) {
                     this.game.marshmallowSeen = true;
                     this.game.isPaused = true;
+                    this.game.thermometerWarn = false;
                     document.getElementById('marshmallow-modal').style.display = 'flex';
                 }
             }
@@ -37,6 +37,7 @@ export default class ThreatManager {
                 if (!this.game.gummyWormSeen) {
                     this.game.gummyWormSeen = true;
                     this.game.isPaused = true;
+                    this.game.thermometerWarn = false;
                     document.getElementById('gummy-worm-modal').style.display = 'flex';
                 }
             } else {

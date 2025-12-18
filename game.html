@@ -49,8 +49,20 @@
             left: 15px;
             right: 15px;
             display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #bottom-ui-overlay {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: flex-end;
             pointer-events: none;
             z-index: 10;
         }
@@ -67,7 +79,6 @@
             display: flex;
             align-items: center;
             gap: 5px; /* Reduced gap */
-            margin: 0 5px; /* Added horizontal margin */
         }
 
         /* Health Bar Container */
@@ -229,7 +240,7 @@
         #buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
 
         #shop-grid {
-            flex: 3; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            flex: 3; display: grid; grid-template-columns: repeat(4, 1fr);
             gap: 10px; padding: 10px; overflow-y: auto;
         }
 
@@ -369,27 +380,18 @@
     <div id="game-wrapper">
         <div id="ui-overlay">
             <div id="game-paused-indicator" style="position: absolute; top: 10px; left: 10px; color: red; font-weight: bold; display: none;">Game Paused</div>
-            <div class="stat-box" style="border-color: #2ecc71; color: #2ecc71;">
-                <span>$</span><span id="money-display">0</span>
-            </div>
-
-            <div class="stat-box" style="border-color: #e74c3c; color: #e74c3c;">
-                <span>SCORE:</span><span id="score-display">0</span>
-            </div>
-            
-            <div id="wave-display" class="stat-box" style="border-color: #3498db; color: #3498db;">
-                <span>ENEMY HP:</span><span id="threat-level">0</span>
-            </div>
-            
             <div id="health-container">
                 <div id="health-bar-fill"></div>
                 <div id="health-text">CASTLE HP: 100/100</div>
             </div>
-
-            <div class="stat-box" style="border-color: #f1c40f; color: #f1c40f;">
-                <span>🥚/min:</span><span id="rpm-display">4.1</span>
+        </div>
+        <div id="bottom-ui-overlay">
+            <div id="money-display-container" class="stat-box" style="border-color: #2ecc71; color: #2ecc71;">
+                <span>$</span><span id="money-display">0</span>
             </div>
-            <!-- Removed [F] SHOP from here -->
+            <div id="score-display-container" class="stat-box" style="border-color: #e74c3c; color: #e74c3c;">
+                <span>SCORE:</span><span id="score-display">0</span>
+            </div>
         </div>
 
         <!-- Zoomed out resolution -->
@@ -542,9 +544,8 @@
         <!-- Start Game Modal -->
         <div id="start-game-modal" class="modal" style="display: block;">
             <h2>Welcome to Jelly Tower Command!</h2>
-            <p class="high-score-text">🏆 High Score: <span id="start-high-score">0</span> (Those are rookie numbers)</p>
             <h3>WARNING!</h3>
-            <p>Ahh Sugar Honey Iced Tea! Why are jelly beans attacking? Protect your castle from the mean, sometimes green, jelly beans for as long as possible! </p>
+            <p>Ahh Sugar Honey Iced Tea! Why are delicious sweets, deliciously attacking? Protect your castle from those meanies for as long as possible! </p>
             <h3>Controls</h3>
             <p><strong>A / D:</strong> Move Left / Right</p>
             <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
@@ -553,6 +554,7 @@
             <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
             <h3>The Shop</h3>
             <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
+            <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>
             <h3>Prepare your Butts!</h3>
             <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
             <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
@@ -570,10 +572,10 @@
 
         <!-- Gummy Worm Modal -->
         <div id="gummy-worm-modal" class="modal" style="display: none;">
-            <h2>🐍 Gummy Worm Spotted! 🐍</h2>
-            <p>These slippery foes slither as they fall.</p>
-            <p>They are faster and tougher than Jelly Beans, but not as tough as a Piggy Bank.</p>
-            <button class="modal-close" onclick="closeGummyWormModal()">Continue!</button>
+            <h2>🐍 Gummy Worm Spotted in the Wild! 🐍</h2>
+            <p>These slippery foes slither as they fall!</p>
+            <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
+            <button class="modal-close" onclick="closeGummyWormModal()">Ready to die!</button>
         </div>
 
         <!-- Marshmallow Modal -->
@@ -581,7 +583,7 @@
             <h2>⚪ Marshmallow Menace! ⚪</h2>
             <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
             <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
-            <button class="modal-close" onclick="closeMarshmallowModal()">Let's get 'em!</button>
+            <button class="modal-close" onclick="closeMarshmallowModal()">Still ready to Die!</button>
         </div>
 
         <div id="notification" class="notification">Item Placed!</div>
