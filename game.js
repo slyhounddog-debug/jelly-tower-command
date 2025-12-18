@@ -59,9 +59,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 12;
+        this.gummyWormSpawnThreshold = 9;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 20;
+        this.marshmallowSpawnThreshold = 15;
         this.marshmallowSeen = false;
         this.thermometerWarn = false;
 
