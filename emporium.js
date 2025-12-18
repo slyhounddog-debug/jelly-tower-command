@@ -1,5 +1,5 @@
 const UPGRADE_VALUES = {
-    starting_money: [25000, 150, 300, 600, 1000, 1500],
+    starting_money: [25, 150, 300, 600, 1000, 1500],
     piggy_cooldown: [60, 52, 44, 36, 28, 20],
     castle_health: [100, 115, 130, 150, 175, 200],
     heart_heal: [10, 12, 15, 17, 20, 25],
