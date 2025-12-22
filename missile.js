@@ -180,18 +180,30 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
         ctx.shadowColor = color;
         ctx.fillStyle = color;
 
+        // --- BOTTOM SHADOW ---
+        const shadowOffset = 5;
+        const shadowDarkness = 20;
+        const shadowColor = darkenColor(color, shadowDarkness);
+        
         if (this.type === 'piggy') {
             const piggyLevel = this.game.stats.piggyLvl;
-            const sizeMultiplier = 1 + (piggyLevel * 0.15); // Increased size multiplier
+            const sizeMultiplier = 1 + (piggyLevel * 0.15);
 
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
 
             ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(1.1 * this.squash * sizeMultiplier, 1.1 * this.stretch * sizeMultiplier); // Apply size multiplier
+            ctx.fillStyle = shadowColor;
+            ctx.translate(cx, cy + shadowOffset);
+            ctx.scale(1.1 * this.squash * sizeMultiplier * 1.05, 1.1 * this.stretch * sizeMultiplier * 1.05);
+            ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
 
-            // Original piggy drawing, centered
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(1.1 * this.squash * sizeMultiplier, 1.1 * this.stretch * sizeMultiplier);
+
+            ctx.fillStyle = color;
             ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
             ctx.fillStyle = '#ffb7b2';
@@ -203,11 +215,10 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-15, -20); ctx.lineTo(-5, -15); ctx.fill();
             ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(15, -20); ctx.lineTo(5, -15); ctx.fill();
 
-            // Golden shimmer effect
             if (piggyLevel > 0) {
                 ctx.globalAlpha = 0.6 + Math.sin(this.game.gameTime / 8) * 0.4;
                 ctx.fillStyle = 'gold';
-                for (let i = 0; i < piggyLevel * 2; i++) { // Doubled the gold particles
+                for (let i = 0; i < piggyLevel * 2; i++) {
                     const shimmerAngle = (this.game.gameTime / 15) + (i * Math.PI * 2 / (piggyLevel * 2));
                     const shimmerX = Math.cos(shimmerAngle) * 12;
                     const shimmerY = Math.sin(shimmerAngle) * 8;
@@ -220,25 +231,23 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
 
             ctx.restore();
         } else if (this.type === 'gummy_worm') {
-            ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-            ctx.scale(this.squash, this.stretch);
-            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
-
             const segments = 10;
             const segmentHeight = this.height / segments;
             const wiggleAmplitude = 4;
             const wiggleFrequency = 0.2;
+
+            ctx.save();
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
+            ctx.scale(this.squash * 1.05, this.stretch * 1.05);
+            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
             
-            // --- Draw Border ---
-            const borderSize = 4;
-            const borderColor1 = darkenColor(this.color1, 20);
-            const borderColor2 = darkenColor(this.color2, 20);
+            const borderColor1 = darkenColor(this.color1, shadowDarkness);
+            const borderColor2 = darkenColor(this.color2, shadowDarkness);
             const borderGrad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
             borderGrad.addColorStop(0, borderColor1);
             borderGrad.addColorStop(1, borderColor2);
             ctx.strokeStyle = borderGrad;
-            ctx.lineWidth = this.width + borderSize;
+            ctx.lineWidth = this.width + 4;
             ctx.lineCap = 'round';
             
             ctx.beginPath();
@@ -246,15 +255,17 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
                 const yPos = this.y + i * segmentHeight;
                 const xOffset = Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
                 const xPos = this.x + this.width / 2 + xOffset;
-                if (i === 0) {
-                    ctx.moveTo(xPos, yPos);
-                } else {
-                    ctx.lineTo(xPos, yPos);
-                }
+                if (i === 0) ctx.moveTo(xPos, yPos);
+                else ctx.lineTo(xPos, yPos);
             }
             ctx.stroke();
+            ctx.restore();
 
-            // --- Draw Fill ---
+            ctx.save();
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.scale(this.squash, this.stretch);
+            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
+
             const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
              if (this.hitTimer > 0) {
                 grad.addColorStop(0, 'white');
@@ -272,11 +283,8 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
                 const yPos = this.y + i * segmentHeight;
                 const xOffset = Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
                 const xPos = this.x + this.width / 2 + xOffset;
-                if (i === 0) {
-                    ctx.moveTo(xPos, yPos);
-                } else {
-                    ctx.lineTo(xPos, yPos);
-                }
+                if (i === 0) ctx.moveTo(xPos, yPos);
+                else ctx.lineTo(xPos, yPos);
             }
             ctx.stroke();
 
@@ -285,11 +293,16 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
         } else if (this.type.includes('marshmallow')) {
             ctx.save();
             
-            // Shadow
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 5;
+            ctx.fillStyle = shadowColor;
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
+            ctx.rotate(this.angle);
+            ctx.scale(this.squash * 1.05, this.stretch * 1.05);
+            ctx.beginPath();
+            ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10);
+            ctx.fill();
+            ctx.restore();
 
+            ctx.save();
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             ctx.rotate(this.angle);
             ctx.scale(this.squash, this.stretch);
@@ -303,9 +316,6 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             ctx.beginPath();
             ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10);
             ctx.fill();
-
-            // Reset shadow for glare
-            ctx.shadowColor = 'transparent';
 
             // Glare
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
@@ -327,29 +337,39 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             const cy = this.y + this.height / 2;
 
             ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(this.angle); // Use dynamic angle
-            ctx.scale(this.scale * this.squash, this.scale * this.stretch); // Apply dynamic scale
-
-            const beanWidth = 45; // 1.5x original
-            const beanHeight = 30; // 1.5x original
-
-            // Main body
+            ctx.translate(cx, cy + shadowOffset);
+            ctx.rotate(this.angle);
+            ctx.scale(this.scale * this.squash * 1.05, this.scale * this.stretch * 1.05);
+            ctx.fillStyle = shadowColor;
+            const beanWidth = 45;
+            const beanHeight = 30;
             ctx.beginPath();
             ctx.moveTo(0, -beanHeight / 2);
             ctx.bezierCurveTo(beanWidth / 2, -beanHeight / 1.5, beanWidth / 2, beanHeight / 1.5, 0, beanHeight / 2);
             ctx.bezierCurveTo(-beanWidth / 3, beanHeight / 1.5, -beanWidth / 3, -beanHeight / 1.5, 0, -beanHeight / 2);
             ctx.closePath();
+            ctx.fill();
+            ctx.restore();
 
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(this.angle);
+            ctx.scale(this.scale * this.squash, this.scale * this.stretch);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, -beanHeight / 2);
+            ctx.bezierCurveTo(beanWidth / 2, -beanHeight / 1.5, beanWidth / 2, beanHeight / 1.5, 0, beanHeight / 2);
+            ctx.bezierCurveTo(-beanWidth / 3, beanHeight / 1.5, -beanWidth / 3, -beanHeight / 1.5, 0, -beanHeight / 2);
+            ctx.closePath();
             ctx.fill();
             ctx.strokeStyle = this.color;
-            ctx.lineWidth = 3; // 1.5x original
+            ctx.lineWidth = 3;
             ctx.stroke();
 
             // Shiny glare
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.beginPath();
-            ctx.ellipse(7.5, -6, 4.5, 9, -0.3, 0, Math.PI * 2); // 1.5x original
+            ctx.ellipse(7.5, -6, 4.5, 9, -0.3, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.restore();

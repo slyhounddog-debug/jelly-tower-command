@@ -26,11 +26,20 @@ export default class Shield extends BaseStructure {
     draw(ctx) {
         const pct = Math.max(0, this.hp / this.maxHp);
         ctx.save();
-        // Shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+        
+        // --- BOTTOM SHADOW ---
+        const shadowOffset = 5;
+        const shadowColor = `rgba(42, 122, 175, ${0.4 + pct * 0.6})`; // Darker blue
+        ctx.fillStyle = shadowColor;
+        ctx.beginPath();
+        ctx.arc(this.x + this.width / 2, this.y + this.height + shadowOffset, (this.width / 2) * 1.05, Math.PI, 0);
+        ctx.fill();
+
+        // Shield Body
         ctx.fillStyle = `rgba(52, 152, 219, ${0.4 + pct * 0.6})`;
-        ctx.beginPath(); ctx.arc(this.x + this.width / 2, this.y + this.height, this.width / 2, Math.PI, 0); ctx.fill();
-        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        ctx.beginPath();
+        ctx.arc(this.x + this.width / 2, this.y + this.height, this.width / 2, Math.PI, 0);
+        ctx.fill();
 
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
         if (this.hp < this.maxHp) {

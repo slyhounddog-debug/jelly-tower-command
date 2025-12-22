@@ -733,17 +733,79 @@ initLevel() {
     ];
 
     floatingConfigs.forEach(cfg => {
-        const platform = { ...cfg, height: 30, type: 'cloud', circles: [] };
-        const baseNumCircles = Math.ceil(platform.width / 40 * 1.5);
-        for (let i = 0; i < baseNumCircles; i++) {
-            const xOffset = (i / (baseNumCircles - 1)) * platform.width;
-            platform.circles.push({
-                dx: xOffset + (Math.random() - 0.5) * 10,
-                dy: platform.height / 2 + (Math.random() - 0.5) * 5,
-                radius: 23 + Math.random() * 20,
-                hasGlare: Math.random() < 0.23
-            });
+        const platform = { ...cfg, height: 30, type: 'cloud' };
+
+        const shadowOffset = 10;
+        const width = platform.width;
+        const height = platform.height * 1.5;
+
+        // Create an off-screen canvas
+        platform.canvas = document.createElement('canvas');
+        platform.canvas.width = width;
+        platform.canvas.height = height + shadowOffset;
+        const pCtx = platform.canvas.getContext('2d');
+
+        // Draw shadow (as a solid darker shape)
+        pCtx.fillStyle = '#A99075'; // Darker tan for shadow
+        if (pCtx.roundRect) {
+            pCtx.beginPath();
+            pCtx.roundRect(0, shadowOffset, width, height, height * 0.3);
+            pCtx.fill();
+        } else {
+            pCtx.fillRect(0, shadowOffset, width, height);
         }
+
+        // --- Draw maple bar on the off-screen canvas ---
+        // Base of the maple bar
+        const gradient = pCtx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, '#E6CBA7'); // Lighter tan on top
+        gradient.addColorStop(1, '#D2B48C'); // Original tan at the bottom
+        pCtx.fillStyle = gradient;
+        if (pCtx.roundRect) {
+            pCtx.beginPath();
+            pCtx.roundRect(0, 0, width, height, height * 0.3);
+            pCtx.fill();
+        } else {
+            pCtx.fillRect(0, 0, width, height);
+        }
+
+        // Frosting (pink)
+        const frostingHeight = height * 0.6;
+        pCtx.fillStyle = '#FFC0CB'; // Pink color
+        if (pCtx.roundRect) {
+            pCtx.beginPath();
+            pCtx.roundRect(0, 0, width, frostingHeight, [height * 0.3, height * 0.3, 0, 0]);
+            pCtx.fill();
+        } else {
+            pCtx.fillRect(0, 0, width, frostingHeight);
+        }
+
+        // Drips
+        for (let i = 0; i < (width / 40); i++) {
+            const dripX = Math.random() * width;
+            const dripY = frostingHeight - 5;
+            const dripWidth = 8 + Math.random() * 8;
+            const dripHeight = 10 + Math.random() * 10;
+            if (pCtx.roundRect) {
+                pCtx.beginPath();
+                pCtx.roundRect(dripX, dripY, dripWidth, dripHeight, 4);
+                pCtx.fill();
+            } else {
+                pCtx.fillRect(dripX, dripY, dripWidth, dripHeight);
+            }
+        }
+
+        // Sprinkles
+        const sprinkles = ['#FF1493', '#00BFFF', '#ADFF2F', '#FFD700', '#FF4500'];
+        for (let i = 0; i < (width / 10); i++) {
+            const sprinkleX = 5 + Math.random() * (width - 10);
+            const sprinkleY = 5 + Math.random() * (frostingHeight - 20);
+            pCtx.fillStyle = sprinkles[Math.floor(Math.random() * sprinkles.length)];
+            const sprinkleWidth = 2 + Math.random() * 2;
+            const sprinkleHeight = 5 + Math.random() * 3;
+            pCtx.fillRect(sprinkleX, sprinkleY, sprinkleWidth, sprinkleHeight);
+        }
+
         this.platforms.push(platform);
     });
 
@@ -1526,42 +1588,12 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         });
 
         this.platforms.forEach(p => {
-            this.ctx.fillStyle = p.color;
             this.ctx.save();
             if (p.type === 'cloud') {
-                this.ctx.save();
-                this.ctx.globalAlpha = 0.95; // Almost no transparency
-
-                const floatingOffset = Math.sin(this.gameTime * 0.03) * 2; // Reduced movement
-
-                p.circles.forEach(circle => {
-                    const cx = p.x + circle.dx;
-                    const cy = p.y + circle.dy + floatingOffset;
-
-                    // Create radial gradient for 3D spherical look
-                    const gradient = this.ctx.createRadialGradient(
-                        cx - circle.radius * 0.3, cy - circle.radius * 0.3, circle.radius * 0.1, // Inner circle (light source)
-                        cx, cy, circle.radius * 1.2 // Outer circle (edge)
-                    );
-                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); // Light pink/white center
-                    gradient.addColorStop(0.5, 'rgba(255, 192, 203, 0.7)'); // Pastel pink mid
-                    gradient.addColorStop(1, 'rgba(218, 112, 214, 0.8)'); // Darker pastel pink edge
-
-                    this.ctx.fillStyle = gradient;
-                    this.ctx.beginPath();
-                    this.ctx.arc(cx, cy, circle.radius, 0, Math.PI * 2);
-                    this.ctx.fill();
-
-                    // Optional subtle border
-                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                    this.ctx.lineWidth = 1;
-                    this.ctx.stroke();
-                });
-                this.ctx.restore();
-            } else if (p.type === 'castle') {
-                this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill();
-                this.drawPlatformFrosting(p);
-            } else {
+                const floatingOffset = Math.sin(this.gameTime * 0.03) * 2;
+                this.ctx.drawImage(p.canvas, p.x, p.y + floatingOffset);
+            } else { // Handles 'castle' and 'ground'
+                this.ctx.fillStyle = p.color;
                 this.ctx.beginPath();
                 this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
                 this.ctx.fill();

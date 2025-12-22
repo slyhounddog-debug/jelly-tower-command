@@ -121,10 +121,14 @@ export default class Tower extends BaseStructure {
         const halfWidth = this.width / 2;
         const halfHeight = this.height / 2;
 
-        // Shadow
-        if (this.isAuto) {
-            ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
-        }
+        // --- BOTTOM SHADOW ---
+        const shadowOffset = 5;
+        const shadowColor = this.isAuto ? 'rgba(120, 150, 200, 0.5)' : 'rgba(200, 200, 200, 0.5)';
+        ctx.fillStyle = shadowColor;
+        ctx.beginPath();
+        ctx.roundRect(-halfWidth * 1.05, -halfHeight * 1.05 + shadowOffset, this.width * 1.05, this.height * 1.05, 10);
+        ctx.fill();
+
         // Tower Body
         ctx.fillStyle = this.isAuto ? '#a1c4fd' : '#ecf0f1';
         ctx.beginPath(); ctx.roundRect(-halfWidth, -halfHeight, this.width, this.height, 10); ctx.fill();
@@ -309,29 +313,6 @@ export default class Tower extends BaseStructure {
 
         ctx.restore();
 
-        // Draw the NON-SCALING cloud effect here
-        if (this.isOnCloud && this.cloudPlatform) {
-            const p = this.cloudPlatform;
-            const pink = [255, 182, 193]; // Lighter Pastel Pink
-            const blue = [135, 206, 250]; // Light Sky Blue
-            const ratio = (p.y - (this.game.height - 1100)) / ((this.game.height - 250) - (this.game.height - 1100));
-            const invRatio = 1 - Math.max(0, Math.min(1, ratio));
 
-            const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
-            const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
-            const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
-            const cloudColor = `rgba(${r}, ${g}, ${b}, 0.7)`;
-
-            ctx.fillStyle = cloudColor;
-
-            const centerX = this.x + this.width / 2;
-            const bottomY = this.y + this.height;
-
-            // Draw overlapping circles to create a fluffy cloud effect at the base
-            ctx.beginPath();
-            ctx.arc(centerX - (15 * (this.width / 46)), bottomY + (5 * (this.height / 46)), (25 * (this.width / 46)), 0, Math.PI * 2);
-            ctx.arc(centerX + (15 * (this.width / 46)), bottomY + (5 * (this.height / 46)), (25 * (this.width / 46)), 0, Math.PI * 2);
-            ctx.fill();
-        }
     }
 }

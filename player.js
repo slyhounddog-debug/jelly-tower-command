@@ -277,7 +277,17 @@ export default class Player {
         ctx.scale(this.scaleX, this.scaleY); 
         ctx.translate(-cx, -cy);
 
-        // --- 3. DRAW BODY (3D BEVEL STYLE) ---
+        // --- 3. DRAW SHADOW ---
+        const shadowOffset = 5;
+        const shadowWidth = this.width * 1.05;
+        const shadowHeight = this.height * 1.05;
+        const shadowX = this.x - (shadowWidth - this.width) / 2;
+        ctx.fillStyle = 'rgba(212, 123, 141, 0.5)';
+        ctx.beginPath();
+        ctx.roundRect(shadowX, this.y + shadowOffset, shadowWidth, shadowHeight, 10);
+        ctx.fill();
+
+        // --- 4. DRAW BODY (3D BEVEL STYLE) ---
         const bodyColor = this.color;      
         const depthPink = '#d47b8d'; 
         const highlightPink = '#ffeef1'; 
