@@ -1139,64 +1139,126 @@ initLevel() {
         document.getElementById('shop-money-display').innerText = this.money;
     }
 
-    drawThermometer(ctx) {
-        const x = this.width - 80;
-        const y = this.height / 2 - 300;
-        const width = 40;
-        const height = 600;
+drawThermometer(ctx) {
+    // --- 1. DIMENSIONS ---
+    const w = 42;           
+    const h = 375;          
+    const x = this.width - 80;
+    const y = 100;
+    const bulbRadius = 38;  
+    const bulbY = y + h;
 
-        // White border with drop shadow
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 5;
-        ctx.shadowOffsetY = 5;
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.roundRect(x, y, width, height, 20);
-        ctx.fill();
-        ctx.restore();
-
-        // Glass-like oval with transparency
-        ctx.fillStyle = 'rgba(220, 220, 220, 0.95)';
-        ctx.beginPath();
-        ctx.roundRect(x, y, width, height, 20);
-        ctx.fill();
-
-        // Jam level
-        const minThreat = 5;
-        const maxThreat = 50;
-        const threatRange = maxThreat - minThreat;
-        const threatLevel = Math.max(0, Math.min(1, (this.currentRPM - minThreat) / threatRange));
-        
-        ctx.fillStyle = 'rgba(255, 105, 180, 0.8)'; // Lighter magenta
-        
-        // Fill oval
-        const jamHeight = height * threatLevel;
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(x, y, width, height, 20);
-        ctx.clip();
-        ctx.fillRect(x, y + height - jamHeight, width, jamHeight);
-        ctx.restore();
-
-        // Notches every 5 RPM
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        for (let i = 5; i <= 50; i += 5) {
-            const tickY = y + height - ((i - minThreat) / threatRange) * height;
-            ctx.beginPath();
-            ctx.moveTo(x - 5, tickY);
-            ctx.lineTo(x, tickY);
-            ctx.stroke();
-        }
-
-        // Glare
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(x + width / 2, y + height / 2, width / 2.5, height / 3, 0, 0, Math.PI * 2);
-        ctx.fill();
+    // --- 2. 10-MINUTE TIMER LOGIC ---
+    if (!this.thermometerStartTime) {
+        this.thermometerStartTime = Date.now();
     }
+    const duration = 10 * 60 * 1000; 
+    const elapsed = Date.now() - this.thermometerStartTime;
+    const fillPercent = Math.min(1, elapsed / duration);
+    
+    // Total height includes the bulb depth
+    const totalFillHeight = (h + bulbRadius) * fillPercent;
+    const jamTopY = (bulbY + bulbRadius) - totalFillHeight;
+
+    const intersectAngle = Math.asin((w / 2) / bulbRadius);
+    const intersectY = bulbY - Math.cos(intersectAngle) * bulbRadius;
+
+    ctx.save();
+
+    // 3. REUSABLE GLASS SHAPE
+    const drawGlassShape = () => {
+        ctx.beginPath();
+        ctx.arc(x, y, w / 2, Math.PI, 0); 
+        ctx.lineTo(x + w / 2, intersectY);
+        ctx.arc(x, bulbY, bulbRadius, 1.5 * Math.PI + intersectAngle, 1.5 * Math.PI - intersectAngle);
+        ctx.closePath();
+    };
+
+    // Background Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 20;
+    drawGlassShape();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 4. INTERNAL JAM (The functional fix)
+    ctx.save();
+    drawGlassShape();
+    ctx.clip(); // This keeps everything inside the glass walls
+
+    // Gradient based on the current top of the liquid
+    const jamGrad = ctx.createLinearGradient(x, jamTopY, x, bulbY + bulbRadius);
+    jamGrad.addColorStop(0, "#ff1a1a");
+    jamGrad.addColorStop(1, "#660000");
+    ctx.fillStyle = jamGrad;
+
+    // STEP A: Fill the entire area from the bottom of the bulb to the top of the jam
+    // We use a simple rectangle that is wider than the thermometer. 
+    // The clip() above makes it look like the correct shape.
+    ctx.fillRect(x - bulbRadius - 10, jamTopY, (bulbRadius + 10) * 2, (bulbY + bulbRadius) - jamTopY);
+
+    // STEP B: The Wave Surface
+    // We draw the wave on top of the rectangle we just made
+    const time = Date.now() * 0.005;
+    const waveWidth = bulbRadius + 10; // Make it wide enough to always cover the edges
+    
+    ctx.beginPath();
+    ctx.moveTo(x - waveWidth, jamTopY + 10);
+    for (let i = -waveWidth; i <= waveWidth; i++) {
+        const wave1 = Math.sin(i * 0.15 + time * 1.5) * 4;
+        const wave2 = Math.cos(i * 0.1 - time * 0.8) * 2;
+        ctx.lineTo(x + i, jamTopY + wave1 + wave2);
+    }
+    ctx.lineTo(x + waveWidth, jamTopY + 10);
+    ctx.fill();
+
+    // Step C: Bubbles
+    const bTime = Date.now();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    for (let i = 0; i < 10; i++) {
+        const bX = x + Math.sin(bTime * 0.001 + i) * (w * 0.3);
+        const bY = (bulbY + 10) - ((bTime * (0.05 + i * 0.01)) % (totalFillHeight + 20));
+        if (bY > jamTopY + 5) {
+            ctx.beginPath();
+            ctx.arc(bX, bY, 1.5 + (i % 3), 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore(); 
+
+    // 5. EXTERNAL DETAILS
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= 10; i++) {
+        const notchY = bulbY - (h * (i / 10));
+        ctx.beginPath();
+        ctx.moveTo(x - w / 2 + 5, notchY);
+        ctx.quadraticCurveTo(x, notchY + 5, x + w / 2 - 5, notchY);
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.lineWidth = 3.5;
+    drawGlassShape();
+    ctx.stroke();
+
+    // Glare
+    const glassGlare = ctx.createLinearGradient(x - w/2, 0, x + w/2, 0);
+    glassGlare.addColorStop(0.2, "rgba(255, 255, 255, 0.4)");
+    glassGlare.addColorStop(0.4, "rgba(255, 255, 255, 0.1)");
+    glassGlare.addColorStop(0.8, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = glassGlare;
+    ctx.fillRect(x - w/2, y - 10, w, h + 10);
+
+    // Bulb Highlight
+    ctx.beginPath();
+    ctx.arc(x - 12, bulbY - 12, 12, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fill();
+
+    ctx.restore();
+}
 
     start() {
         window.closePiggyModal = this.closePiggyModal.bind(this);
