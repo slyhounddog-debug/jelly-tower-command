@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tower Command: Jelly Defense</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lucky+Guy&display=swap');
         /*
          * CORE CSS STYLES
          * Defines the look and feel of the game container and UI elements.
@@ -17,10 +18,34 @@
             height: 100vh;
             margin: 0;
             background-color: #0d0d15; /* Fallback */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Lucky Guy', cursive;
             color: #ecf0f1;
             overflow: hidden;
             user-select: none;
+        }
+
+        .modal-internal-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            font-family: 'Lucky Guy', cursive;
+        }
+
+        .modal-internal-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #emporium-header-plate h2 { /* Override global h2 for emporium header */
+            color: #ffd700;
+            border-bottom: none;
+            background: none;
+            padding: 0;
+            margin: 0;
         }
 
         #game-wrapper {
@@ -116,146 +141,150 @@
             display: none;
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
             z-index: 100;
             flex-direction: column;
-            padding: 20px;
+            padding: 0; /* Remove padding here, handled by internal elements */
             box-sizing: border-box;
-            color: #333;
+            color: #ecf0f1;
+            font-family: 'Lucky Guy', cursive;
+            border-radius: 15px; /* Match modal border radius */
+            overflow: hidden; /* Ensure content stays within rounded corners */
         }
         
-        #shop-money {
-            text-align: right;
+        #shop-money-counter { /* Carved-out slot with glowing green text */
+            background-color: #3e2723; /* Chocolate brown, matching ground platform */
+            border: 3px solid #6d4c41; /* Darker brown border */
+            border-radius: 15px;
+            padding: 10px 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 255, 0, 0.5); /* Inset and green glow */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute; /* Positioned by JS or specific parent div */
+            top: 15px; /* Example positioning, adjust as needed */
+            right: 15px; /* Example positioning, adjust as needed */
+            z-index: 101;
+        }
+
+        #shop-money-counter span {
             font-size: 28px;
-            color: #27ae60; 
-            margin-bottom: 10px;
+            color: #0f0; /* Bright green */
+            text-shadow: 0 0 8px #0f0; /* Glowing effect */
             font-weight: bold;
-            padding: 5px 15px;
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
-            border: 1px solid #27ae60;
-            align-self: flex-end; 
-        }
-        
-        #shop-header {
-            text-align: center; font-size: 32px; color: #f39c12; margin-bottom: 20px;
-            text-transform: uppercase; letter-spacing: 2px;
-            border-bottom: 2px solid #f39c12; padding-bottom: 10px;
-            position: relative;
         }
 
-        /* Help Button in Shop */
-        #help-btn {
-            position: absolute;
-            right: 0;
-            top: 0;
-            background: #3498db;
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #help-btn:hover { background: #2980b9; transform: scale(1.1); }
-
-        #stats-btn {
-            position: absolute;
-            left: 0;
-            top: 0;
-            background: #3498db;
-            color: white;
-            border: none;
-            width: 80px;
-            height: 40px;
-            border-radius: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #stats-btn:hover { background: #2980b9; transform: scale(1.1); }
-
-        #stats-btn-emporium {
-            background: #9b59b6; /* Emporium purple */
-            color: white;
-            border: none;
-            width: 80px;
-            height: 40px;
-            border-radius: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #stats-btn-emporium:hover { background: #8e44ad; transform: scale(1.1); }
-
-        #help-btn-emporium {
-            background: #9b59b6; /* Emporium purple */
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #help-btn-emporium:hover { background: #8e44ad; transform: scale(1.1); }
-
-        #shop-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
-        
         #shop-details {
-            flex: 2; background: rgba(0, 0, 0, 0.03); border-radius: 8px;
-            padding: 20px; display: flex; align-items: center; justify-content: center;
-            gap: 40px; border: 1px solid #ddd;
+            flex: 2;
+            background-color: rgba(0, 0, 0, 0.5); /* Dark background for inset effect */
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
+            margin-bottom: 20px;
+            border: 3px solid #4a2c4a; /* Dark magenta border, matching health bar theme */
         }
 
-        .detail-icon { font-size: 80px; width: 120px; text-align: center; }
-        .detail-info { flex: 1; }
-        .detail-info h2 { margin: 0 0 10px 0; color: #2980b9; }
-        .detail-info p { color: #666; font-style: italic; margin-bottom: 15px; }
+        #shop-details h2 { color: #f1c40f; } /* Gold-like for selected item title */
+        #shop-details p { color: #ccc; font-style: normal; } /* Lighter text for description */
 
         .stat-comparison {
-            display: grid; grid-template-columns: auto auto auto;
-            gap: 10px; align-items: center; font-size: 18px; margin-bottom: 20px;
-            background: rgba(255,255,255,0.5); padding: 10px; border-radius: 5px;
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 10px;
+            align-items: center;
+            font-size: 20px; /* Slightly larger */
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1); /* Subtle background */
+            padding: 10px;
+            border-radius: 5px;
             width: fit-content;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .stat-old { color: #c0392b; text-align: right; }
-        .stat-new { color: #27ae60; font-weight: bold; text-align: left; }
-        .arrow { color: #333; padding: 0 10px; }
+        .stat-old { color: #e74c3c; text-align: right; } /* Red for old stat */
+        .stat-new { color: #00ff00; font-weight: bold; text-align: left; text-shadow: 0 0 5px #0f0; } /* Bright green for new stat with glow */
+        .arrow { color: #ecf0f1; padding: 0 10px; } /* White arrow */
 
         #buy-btn {
-            background: #27ae60; color: white; border: none; padding: 15px 40px;
-            font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-            box-shadow: 0 4px 0 #219150;
+            background: linear-gradient(to bottom, #2ecc71, #27ae60); /* Green gradient */
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px; /* Larger font */
+            border-radius: 50px; /* Pill shape */
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 7px 0 #1e8449; /* Thick bottom border for 3D effect */
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        #buy-btn:hover { background: #2ecc71; transform: translateY(-2px); box-shadow: 0 6px 0 #219150; }
-        #buy-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #219150; }
-        #buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
+        #buy-btn:hover { background: linear-gradient(to bottom, #2ecc71, #34d883); transform: translateY(-2px); box-shadow: 0 9px 0 #1e8449; }
+        #buy-btn:active { transform: translateY(3px); box-shadow: 0 4px 0 #1e8449; }
+        #buy-btn:disabled { 
+            background: linear-gradient(to bottom, #7f8c8d, #6c7a89); /* Dull gray gradient */
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: 0 7px 0 #5f6a72; /* Gray bottom border */
+            color: #bdc3c7; /* Lighter gray text */
+        }
 
         #shop-grid {
-            flex: 3; display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 10px; padding: 10px; overflow-y: auto;
+            flex: 3;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+            gap: 15px; /* Increased gap */
+            padding: 10px;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.3); /* Match inset background */
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
         }
 
         .shop-item {
-            background: #fff; border: 2px solid #bdc3c7; border-radius: 8px;
-            padding: 10px; cursor: pointer; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; transition: all 0.2s;
-            position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background: #342234; /* Dark gray background */
+            border: 3px solid #7a4d7a; /* Dark magenta border, matching health bar theme */
+            border-radius: 10px;
+            padding: 15px; /* Increased padding */
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out; /* Smooth transition for hover */
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Deeper shadow */
+            text-align: center;
         }
-        .shop-item:hover { border-color: #f1c40f; transform: translateY(-2px); }
-        .shop-item.selected { border-color: #3498db; background: #ebf5fb; box-shadow: 0 0 0 2px #3498db inset; }
-        .shop-item-icon { font-size: 32px; margin-bottom: 5px; }
-        .shop-item-name { font-size: 11px; text-align: center; font-weight: bold; color: #2c3e50; }
-        .shop-item-cost { font-size: 11px; color: #e67e22; margin-top: 4px; font-weight: bold;}
-        .shop-item-count { position: absolute; top: 2px; right: 4px; font-size: 10px; color: #7f8c8d; font-weight: bold; }
+        .shop-item:hover { 
+            border-color: #f1c40f; /* Yellow border on hover */
+            transform: scale(1.05); /* Scale up slightly */
+            box-shadow: 0 0 20px #f1c40f; /* Glowing effect */
+        }
+        .shop-item.selected { 
+            border-color: #00ff00; /* Bright green for selected */
+            background: #4a2c4a; /* Slightly lighter dark magenta */
+            box-shadow: 0 0 20px #0f0; /* Green glow for selected */
+            transform: scale(1.02); /* Slight scale for selected */
+        }
+        .shop-item-icon { font-size: 48px; margin-bottom: 10px; } /* Larger icon */
+        .shop-item-name { font-size: 16px; font-weight: bold; color: #ecf0f1; margin-bottom: 5px;}
+        .shop-item-cost { font-size: 16px; color: #f39c12; font-weight: bold;} /* Orange for cost */
+        .shop-item-count { 
+            position: absolute; 
+            top: 5px; right: 8px; 
+            font-size: 12px; 
+            color: #bdc3c7; 
+            font-weight: bold;
+            background-color: rgba(0,0,0,0.5);
+            padding: 2px 6px;
+            border-radius: 5px;
+        }
+        
+
         
         .notification {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -279,28 +308,60 @@
             display: none;
             position: absolute;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #fff;
-            border: 4px solid #f1c40f;
-            border-radius: 15px;
-            padding: 20px; /* Reduced padding */
+            background: linear-gradient(to bottom, #7a4d7a, #4a2c4a); /* Dark, stylized background */
+            border: 5px solid #4a2c4a; /* Thick dark magenta border */
+            border-radius: 25px; /* Very large border-radius */
+            padding: 20px;
             z-index: 200;
             overflow-y: auto;
-            color: #333;
-            box-shadow: 0 0 50px rgba(0,0,0,0.3);
-            max-width: 80vw; /* Constrain max width */
-            max-height: 80vh; /* Constrain max height */
+            color: #ecf0f1; /* Light text for dark background */
+            box-shadow: 0 0 50px 10px rgba(122, 77, 122, 0.7); /* Deep glow */
+            max-width: 80vw;
+            max-height: 80vh;
             flex-direction: column;
+            font-family: 'Lucky Guy', cursive; /* Apply Lucky Guy font */
         }
-        .modal h2 { color: #d35400; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .modal h3 { color: #2980b9; margin-top: 20px; margin-bottom: 5px; }
-        .modal p { line-height: 1.6; margin: 5px 0; font-size: 16px; }
+        .modal h2 { 
+            color: #ffd700; /* Gold-like color for headings */
+            text-align: center; 
+            border-bottom: 2px solid #a55aab; /* Lighter magenta border */
+            padding-bottom: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background-color: rgba(0, 0, 0, 0.3); /* Dark bar for header plate */
+            padding: 10px;
+            margin: -20px -20px 20px -20px; /* Adjust margin to act as header plate */
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+        .modal h3 { 
+            color: #f39c12; /* Orange-yellow for subheadings */
+            margin-top: 20px; 
+            margin-bottom: 5px; 
+        }
+        .modal p { 
+            line-height: 1.6; 
+            margin: 5px 0; 
+            font-size: 16px; 
+            color: #e0e0e0; /* Slightly lighter text for content */
+        }
+        .modal-content-area { /* New class for inset content */
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
+            margin-bottom: 15px;
+        }
         .modal-close {
             display: block; margin: 20px auto 0;
             background: #27ae60; color: white; border: none;
             padding: 10px 30px; font-size: 18px; border-radius: 5px; cursor: pointer;
             font-weight: bold;
+            border-bottom: 5px solid darkgreen; /* Thick bottom border */
+            transition: all 0.1s ease;
         }
         .modal-close:hover { background: #2ecc71; }
+        .modal-close:active { transform: translateY(2px); border-bottom: 3px solid darkgreen; }
 
         /* Game Over Stats */
         #game-over-stats, #shop-reminder {
@@ -312,8 +373,28 @@
             color: #2c3e50; min-width: 300px;
             z-index: 150;
         }
-        #game-over-stats h1 { color: #e74c3c; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; }
-        #shop-reminder h1 { color: #f39c12; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; }
+        #game-over-stats h1 { 
+            color: #ffd700; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; 
+            font-family: 'Lucky Guy', cursive; letter-spacing: 2px;
+            background: linear-gradient(to right, #e74c3c, #c0392b); /* Red-dark red gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 10px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            margin: -30px -30px 20px -30px; /* Adjust margin to act as header plate */
+        }
+        #shop-reminder h1 { 
+            color: #ffd700; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; 
+            font-family: 'Lucky Guy', cursive; letter-spacing: 2px;
+            background: linear-gradient(to right, #f39c12, #e67e22); /* Orange-dark orange gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 10px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            margin: -30px -30px 20px -30px; /* Adjust margin to act as header plate */
+        }
         .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
         .stat-points-value {
             font-size: 14px; /* Smaller font for points */
@@ -443,16 +524,21 @@
         </div>
         <button id="restart-btn">RESTART MISSION</button>
 
-        <div id="shop-overlay">
-            <div id="shop-money">
-                CURRENT FUNDS: $<span id="shop-money-display">0</span>
+        <div id="shop-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; flex-direction: column; box-sizing: border-box; color: #ecf0f1; font-family: 'Lucky Guy', cursive;">
+            <!-- Header Bar -->
+            <div id="shop-header-bar" style="background-color: #2d1b2d; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4a2c4a;">
+                <button id="stats-btn" class="modal-internal-button">Stats</button>
+                <span style="font-size: 36px; font-weight: bold; background: linear-gradient(to right, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upgrade Shop</span>
+                <button id="help-btn" class="modal-internal-button">?</button>
             </div>
-            <div id="shop-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <button id="stats-btn">Stats</button>
-                <span>Tactical Supply Depot</span>
-                <button id="help-btn">?</button>
+            
+            <!-- Currency Counter -->
+            <div id="shop-money-counter" style="position: absolute; top: 70px; right: 20px; background-color: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 15px; border: 2px solid #3e2723; box-shadow: inset 0 0 8px rgba(0,255,0,0.7); display: flex; align-items: center;">
+                <span style="font-size: 24px; color: #0f0; text-shadow: 0 0 5px #0f0;">$</span>
+                <span id="shop-money-display" style="font-size: 24px; color: #0f0; text-shadow: 0 0 5px #0f0; margin-left: 5px;">0</span>
             </div>
-            <div id="shop-content">
+
+            <div id="shop-content" style="display: flex; flex-direction: column; flex: 1; padding: 20px; gap: 20px; background-color: rgba(0,0,0,0.7); border-radius: 0 0 15px 15px;">
                 <div id="shop-details">
                     <div class="detail-icon" id="detail-icon">🔧</div>
                     <div class="detail-info">
@@ -473,16 +559,16 @@
         <div id="notification" class="notification">Item Placed!</div>
 
         <div id="emporium-overlay" class="modal" style="display: none;">
-            <div id="emporium-money">
+            <div id="emporium-money" style="position: absolute; top: 15px; right: 15px; z-index: 1;">
                 CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
             </div>
 
-            <div id="emporium-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <button id="stats-btn-emporium">Stats</button>
-                <span style="background-color: #9b59b6; color: white; font-weight: bold; padding: 10px 20px; border-radius: 25px;">The Emporium</span>
-                <button id="help-btn-emporium">?</button>
-            </div>
-            <div id="emporium-content">
+            <h2 id="emporium-header-plate" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin: -20px -20px 20px -20px; padding: 10px 20px; box-sizing: border-box; background-color: rgba(0,0,0,0.3); border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <button id="stats-btn-emporium" class="modal-internal-button">Stats</button>
+                <span style="color: #ffd700; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">The Emporium</span>
+                <button id="help-btn-emporium" class="modal-internal-button">?</button>
+            </h2>
+            <div id="emporium-content" class="modal-content-area" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
                 <div id="emporium-details">
                     <div class="detail-icon" id="emporium-detail-icon">⭐</div>
                     <div class="detail-info">
@@ -494,95 +580,108 @@
                         <button id="emporium-reset-btn" class="modal-close" style="background: #e74c3c; margin-top: 10px;">RESET UPGRADES</button>
                     </div>
                 </div>
-                <div id="emporium-grid" style="display: grid; grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: row;"></div>
+                <div id="emporium-grid" style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; overflow-y: auto;"></div>
             </div>
-            <div style="text-align: center; color: #777; margin-top: 10px;">Press ESC to Close</div>
+            <div style="text-align: center; color: #e0e0e0; margin-top: 10px;">Press ESC to Close</div>
         </div>
     </div>
 
         <!-- Guide Modal -->
         <div id="guide-modal" class="modal" style="display: none;">
             <h2>Field Manual & Mechanics</h2>
-            <h3>Defensive Systems</h3>
-            <p><strong>Auto-Turrets:</strong> Deal 50% damage/range. Target closest enemy.</p>
-            <p><strong>Barriers (Shields):</strong> Regen 1% HP/s. Enemies deal 10 dmg. Max 5.</p>
-            <h3>Enemies</h3>
-            <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
-            <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
-            <h3>Combat</h3>
-            <p><strong>Piercing:</strong> Projectiles pierce until damage potential is exhausted.</p>
-            <h3>Platforming</h3>
-            <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
-            <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
+            <div class="modal-content-area">
+                <h3>Defensive Systems</h3>
+                <p><strong>Auto-Turrets:</strong> Deal 50% damage/range. Target closest enemy.</p>
+                <p><strong>Barriers (Shields):</strong> Regen 1% HP/s. Enemies deal 10 dmg. Max 5.</p>
+                <h3>Enemies</h3>
+                <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
+                <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
+                <h3>Combat</h3>
+                <p><strong>Piercing:</strong> Projectiles pierce until damage potential is exhausted.</p>
+                <h3>Platforming</h3>
+                <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
+                <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
+            </div>
             <button class="modal-close" onclick="document.getElementById('guide-modal').style.display='none'">Close Guide</button>
         </div>
 
         <!-- Stats Modal -->
         <div id="stats-modal" class="modal" style="display: none;">
             <h2>Current Stats</h2>
-            <p><strong>Shot Damage:</strong> <span id="stat-shot-damage"></span></p>
-            <p><strong>Fire Rate:</strong> <span id="stat-fire-rate"></span></p>
-            <p><strong>Projectile Speed:</strong> <span id="stat-projectile-speed"></span></p>
-            <p><strong>Range:</strong> <span id="stat-range"></span></p>
-            <p><strong>Slap Damage:</strong> <span id="stat-slap-damage"></span></p>
-            <p><strong>Slap Knockback:</strong> <span id="stat-slap-knockback"></span></p>
-            <p><strong>Enemy Health:</strong> <span id="stat-enemy-health"></span></p>
-            <p><strong>Castle Max Health:</strong> <span id="stat-castle-max-health"></span></p>
-            <p><strong>Shield Regeneration:</strong> <span id="stat-shield-regen"></span></p>
-            <p><strong>Shield Health:</strong> <span id="stat-shield-health"></span></p>
-            <p><strong>Big Coin Drop Chance:</strong> <span id="stat-big-coin-chance"></span></p>
-            <p><strong>Big Coin Cash Amount:</strong> <span id="stat-big-coin-cash"></span></p>
-            <p><strong>Heart Drop Chance:</strong> <span id="stat-heart-chance"></span></p>
-            <p><strong>Heart Heal Amount:</strong> <span id="stat-heart-heal"></span></p>
-            <p><strong>Piggy Bank Bonus %:</strong> <span id="stat-piggy-bonus"></span></p>
-            <p><strong>Piggy Bank Kill Multiplier:</strong> <span id="stat-piggy-multiplier"></span></p>
-            <p><strong>Piggy Bank Cooldown:</strong> <span id="stat-piggy-cooldown"></span></p>
-            <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
+            <div class="modal-content-area">
+                <p><strong>Shot Damage:</strong> <span id="stat-shot-damage"></span></p>
+                <p><strong>Fire Rate:</strong> <span id="stat-fire-rate"></span></p>
+                <p><strong>Projectile Speed:</strong> <span id="stat-projectile-speed"></span></p>
+                <p><strong>Range:</strong> <span id="stat-range"></span></p>
+                <p><strong>Lick Damage:</strong> <span id="stat-lick-damage"></span></p>
+                <p><strong>Lick Knockback:</strong> <span id="stat-lick-knockback"></span></p>
+                <p><strong>Enemy Health:</strong> <span id="stat-enemy-health"></span></p>
+                <p><strong>Castle Max Health:</strong> <span id="stat-castle-max-health"></span></p>
+                <p><strong>Shield Regeneration:</strong> <span id="stat-shield-regen"></span></p>
+                <p><strong>Shield Health:</strong> <span id="stat-shield-health"></span></p>
+                <p><strong>Big Coin Drop Chance:</strong> <span id="stat-big-coin-chance"></span></p>
+                <p><strong>Big Coin Cash Amount:</strong> <span id="stat-big-coin-cash"></span></p>
+                <p><strong>Heart Drop Chance:</strong> <span id="stat-heart-chance"></span></p>
+                <p><strong>Heart Heal Amount:</strong> <span id="stat-heart-heal"></span></p>
+                <p><strong>Piggy Bank Bonus %:</strong> <span id="stat-piggy-bonus"></span></p>
+                <p><strong>Piggy Bank Kill Multiplier:</strong> <span id="stat-piggy-multiplier"></span></p>
+                <p><strong>Piggy Bank Cooldown:</strong> <span id="stat-piggy-cooldown"></span></p>
+                <p><strong>Critical Hit Chance:</strong> <span id="stat-critical-hit-chance"></span></p>
+                <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
+            </div>
             <button class="modal-close" onclick="document.getElementById('stats-modal').style.display='none'">Close Stats</button>
         </div>
 
         <!-- Start Game Modal -->
         <div id="start-game-modal" class="modal" style="display: block;">
             <h2>Welcome to Jelly Tower Command!</h2>
-            <h3>WARNING!</h3>
-            <p>Ahh Sugar Honey Iced Tea! Why are delicious sweets, deliciously attacking? Protect your castle from those meanies for as long as possible! </p>
-            <h3>Controls</h3>
-            <p><strong>A / D:</strong> Move Left / Right</p>
-            <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
-            <p><strong>Mouse:</strong> Aim your glove</p>
-            <p><strong>Click:</strong> Slap</p>
-            <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
-            <h3>The Shop</h3>
-            <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
-            <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>
-            <h3>Prepare your Butts!</h3>
-            <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
-            <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
+            <div class="modal-content-area">
+                <h3>WARNING!</h3>
+                <p>Ahh Sugar Honey Iced Tea! Why are delicious sweets, deliciously attacking? Protect your castle from those meanies for as long as possible! </p>
+                <h3>Controls</h3>
+                <p><strong>A / D:</strong> Move Left / Right</p>
+                <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
+                <p><strong>Mouse:</strong> Aim your glove</p>
+                <p><strong>Click:</strong> Lick</p>
+                <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
+                <h3>The Shop</h3>
+                <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
+                <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>
+                <h3>Prepare your Butts!</h3>
+                <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
+                <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
+            </div>
             <button class="modal-close" id="start-game-btn">Start Game</button>
         </div>
 
         <!-- Piggy Modal -->
         <div id="piggy-modal" class="modal">
             <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
-            <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
-            <p id="piggy-cooldown-text">It appears once every minute.</p>
-            <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
+            <div class="modal-content-area">
+                <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
+                <p id="piggy-cooldown-text">It appears once every minute.</p>
+                <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
+            </div>
             <button class="modal-close" onclick="closePiggyModal()">Understood!</button>
         </div>
 
         <!-- Gummy Worm Modal -->
         <div id="gummy-worm-modal" class="modal" style="display: none;">
             <h2>🐍 Gummy Worm Spotted in the Wild! 🐍</h2>
-            <p>These slippery foes slither as they fall!</p>
-            <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
+            <div class="modal-content-area">
+                <p>These slippery foes slither as they fall!</p>
+                <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
+            </div>
             <button class="modal-close" onclick="closeGummyWormModal()">Ready to die!</button>
         </div>
 
         <!-- Marshmallow Modal -->
         <div id="marshmallow-modal" class="modal" style="display: none;">
             <h2>⚪ Marshmallow Menace! ⚪</h2>
-            <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
-            <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
+            <div class="modal-content-area">
+                <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
+                <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
+            </div>
             <button class="modal-close" onclick="closeMarshmallowModal()">Still ready to Die!</button>
         </div>
 

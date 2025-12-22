@@ -234,11 +234,10 @@ export default class Tower extends BaseStructure {
 
                 // Pulsing sugar-ring
                 const pulse = (Math.sin(this.game.gameTime / 200) + 1) / 2;
-                ctx.strokeStyle = `rgba(130, 180, 200, ${1 - pulse})`;
-                ctx.lineWidth = 2 + pulse * 3;
+                ctx.fillStyle = `rgba(130, 180, 200, ${0.5 - pulse * 0.4})`; // Make it a fill and subtler
                 ctx.beginPath();
-                ctx.arc(0, 0, 10 + pulse * 15, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.arc(0, 0, 15 + pulse * 5, 0, Math.PI * 2); // Adjusted size
+                ctx.fill();
 
             } else if (rangeLevel >= 4) {
                 // Mid: Rotating stroopwafel radar
@@ -247,9 +246,6 @@ export default class Tower extends BaseStructure {
                 ctx.beginPath();
                 ctx.arc(0, 0, 20, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#8B4513';
-                ctx.lineWidth = 2;
-                ctx.stroke();
             } else {
                 // Early: Wafer stick
                 ctx.fillStyle = '#d2b48c'; // Wafer color

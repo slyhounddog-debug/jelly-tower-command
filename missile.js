@@ -68,12 +68,21 @@ export default class Missile {
         this.squash = 1;
         this.damageText = null;
         this.damageTextTimer = 0;
+        this.criticalHitFlashTimer = 0;
+        this.shakeDuration = 0;
+        this.shakeMagnitude = 0;
+        this.healScale = 1;
     }
-    takeDamage(amount) {
+    takeDamage(amount, isCritical = false) {
         const roundedAmount = amount;
         this.health -= roundedAmount;
         this.hitTimer = 10; // Start the hit blink animation
-        this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount}`, 'red'));
+        if (isCritical) {
+            this.criticalHitFlashTimer = 15;
+            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount}`, 'yellow', 4)); // Yellow, +4px size
+        } else {
+            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount}`, 'red'));
+        }
         this.damageText = `${this.health.toFixed(0)}/${this.maxHealth.toFixed(0)}`;
         this.damageTextTimer = 30; // 0.5 seconds
 
@@ -95,6 +104,12 @@ export default class Missile {
         if (this.damageTextTimer > 0) {
             this.damageTextTimer -= tsf;
         }
+        if (this.criticalHitFlashTimer > 0) {
+            this.criticalHitFlashTimer -= tsf;
+        }
+if (this.shakeDuration > 0) this.shakeDuration -= tsf;
+        if (this.healScale > 1) this.healScale -= 0.05 * tsf;
+        else this.healScale = 1;
 
         const stretch_factor = 0.2;
         this.stretch = 1 + Math.abs(this.kbVy) * stretch_factor;
@@ -327,11 +342,9 @@ export default class Missile {
             ctx.closePath();
 
             ctx.fill();
-            ctx.filter = 'brightness(85%)';
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 3; // 1.5x original
             ctx.stroke();
-            ctx.filter = 'none';
 
             // Shiny glare
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -343,38 +356,64 @@ export default class Missile {
         }
 
         ctx.shadowBlur = 0;
-        if (this.health < this.maxHealth) {
+       if (this.health < this.maxHealth) {
             const pct = Math.max(0, this.health / this.maxHealth);
-            const barY = this.y - 6;
-            const barRadius = 2;
+            
+            // --- SHAKE LOGIC ---
+            let offsetX = 0;
+            let offsetY = 0;
+            if (this.shakeDuration > 0) {
+                offsetX = (Math.random() - 0.5) * this.shakeMagnitude;
+                offsetY = (Math.random() - 0.5) * this.shakeMagnitude;
+            }
 
-            // Background bar
-            ctx.fillStyle = '#e74c3c';
+            const barWidth = this.width;
+            const barHeight = 10;
+            const barX = this.x + offsetX;
+            const barY = this.y - 15 + offsetY;
+            const barRadius = 3;
+
+            // --- HEAL PULSE BORDER ---
+            if (this.healScale > 1) {
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(barX - (this.healScale * 2), barY - (this.healScale * 2), barWidth + (this.healScale * 4), barHeight + (this.healScale * 4));
+            }
+
+            // --- MAGENTA BACKGROUND & BORDER ---
+            ctx.fillStyle = '#4a004a'; // Dark Magenta background
+            ctx.strokeStyle = '#ff00ff'; // Bright Magenta border
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.roundRect(this.x, barY, this.width, 4, barRadius);
+            ctx.roundRect(barX, barY, barWidth, barHeight, barRadius);
+            ctx.fill();
+            ctx.stroke();
+
+            // --- DYNAMIC FILL COLOR ---
+            let healthColor = '#2ecc71'; // Green
+            if (pct <= 0.5) healthColor = '#f1c40f'; // Yellow
+            if (pct <= 0.2) healthColor = '#e74c3c'; // Red
+            
+            // FLASH EFFECT (White fill if hit)
+            ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthColor;
+
+            ctx.beginPath();
+            ctx.roundRect(barX, barY, barWidth * pct, barHeight, barRadius);
             ctx.fill();
 
-            // Foreground (health) bar
-            ctx.fillStyle = '#2ecc71';
-            ctx.beginPath();
-            ctx.roundRect(this.x, barY, this.width * pct, 4, barRadius);
-            ctx.fill();
-
+            // DAMAGE TEXT
             if (this.damageTextTimer > 0) {
                 const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
                 ctx.save();
                 ctx.globalAlpha = alpha;
                 ctx.fillStyle = 'white';
-                ctx.strokeStyle = 'grey';
-                ctx.lineWidth = 1;
-                ctx.font = 'bold 28px Arial';
+                ctx.font = 'bold 28px "Lucky Guy"';
                 ctx.textAlign = 'center';
-                ctx.strokeText(this.damageText, this.x + this.width / 2, barY + 3);
-                ctx.fillText(this.damageText, this.x + this.width / 2, barY + 3);
+                ctx.fillText(Math.ceil(this.health), barX + barWidth / 2, barY - 5);
                 ctx.restore();
             }
         }
-        ctx.restore();
+        ctx.restore(); // Restores from the main missile draw save
 
         for (const spot of this.damageSpots) {
             spot.draw(ctx);

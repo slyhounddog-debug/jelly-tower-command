@@ -9,6 +9,7 @@ import Drop from './drop.js?v=25';
 import Particle from './particle.js';
 import FloatingText from './floatingText.js?v=25';
 import DamageSpot from './damageSpot.js';
+import CastleHealthBar from './castleHealthBar.js';
 
 class Game {
     constructor(canvas) {
@@ -20,8 +21,9 @@ class Game {
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [10, 15, 20, 25, 35, 45, 55, 70, 85, 100, 118, 137, 160, 180, 200, 250];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
-        this.SLAP_DAMAGE_TIERS = [10, 20, 30, 40, 50];
-        this.SLAP_KNOCKBACK_TIERS = [75, 100, 150, 200, 250];
+        this.LICK_DAMAGE_TIERS = [10, 20, 30, 40, 50];
+        this.LICK_KNOCKBACK_TIERS = [75, 100, 150, 200, 250];
+        this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
         this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [
             { bonus: 0.10, mult: 2 },
@@ -75,7 +77,7 @@ class Game {
             rangeLvl: 0,
             shieldLvl: 0,
             luckLvl: 0,
-            slapLvl: 0,
+            lickLvl: 0,
             piggyLvl: 0,
             baseDamage: 10,
             baseFireRate: 60,
@@ -83,6 +85,8 @@ class Game {
             baseShieldHp: 15,
             turretsBought: 0,
             maxTurrets: 3,
+            critLvl: 0,
+            criticalHitChance: 1, // 1% initial chance
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
             getNextDamage() { return (this.damageLvl >= this.game.DAMAGE_TIERS.length - 1) ? "MAX" : this.game.DAMAGE_TIERS[this.damageLvl + 1]; },
@@ -94,8 +98,9 @@ class Game {
             getNextShieldHp() { return this.shieldMaxHp + 5; },
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
-            get slapDamage() { return this.game.SLAP_DAMAGE_TIERS[Math.min(this.slapLvl, this.game.SLAP_DAMAGE_TIERS.length - 1)]; },
-            get slapKnockback() { return this.game.SLAP_KNOCKBACK_TIERS[Math.min(this.slapLvl, this.game.SLAP_KNOCKBACK_TIERS.length - 1)]; },
+            get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
+            get lickKnockback() { return this.game.LICK_KNOCKBACK_TIERS[Math.min(this.lickLvl, this.game.LICK_KNOCKBACK_TIERS.length - 1)]; },
+            get criticalHitChance() { return this.game.CRITICAL_CHANCE_TIERS[Math.min(this.critLvl, this.game.CRITICAL_CHANCE_TIERS.length - 1)]; },
             get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; }
         };
 
@@ -135,13 +140,13 @@ class Game {
               getLevel: () => `${this.stats.luckLvl}/15`,
               action: () => this.stats.luckLvl++ 
             },
-            { id: 'slap_dmg', name: 'Slap Strength', icon: '✋', 
-              desc: `Increases slap damage and knockback.`, type: 'upgrade', 
-              getCost: () => (this.stats.slapLvl >= this.SLAP_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.slapLvl], 
+            { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
+              desc: `Increases tongue damage and knockback.`, type: 'upgrade', 
+              getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
               getValue: () => `D:${this.stats.slapDamage} K:${this.stats.slapKnockback}`, 
-              getNext: () => (this.stats.slapLvl >= this.SLAP_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.SLAP_DAMAGE_TIERS[this.stats.slapLvl+1]} K:${this.SLAP_KNOCKBACK_TIERS[this.stats.slapLvl+1]}`,
-              getLevel: () => `${this.stats.slapLvl}/${this.SLAP_DAMAGE_TIERS.length}`,
-              action: () => { if (this.stats.slapLvl < this.SLAP_DAMAGE_TIERS.length - 1) this.stats.slapLvl++; } 
+              getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
+              getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length}`,
+              action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
             },
             { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷', 
               desc: 'Increases instant cash bonus % and kill count multiplier.', type: 'upgrade',
@@ -154,6 +159,14 @@ class Game {
               },
               getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
+            },
+            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
+              desc: 'Increases the chance for tower projectiles to deal double damage.', type: 'upgrade',
+              getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
+              getValue: () => `${this.stats.criticalHitChance}%`,
+              getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
+              getLevel: () => `${this.stats.critLvl}/${this.CRITICAL_CHANCE_TIERS.length}`,
+              action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             }
         ];
         this.selectedShopItem = this.shopItems[0];
@@ -272,12 +285,110 @@ class Game {
         this.floatingTexts = [];
         this.damageSpots = [];
         this.currentRPM = 5.5;
+
+        // --- NEW BACKGROUND LOGIC ---
+        const castleColor = '#ff85a2'; 
+        const castlePlatforms = [
+            { x: 40, y: this.height - 180, width: 120, height: 100 },
+            { x: 70, y: this.height - 240, width: 60, height: 60 }
+        ];
+        const groundPlatform = { x: 0, y: this.height - 80, width: this.width, height: 80 };
+
         this.backgroundCastlePlatforms = [];
-        this.trees = [];
+        castlePlatforms.forEach(p => {
+            this.backgroundCastlePlatforms.push({
+                x: p.x - 75, y: p.y - 38, width: p.width, height: p.height,
+                color: '#d66d85', type: 'castle'
+            });
+        });
+        this.backgroundCastlePlatforms.push({ 
+            x: groundPlatform.x, y: groundPlatform.y - 38, width: groundPlatform.width, height: groundPlatform.height, 
+            color: '#d66d85', type: 'ground' 
+        });
+
+        // Lollipop Trees Setup
+       this.trees = [];
+        const treeColors = ['#ff9ff3', '#feca57', '#48dbfb', '#a29bfe'];
+        for (let i = 0; i < 12; i++) {
+            const z = Math.random();
+            this.trees.push({
+                x: Math.random() * this.width,
+                y: this.height - 80,
+                z: z,
+                width: (z * 40) + 40,
+                // height is now significantly boosted (up to 550px)
+                height: (z * 350) + 200, 
+                color: treeColors[Math.floor(Math.random() * treeColors.length)]
+            });
+        }
+
+        // Draw Logic for Mountains (with Sunlight Glow)
+        this.drawMountains = (ctx) => {
+            const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = mountainColors[i];
+                ctx.beginPath();
+                const yBase = this.height - 80;
+                const mWidth = this.width / 1.5;
+                const xStart = (i * this.width / 4) - 100;
+                ctx.moveTo(xStart, yBase);
+                ctx.lineTo(xStart + mWidth / 2, yBase - 300 - (i * 50));
+                ctx.lineTo(xStart + mWidth, yBase);
+                ctx.fill();
+
+                // RIM LIGHTING GLOW
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const glowGrad = ctx.createLinearGradient(xStart, yBase - 300, xStart + mWidth/2, yBase);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
+                glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = glowGrad;
+                ctx.fill();
+                ctx.restore();
+            }
+        };
+
+        // Draw Logic for Spiral Trees
+        this.drawTree = (ctx, t) => {
+            ctx.save();
+            const scale = 0.4 + (t.z * 0.6);
+            const trunkW = 20 * scale;
+            const trunkH = t.height * 0.5;
+            
+            // Spiral Trunk
+            ctx.save();
+            ctx.translate(t.x, t.y);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-trunkW/2, -trunkH, trunkW, trunkH);
+            ctx.clip(new Path2D(`M${-trunkW/2} ${-trunkH} h${trunkW} v${trunkH} h${-trunkW} z`));
+            ctx.strokeStyle = '#ff4d4d'; // Red Stripe
+            ctx.lineWidth = 8 * scale;
+            for(let j = -trunkH - 20; j < 20; j += 20 * scale) {
+                ctx.beginPath();
+                ctx.moveTo(-trunkW, j);
+                ctx.lineTo(trunkW, j + (20 * scale));
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Lollipop Top
+            const r = (t.width / 2) * scale;
+            const headY = t.y - trunkH;
+            const g = ctx.createRadialGradient(t.x - r*0.3, headY - r*0.3, r*0.1, t.x, headY, r);
+            g.addColorStop(0, '#ffffff'); // Shine
+            g.addColorStop(0.2, t.color); 
+            g.addColorStop(1, 'rgba(0,0,0,0.2)'); 
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(t.x, headY, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        };
 
         this.player = new Player(this);
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
+        this.castleHealthBar = new CastleHealthBar(this);
         
         this.loadEmporiumUpgrades();
         this.initListeners();
@@ -357,7 +468,7 @@ class Game {
             } else if (button.id === 'buy_turret') {
                 this.drawTurretIcon(ctx, 0, 0, radius);
             } else {
-                ctx.font = `${radius * 0.8}px Arial`;
+                ctx.font = `${radius * 0.8}px 'Lucky Guy'`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#333';
@@ -374,7 +485,7 @@ class Game {
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                     ctx.fill();
                     ctx.fillStyle = button.errorShake > 0 ? 'red' : '#fff';
-                    ctx.font = `bold ${radius * 0.5}px Arial`;
+                    ctx.font = `bold ${radius * 0.5}px 'Lucky Guy'`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(`$${cost}`, 0, 0);
@@ -468,7 +579,7 @@ class Game {
                     });
                 }
         
-                // This part handles placing item OR slapping.
+                // This part handles placing item OR licking.
                 // If a button was clicked to enter a mode, this part should be skipped.
                 if (!buttonClicked) {
                     if (this.placementMode) {
@@ -476,7 +587,7 @@ class Game {
                     } else if (this.sellMode) {
                         // The logic for selling is handled within the gameLoop's sellMode block
                     } else if (!this.isShopOpen && !this.player.isControlling) {
-                        this.player.trySlap();
+                        this.player.tryLick();
                     }
                 }
             }
@@ -585,7 +696,7 @@ class Game {
         this.shopReminderShown = false;
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
-        this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.slapLvl = 0; this.stats.piggyLvl = 0;
+        this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
         this.stats.turretsBought = 0;
 
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = [];
@@ -598,101 +709,172 @@ class Game {
                 this.threatManager.reset();
             }
 
-    initLevel() {
-        const castleColor = '#f8c8dc'; // Pastel Pink
-        const groundPlatform = { x: 0, y: this.height - 60, width: this.width, height: 60, color: castleColor, type: 'ground' };
-        const castlePlatforms = [
-            { x: 50, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
-            { x: this.width - 150, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
-            { x: this.width / 2 - 100, y: this.height - 120, width: 200, height: 120, color: castleColor, type: 'castle' }
-        ];
+initLevel() {
+    // --- 1. CORE ENVIRONMENT & COLORS ---
+    const castleColor = '#f8c8dc'; 
+    const groundColor = '#f8c8dc';
+    const lollipopPalette = ['#ff9ff3', '#feca57', '#48dbfb']; 
+    
+    // Platforms Setup
+    const groundPlatform = { x: 0, y: this.height - 60, width: this.width, height: 60, color: groundColor, type: 'ground' };
+    const castlePlatforms = [
+        { x: 50, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
+        { x: this.width - 150, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
+        { x: this.width / 2 - 100, y: this.height - 120, width: 200, height: 120, color: castleColor, type: 'castle' }
+    ];
 
-        this.platforms = [
-            ...castlePlatforms,
-            groundPlatform,
-        ];
+    this.platforms = [...castlePlatforms, groundPlatform];
 
-        const floatingPlatforms = [
-            { x: 100, y: this.height - 250, width: 200 }, { x: 900, y: this.height - 350, width: 200 },
-            { x: 500, y: this.height - 550, width: 250 }, { x: 100, y: this.height - 750, width: 180 },
-            { x: 800, y: this.height - 850, width: 180 }, { x: 450, y: this.height - 1100, width: 200 }
-        ];
+    // Cloud Platforms logic
+    const floatingConfigs = [
+        { x: 100, y: this.height - 250, width: 200 }, { x: 900, y: this.height - 350, width: 200 },
+        { x: 500, y: this.height - 550, width: 250 }, { x: 100, y: this.height - 750, width: 180 },
+        { x: 800, y: this.height - 850, width: 180 }, { x: 450, y: this.height - 1100, width: 200 }
+    ];
 
-        floatingPlatforms.forEach(cfg => {
-            const platform = { ...cfg, height: 30, type: 'cloud', circles: [] };
-            const baseNumCircles = Math.ceil(platform.width / 40 * 1.5);
-            const minRadius = 23.4375;
-            const maxRadius = 43.75;
-
-            for (let i = 0; i < baseNumCircles; i++) {
-                const xOffset = (i / (baseNumCircles - 1)) * platform.width;
-                const mainCircleRadius = minRadius + Math.random() * (maxRadius - minRadius);
-                platform.circles.push({
-                    dx: xOffset + (Math.random() - 0.5) * 10,
-                    dy: platform.height / 2 + (Math.random() - 0.5) * 5,
-                    radius: mainCircleRadius,
-                    hasGlare: Math.random() < 0.23
-                });
-                if (Math.random() < 0.7) {
-                    const fillerRadius = minRadius * 0.75 + Math.random() * (minRadius * 0.75);
-                    platform.circles.push({
-                        dx: xOffset + (Math.random() - 0.5) * 20,
-                        dy: platform.height / 2 + (Math.random() - 0.5) * 15,
-                        radius: fillerRadius,
-                        hasGlare: Math.random() < 0.23
-                    });
-                }
-            }
-            this.platforms.push(platform);
-        });
-
-        this.towers = [
-            new Tower(this, 172.4, floatingPlatforms[0].y - 55.2), new Tower(this, 972.4, floatingPlatforms[1].y - 55.2),
-            new Tower(this, 597.4, floatingPlatforms[2].y - 55.2), new Tower(this, 172.4, floatingPlatforms[3].y - 55.2),
-            new Tower(this, 872.4, floatingPlatforms[4].y - 55.2), new Tower(this, 522.4, floatingPlatforms[5].y - 55.2)
-        ];
-
-        this.clouds = [];
-        for (let i = 0; i < 4; i++) {
-            this.clouds.push(new Cloud(this));
-        }
-
-        // Background Castle
-        this.backgroundCastlePlatforms = [];
-        const bgCastleColor = darkenColor(castleColor, 15);
-        const bgCastleOffsetX = -75;
-        const bgCastleOffsetY = -38;
-        castlePlatforms.forEach(p => {
-            this.backgroundCastlePlatforms.push({
-                x: p.x + bgCastleOffsetX,
-                y: p.y + bgCastleOffsetY,
-                width: p.width,
-                height: p.height,
-                color: bgCastleColor,
-                type: 'castle'
-            });
-        });
-        const bgGroundPlatform = { x: groundPlatform.x, y: groundPlatform.y + bgCastleOffsetY, width: groundPlatform.width, height: groundPlatform.height, color: bgCastleColor, type: 'ground' };
-        this.backgroundCastlePlatforms.push(bgGroundPlatform);
-
-        // Background Trees
-        this.trees = [];
-        const treeColors = ['#9bf6ff', '#a0c4ff'];
-        const sectionWidth = this.width / 8;
-        for (let i = 0; i < 8; i++) {
-            const z = Math.random();
-            const width = (z * 150) + 75;
-            const height = width * (2.5 + Math.random() * 2);
-            this.trees.push({
-                x: (sectionWidth * i) + (Math.random() * sectionWidth),
-                y: this.height,
-                z: z,
-                width: width,
-                height: height,
-                color: treeColors[i % 2]
+    floatingConfigs.forEach(cfg => {
+        const platform = { ...cfg, height: 30, type: 'cloud', circles: [] };
+        const baseNumCircles = Math.ceil(platform.width / 40 * 1.5);
+        for (let i = 0; i < baseNumCircles; i++) {
+            const xOffset = (i / (baseNumCircles - 1)) * platform.width;
+            platform.circles.push({
+                dx: xOffset + (Math.random() - 0.5) * 10,
+                dy: platform.height / 2 + (Math.random() - 0.5) * 5,
+                radius: 23 + Math.random() * 20,
+                hasGlare: Math.random() < 0.23
             });
         }
+        this.platforms.push(platform);
+    });
+
+    this.towers = floatingConfigs.map(p => new Tower(this, p.x + 72.4, p.y - 55.2));
+    this.clouds = Array.from({ length: 4 }, () => new Cloud(this));
+
+    // --- 2. LOLLIPOP TREES SETUP ---
+    // We generate these here, but drawing order in your main loop is what hides the trunks.
+    this.trees = [];
+    const treeCount = 8;
+    const spacing = this.width / treeCount;
+
+    for (let i = 0; i < treeCount; i++) {
+        const depth = Math.random(); 
+        this.trees.push({
+            x: (spacing * i) + (Math.random() * (spacing * 0.4)),
+            y: this.height - 55, // Slightly lower than ground to ensure no gaps
+            z: depth,
+            width: 110 + (depth * 90), 
+            height: 380 + (depth * 520), 
+            color: lollipopPalette[i % lollipopPalette.length]
+        });
     }
+
+    // --- 3. REFINED MOUNTAIN DRAWING (Will hide trunks) ---
+    this.drawMountains = (ctx) => {
+        const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
+        
+        // Add a very subtle "Distance Fog" to the mountains
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        
+        mountainColors.forEach((color, i) => {
+            const yBase = this.height - 60; // Anchored exactly to ground top
+            const mWidth = this.width / 1.4;
+            const xStart = (i * this.width / 4) - 150;
+            const peakX = xStart + mWidth / 2;
+            const peakY = yBase - 280 - (i * 60);
+
+            // Solid Mountain Shape (covers trunks)
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(xStart, yBase + 10); // Overlap slightly with ground
+            ctx.lineTo(peakX, peakY);
+            ctx.lineTo(xStart + mWidth, yBase + 10);
+            ctx.closePath();
+            ctx.fill();
+
+            // Refined Soft Peak Glow
+            const grad = ctx.createLinearGradient(peakX, peakY, peakX, peakY + 200);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+        });
+        ctx.restore();
+    };
+
+    // --- 4. LOLLIPOP DRAWING LOGIC ---
+    this.drawTree = (ctx, t) => {
+        ctx.save();
+        const scale = 0.45 + (t.z * 0.55);
+        ctx.globalAlpha = 0.7 + (t.z * 0.3); // Atmospheric fading for depth
+        
+        const trunkW = 16 * scale;
+        const trunkH = t.height;
+        const headR = (t.width / 2) * scale;
+        const headY = t.y - trunkH;
+
+        // Trunk
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(-trunkW/2, -trunkH, trunkW, trunkH);
+        
+        ctx.beginPath();
+        ctx.rect(-trunkW/2, -trunkH, trunkW, trunkH);
+        ctx.clip();
+        
+        ctx.strokeStyle = "#ffb3c1"; // Softer candy pink stripe
+        ctx.lineWidth = 6 * scale;
+        for (let j = -trunkH - 50; j < 50; j += 40 * scale) {
+            ctx.beginPath();
+            ctx.moveTo(-trunkW, j);
+            ctx.lineTo(trunkW, j + (25 * scale));
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Lollipop Top
+        ctx.beginPath();
+        ctx.arc(t.x, headY, headR, 0, Math.PI * 2);
+        ctx.fillStyle = t.color;
+        ctx.fill();
+
+        // Elegant Swirl
+        ctx.save();
+        ctx.translate(t.x, headY);
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 2.5 * scale;
+        for (let a = 0; a < 15; a += 0.1) {
+            const radius = (a / 15) * headR;
+            const angle = a * 1.8; 
+            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Sophisticated Gloss (Rim Lighting)
+        const shine = ctx.createRadialGradient(
+            t.x - headR * 0.4, headY - headR * 0.4, headR * 0.05,
+            t.x - headR * 0.4, headY - headR * 0.4, headR * 0.8
+        );
+        shine.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        shine.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = shine;
+        ctx.beginPath();
+        ctx.arc(t.x, headY, headR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    };
+
+    // --- 5. AESTHETIC TWEAKS (Background Castle & Ground Bloom) ---
+    const bgCastleColor = darkenColor(castleColor, 12);
+    this.backgroundCastlePlatforms = castlePlatforms.map(p => ({
+        ...p, x: p.x - 75, y: p.y - 30, color: bgCastleColor
+    }));
+    this.backgroundCastlePlatforms.push({ ...groundPlatform, y: groundPlatform.y - 30, color: bgCastleColor });
+}
 
     killMissile(m, index) {
         // Splitting logic for marshmallows
@@ -753,19 +935,18 @@ class Game {
         const gamePausedIndicator = document.getElementById('game-paused-indicator');
         gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
 
-        if (this.isShopOpen) {
-            this.shopOpenedFirstTime = true;
-            document.getElementById('notification').innerText = 'Game Paused';
-            document.getElementById('notification').style.opacity = 1;
-            setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-        }
-        document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
-        if (this.isShopOpen) { 
-            document.getElementById('shop-money-display').innerText = '$' + this.money; 
-            this.renderShopGrid(); 
-            this.selectShopItem(this.shopItems[0]); 
-        }
-    }
+                if (this.isShopOpen) { 
+                    this.shopOpenedFirstTime = true;
+                    document.getElementById('notification').innerText = 'Game Paused';
+                    document.getElementById('notification').style.opacity = 1;
+                    setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+                }
+                document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
+                if (this.isShopOpen) { 
+                    document.getElementById('shop-money-display').innerText = this.money; 
+                    this.renderShopGrid(); 
+                    this.selectShopItem(this.shopItems[0]); 
+                }    }
 
     renderShopGrid() {
         document.getElementById('shop-grid').innerHTML = '';
@@ -777,7 +958,7 @@ class Game {
             div.innerHTML = `
                 <div class="shop-item-icon">${item.icon}</div>
                 <div class="shop-item-name">${item.name}</div>
-                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : '$' + cost}</div>
+                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `$${cost}`}</div>
                 ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
             `;
             div.onclick = () => this.selectShopItem(item);
@@ -925,8 +1106,8 @@ class Game {
         document.getElementById('stat-fire-rate').innerText = `${(60/this.stats.fireRate).toFixed(1)}/s`;
         document.getElementById('stat-projectile-speed').innerText = this.stats.projectileSpeed.toFixed(1);
         document.getElementById('stat-range').innerText = this.stats.range;
-        document.getElementById('stat-slap-damage').innerText = this.stats.slapDamage;
-        document.getElementById('stat-slap-knockback').innerText = this.stats.slapKnockback;
+        document.getElementById('stat-lick-damage').innerText = this.stats.lickDamage;
+        document.getElementById('stat-lick-knockback').innerText = this.stats.lickKnockback;
         document.getElementById('stat-enemy-health').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
         document.getElementById('stat-castle-max-health').innerText = this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level];
         document.getElementById('stat-shield-regen').innerText = `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level]}%`;
@@ -938,6 +1119,7 @@ class Game {
         document.getElementById('stat-piggy-bonus').innerText = `${(this.stats.piggyStats.bonus*100).toFixed(0)}%`;
         document.getElementById('stat-piggy-multiplier').innerText = `${this.stats.piggyStats.mult}x`;
         document.getElementById('stat-piggy-cooldown').innerText = `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level]}s`;
+        document.getElementById('stat-critical-hit-chance').innerText = `${this.stats.criticalHitChance}%`;
         const iceCreamChanceLevel = this.emporiumUpgrades.ice_cream_chance.level;
         const iceCreamChances = this.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
         document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
@@ -958,76 +1140,51 @@ class Game {
     }
 
     drawThermometer(ctx) {
-        const x = this.width - 60;
-        const y = this.height / 2 - 225;
-        const width = 30;
-        const height = 450;
-        const bulbRadius = 30;
-        const neckY = y + height - bulbRadius;
+        const x = this.width - 80;
+        const y = this.height / 2 - 300;
+        const width = 40;
+        const height = 600;
 
-        // Thermometer glass
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        // White border with drop shadow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.roundRect(x, y, width, height - bulbRadius, 15);
+        ctx.roundRect(x, y, width, height, 20);
         ctx.fill();
+        ctx.restore();
+
+        // Glass-like oval with transparency
+        ctx.fillStyle = 'rgba(220, 220, 220, 0.95)';
         ctx.beginPath();
-        ctx.arc(x + width / 2, neckY, bulbRadius, 0, Math.PI * 2);
+        ctx.roundRect(x, y, width, height, 20);
         ctx.fill();
 
         // Jam level
-        const totalThreat = this.currentRPM;
-        const bulbCapacity = 25;
-        const neckCapacity = 100 - bulbCapacity;
-
-        const bulbLevel = Math.min(1, totalThreat / bulbCapacity);
-        const neckLevel = Math.max(0, (totalThreat - bulbCapacity) / neckCapacity);
+        const minThreat = 5;
+        const maxThreat = 50;
+        const threatRange = maxThreat - minThreat;
+        const threatLevel = Math.max(0, Math.min(1, (this.currentRPM - minThreat) / threatRange));
         
         ctx.fillStyle = 'rgba(255, 105, 180, 0.8)'; // Lighter magenta
-
-        // Fill bulb
+        
+        // Fill oval
+        const jamHeight = height * threatLevel;
         ctx.save();
         ctx.beginPath();
-        ctx.arc(x + width / 2, neckY, bulbRadius, 0, Math.PI * 2);
+        ctx.roundRect(x, y, width, height, 20);
         ctx.clip();
-        const bulbFillHeight = bulbLevel * bulbRadius * 2;
-        ctx.fillRect(x - bulbRadius, neckY + bulbRadius - bulbFillHeight, bulbRadius * 2, bulbFillHeight);
+        ctx.fillRect(x, y + height - jamHeight, width, jamHeight);
         ctx.restore();
 
-        // Fill neck
-        const jamHeight = (height - bulbRadius) * neckLevel;
-        if (neckLevel > 0) {
-            ctx.fillRect(x, neckY - jamHeight, width, jamHeight);
-        }
-
-        // Wavey top
-        const topOfJam = neckLevel > 0 ? neckY - jamHeight : neckY + bulbRadius - bulbFillHeight;
-        ctx.beginPath();
-        ctx.moveTo(x, topOfJam);
-        for (let i = 0; i < width; i++) {
-            ctx.lineTo(x + i, topOfJam + Math.sin(i * 0.5 + this.gameTime) * 2);
-        }
-        ctx.lineTo(x + width, y + height);
-        ctx.lineTo(x, y + height);
-        ctx.fill();
-
-
-        // Bubbles
-        const jamFillTotalHeight = (height - bulbRadius) * neckLevel + bulbRadius * 2 * bulbLevel;
-        for (let i = 0; i < 5; i++) {
-            const bubbleX = x + Math.random() * width;
-            const bubbleY = y + height - (Math.random() * jamFillTotalHeight);
-            const bubbleRadius = Math.random() * 4 + 1;
-            ctx.beginPath();
-            ctx.arc(bubbleX, bubbleY, bubbleRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.fill();
-        }
-
-        // Tick marks
-        ctx.strokeStyle = 'white';
+        // Notches every 5 RPM
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 2;
-        for (let i = 1; i <= 10; i++) {
-            const tickY = y + height - bulbRadius - (i * ((height-bulbRadius) / 10));
+        for (let i = 5; i <= 50; i += 5) {
+            const tickY = y + height - ((i - minThreat) / threatRange) * height;
             ctx.beginPath();
             ctx.moveTo(x - 5, tickY);
             ctx.lineTo(x, tickY);
@@ -1037,7 +1194,7 @@ class Game {
         // Glare
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.beginPath();
-        ctx.ellipse(x + width / 2, y + (height - bulbRadius) / 2, width / 2.5, (height - bulbRadius) / 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + width / 2, y + height / 2, width / 2.5, height / 3, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -1062,6 +1219,10 @@ class Game {
         skyGradient.addColorStop(1, '#ffdde1');
         this.ctx.fillStyle = skyGradient;
         this.ctx.fillRect(0, 0, this.width, this.height);
+        this.drawSunlight(this.ctx);
+this.drawMountains(this.ctx);
+// Draw trees sorted by depth (z) so further ones are behind
+[...this.trees].sort((a, b) => a.z - b.z).forEach(t => this.drawTree(this.ctx, t));
 
         if (!this.isPaused && !this.isGameOver) {
             this.gameTime += tsf;
@@ -1093,6 +1254,7 @@ class Game {
             this.player.update(tsf);
             this.towers.forEach(t => t.update(tsf));
             this.shields.forEach(s => s.update(tsf));
+            this.castleHealthBar.update(tsf);
 
             for (let i = this.missiles.length - 1; i >= 0; i--) {
                 const m = this.missiles[i];
@@ -1112,6 +1274,7 @@ class Game {
                 if (blocked) continue;
                 if (m.y > this.height - 80) {
                     this.castleHealth -= 10;
+                    this.castleHealthBar.triggerHit();
                     this.missiles.splice(i, 1);
                     this.screenShake.trigger(5, 10);
                     for (let k = 0; k < 15; k++) {
@@ -1148,9 +1311,15 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
 
         // Check for hit
         if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+            // Determine if it's a critical hit
+            const isCritical = (Math.random() * 100 < this.stats.criticalHitChance);
+            let damageAmount = p.hp || 10;
+            if (isCritical) {
+                damageAmount *= 2;
+            }
             
             // Apply damage from projectile to enemy
-            const isDead = m.takeDamage(p.hp || 10);
+            const isDead = m.takeDamage(damageAmount, isCritical);
             
             // Visual feedback
             m.kbVy = -2;
@@ -1243,15 +1412,8 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         const offset = this.screenShake.getOffset();
         this.ctx.save(); this.ctx.translate(offset.x, offset.y);
 
-        const backgroundElements = [...this.trees, ...this.clouds];
-        backgroundElements.sort((a, b) => (a.z || a.y) - (b.z || b.y));
-        backgroundElements.forEach(elem => {
-            if (elem.z) { // It's a tree
-                this.drawTree(elem);
-            } else { // It's a cloud
-                elem.draw(this.ctx);
-            }
-        });
+        this.drawMountains(this.ctx);
+        this.clouds.forEach(c => c.draw(this.ctx));
 
         this.backgroundCastlePlatforms.forEach(p => {
             this.ctx.save();
@@ -1268,40 +1430,35 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
             this.ctx.fillStyle = p.color;
             this.ctx.save();
             if (p.type === 'cloud') {
-                const pink = [255, 182, 193];
-                const blue = [135, 206, 250];
-                const ratio = (p.y - (this.height - 1100)) / ((this.height - 250) - (this.height - 1100));
-                const invRatio = 1 - Math.max(0, Math.min(1, ratio));
-                const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
-                const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
-                const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
-                const cloudColor = `rgb(${r}, ${g}, ${b})`;
-                const borderWidth = 4;
-                this.ctx.fillStyle = 'white';
-                this.ctx.beginPath();
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.95; // Almost no transparency
+
+                const floatingOffset = Math.sin(this.gameTime * 0.03) * 2; // Reduced movement
+
                 p.circles.forEach(circle => {
-                    this.ctx.moveTo(p.x + circle.dx + circle.radius + borderWidth, p.y + circle.dy);
-                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius + borderWidth, 0, Math.PI * 2);
-                });
-                this.ctx.fill();
-                p.circles.forEach(circle => {
-                    this.ctx.fillStyle = cloudColor;
+                    const cx = p.x + circle.dx;
+                    const cy = p.y + circle.dy + floatingOffset;
+
+                    // Create radial gradient for 3D spherical look
+                    const gradient = this.ctx.createRadialGradient(
+                        cx - circle.radius * 0.3, cy - circle.radius * 0.3, circle.radius * 0.1, // Inner circle (light source)
+                        cx, cy, circle.radius * 1.2 // Outer circle (edge)
+                    );
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); // Light pink/white center
+                    gradient.addColorStop(0.5, 'rgba(255, 192, 203, 0.7)'); // Pastel pink mid
+                    gradient.addColorStop(1, 'rgba(218, 112, 214, 0.8)'); // Darker pastel pink edge
+
+                    this.ctx.fillStyle = gradient;
                     this.ctx.beginPath();
-                    this.ctx.arc(p.x + circle.dx, p.y + circle.dy, circle.radius, 0, Math.PI * 2);
+                    this.ctx.arc(cx, cy, circle.radius, 0, Math.PI * 2);
                     this.ctx.fill();
-                    if (circle.hasGlare) {
-                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                        this.ctx.beginPath();
-                        this.ctx.ellipse(
-                            p.x + circle.dx - circle.radius * 0.3,
-                            p.y + circle.dy - circle.radius * 0.3,
-                            circle.radius * 0.4,
-                            circle.radius * 0.6,
-                            -0.8, 0, Math.PI * 2
-                        );
-                        this.ctx.fill();
-                    }
+
+                    // Optional subtle border
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
                 });
+                this.ctx.restore();
             } else if (p.type === 'castle') {
                 this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill();
                 this.drawPlatformFrosting(p);
@@ -1343,7 +1500,7 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
             this.towers.forEach(t => {
                 if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
-                    this.ctx.fillStyle = 'white'; this.ctx.font = '20px Arial'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
+                    this.ctx.fillStyle = 'white'; this.ctx.font = '20px "Lucky Guy"'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
                 }
             });
         }
@@ -1357,7 +1514,7 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
                 this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 33, 64, Math.PI, 0); this.ctx.fill();
             }
             this.ctx.globalAlpha = 1.0;
-            this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px "Lucky Guy"'; this.ctx.textAlign = 'center';
             this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
         }
 
@@ -1389,7 +1546,7 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
                 this.ctx.fillStyle = '#2ecc71';
-                this.ctx.font = 'bold 24px Arial';
+                this.ctx.font = 'bold 24px "Lucky Guy"';
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
                 this.ctx.globalAlpha = 0.2;
@@ -1425,6 +1582,103 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         requestAnimationFrame(() => this.gameLoop(performance.now()));
     }
 
+    drawMountains(ctx) {
+    const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
+    for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = mountainColors[i];
+        ctx.beginPath();
+        const yBase = this.height - 100;
+        const mWidth = this.width / 1.5;
+        const xStart = (i * this.width / 4) - 100;
+
+        ctx.moveTo(xStart, yBase);
+        ctx.lineTo(xStart + mWidth / 2, yBase - 300 - (i * 50));
+        ctx.lineTo(xStart + mWidth, yBase);
+        ctx.fill();
+
+        // --- SUNLIGHT GLOW (RIM LIGHTING) ---
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const glowGrad = ctx.createLinearGradient(xStart, yBase - 300, xStart + mWidth/2, yBase);
+        glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Bright glow on the sunward side
+        glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+    
+
+drawTree(ctx, t) {
+    ctx.save();
+    // Use z-index for parallax-like scaling
+    const scale = 0.5 + (t.z * 0.5);
+    const trunkWidth = 20 * scale;
+    const trunkHeight = t.height * 0.4;
+    
+    // --- SPIRAL WRAPPED TRUNK ---
+    ctx.save();
+    ctx.translate(t.x, t.y - trunkHeight);
+    // Draw white base
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-trunkWidth/2, 0, trunkWidth, trunkHeight);
+    
+    // Draw red spiral stripes
+    ctx.clip(new Path2D(`M${-trunkWidth/2} 0 h${trunkWidth} v${trunkHeight} h${-trunkWidth} z`));
+    ctx.strokeStyle = '#ff4d4d';
+    ctx.lineWidth = 8 * scale;
+    for(let j = -20; j < trunkHeight; j += 20 * scale) {
+        ctx.beginPath();
+        ctx.moveTo(-trunkWidth, j);
+        ctx.lineTo(trunkWidth, j + (20 * scale)); // Diagonal line for "wrap" look
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // --- GLOSSY LOLLIPOP TOP ---
+    const headRadius = (t.width / 2) * scale;
+    const headY = t.y - trunkHeight;
+    
+    const grad = ctx.createRadialGradient(
+        t.x - headRadius * 0.3, headY - headRadius * 0.3, headRadius * 0.1,
+        t.x, headY, headRadius
+    );
+    grad.addColorStop(0, '#ffffff'); // Shine
+    grad.addColorStop(0.2, t.color); // Main candy color
+    grad.addColorStop(1, darkenColor(t.color, 20)); // Shadow edge
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(t.x, headY, headRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sunlight Glow on the Lollipop
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.beginPath();
+    ctx.arc(t.x, headY, headRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+    drawSunlight(ctx) {
+        const centerX = this.width * 0.9;
+        const centerY = this.height * 0.1;
+        const radiusInner = 100;
+        const radiusOuter = 500;
+
+        const gradient = ctx.createRadialGradient(centerX, centerY, radiusInner, centerX, centerY, radiusOuter);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)'); // Faint white glow
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');  // Transparent
+
+        ctx.save();
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radiusOuter, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
     drawTree(tree) {
         this.ctx.save();
         this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
@@ -1452,6 +1706,53 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         
         // top
         this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*0.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
+
+        this.ctx.restore();
+    }
+    
+    drawLollipopTree(tree) {
+        this.ctx.save();
+        this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
+
+        const trunkWidth = tree.width * 0.15; // Thinner trunk
+        const trunkHeight = tree.height * 0.7; // Shorter trunk for lollipop head
+        const headRadius = tree.width * 0.6; // Large round head
+        const headY = tree.y - trunkHeight - headRadius;
+
+        // Solid white trunk
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
+
+        // Slanted red stripes
+        this.ctx.strokeStyle = '#e74c3c';
+        this.ctx.lineWidth = trunkWidth / 2;
+        const stripeGap = trunkWidth * 1.5;
+        for (let i = -trunkHeight; i < trunkHeight; i += stripeGap) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(tree.x - trunkWidth, tree.y - i);
+            this.ctx.lineTo(tree.x + trunkWidth, tree.y - (i - stripeGap * 0.7));
+            this.ctx.stroke();
+        }
+
+        // Highlight strip
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        this.ctx.fillRect(tree.x - trunkWidth/2, tree.y - trunkHeight, trunkWidth / 3, trunkHeight);
+
+        // Lollipop Head
+        this.ctx.fillStyle = tree.color;
+        this.ctx.beginPath();
+        this.ctx.arc(tree.x, headY, headRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Swirl pattern
+        this.ctx.strokeStyle = darkenColor(tree.color, 20); // Darker shade of tree color
+        this.ctx.lineWidth = headRadius * 0.1;
+        const numSwirls = 5;
+        for (let i = 0; i < numSwirls; i++) {
+            this.ctx.beginPath();
+            this.ctx.arc(tree.x, headY, headRadius * (1 - (i / numSwirls)), Math.PI * 2 * i / numSwirls, Math.PI * 2 * (i + 1) / numSwirls + Math.PI / numSwirls);
+            this.ctx.stroke();
+        }
 
         this.ctx.restore();
     }

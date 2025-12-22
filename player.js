@@ -6,12 +6,12 @@ export default class Player {
         this.reset();
         this.width = 37.191; this.height = 54.45825; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
-        this.slapCooldown = 0; this.slapAnim = 0;
+        this.lickCooldown = 0; this.lickAnim = 0;
         this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 1.2;
         this.jumpForce = -26;
         this.airJumpForce = -26; // Fixed: Same as ground jump
         this.passThroughTimer = 0;
-        this.slapAngle = 0;
+        this.lickAngle = 0;
         this.dashCooldown = 0;
         this.lastAPress = 0;
         this.lastDPress = 0;
@@ -40,23 +40,23 @@ export default class Player {
             }
         }
     }
-    trySlap() {
-        if (this.slapCooldown > 0) return;
+    tryLick() {
+        if (this.lickCooldown > 0) return;
         const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
-        this.slapAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
-        this.slapOffsetX = Math.cos(this.slapAngle) * 50;
-        this.slapOffsetY = Math.sin(this.slapAngle) * 50;
-        this.slapAnim = 15; this.slapCooldown = 20;
+        this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
+        this.lickOffsetX = Math.cos(this.lickAngle) * 66.5; // Increased range
+        this.lickOffsetY = Math.sin(this.lickAngle) * 66.5; // Increased range
+        this.lickAnim = 15; this.lickCooldown = 20;
 
         // Hitbox logic
-        const impactX = cx + this.slapOffsetX;
-        const impactY = cy + this.slapOffsetY;
+        const impactX = cx + this.lickOffsetX;
+        const impactY = cy + this.lickOffsetY;
         this.game.missiles.forEach(m => {
             const missileCx = m.x + m.width / 2;
             const missileCy = m.y + m.height / 2;
 
             // Check for collision with the hand hitbox OR the player's hitbox
-            const hitByHand = Math.hypot(missileCx - impactX, missileCy - impactY) < 60;
+            const hitByHand = Math.hypot(missileCx - impactX, missileCy - impactY) < 80; // Increased hitbox
             const hitByPlayer = (
                 this.x < m.x + m.width &&
                 this.x + this.width > m.x &&
@@ -65,9 +65,9 @@ export default class Player {
             );
 
             if (hitByHand || hitByPlayer) {
-                m.takeDamage(this.game.stats.slapDamage);
+                m.takeDamage(this.game.stats.lickDamage);
                 // Smooth Knockback application
-                m.kbVy = -this.game.stats.slapKnockback * 0.3; // Initial impulse
+                m.kbVy = -this.game.stats.lickKnockback * 0.3; // Initial impulse
                 this.game.screenShake.trigger(4, 10); // Increased
                 // More particles
                 for (let i = 0; i < 15; i++) { // Increased particle count
@@ -88,7 +88,7 @@ export default class Player {
             this.x += (targetX - this.x) * this.transitionProgress * 0.2;
             this.y += (targetY - this.y) * this.transitionProgress * 0.2;
             this.scaleX = 1 - this.transitionProgress;
-            this.scaleY = 1 + this.transitionProgress * 0.5; // Stretch while entering
+            this.scaleY = 1 + this.transitionProgress * 0.5;
 
             if (this.transitionProgress >= 1) {
                 this.isControlling = this.transitionTarget;
@@ -100,7 +100,7 @@ export default class Player {
 
         if (this.transitionState === 'leaving') {
             this.transitionProgress += 0.125 * tsf;
-            this.scaleX = 1 - this.transitionProgress * 0.5; // Stretch while leaving
+            this.scaleX = 1 - this.transitionProgress * 0.5;
             this.scaleY = 1 + this.transitionProgress;
             this.y -= 2 * tsf;
 
@@ -127,8 +127,8 @@ export default class Player {
             return;
         }
 
-        if (this.slapCooldown > 0) this.slapCooldown -= tsf;
-        if (this.slapAnim > 0) this.slapAnim -= tsf * 1.2;
+        if (this.lickCooldown > 0) this.lickCooldown -= tsf;
+        if (this.lickAnim > 0) this.lickAnim -= tsf * 1.2;
 
         if (this.game.keys['a']) this.vx -= this.acceleration * tsf;
         if (this.game.keys['d']) this.vx += this.acceleration * tsf;
@@ -154,42 +154,63 @@ export default class Player {
         if (!this.game.keys[' '] && !this.game.keys['w']) this.jumpLock = false;
 
         this.vy += this.gravity * tsf;
-        this.x += this.vx * tsf; this.y += this.vy * tsf;
-        if (this.x < 0) this.x = 0; if (this.x + this.width > this.game.width) this.x = this.game.width - this.width;
+        
+        // --- FIXED COLLISION LOGIC ---
+        this.x += this.vx * tsf;
+        if (this.x < 0) this.x = 0;
+        if (this.x + this.width > this.game.width) this.x = this.game.width - this.width;
 
         const wasOnGround = this.isOnGround;
         this.isOnGround = false;
-        this.game.platforms.forEach((p, pIdx) => {
+
+        this.game.platforms.forEach((p) => {
             if (p.type === 'cloud' && this.isPassingThrough) return;
-            if (this.x < p.x + p.width && this.x + this.width > p.x && this.y + this.height > p.y && this.y < p.y + p.height + 10) {
-                if (this.vy >= 0 && (this.y - (this.vy * tsf)) + this.height <= p.y + 25) {
-                    if (!wasOnGround) {
-                        this.jumpSquash = 15;
-                    }
-                    this.y = p.y - this.height; this.vy = 0; this.isOnGround = true; this.jumpsLeft = 2;
-                    if (this.isPassingThrough) this.isPassingThrough = false;
-                }
+            const isMovingDown = this.vy >= 0;
+            const playerWasAbove = (this.y) + this.height <= p.y + 2; 
+            const horizontalOverlap = this.x < p.x + p.width && this.x + this.width > p.x;
+            const verticalOverlap = (this.y + this.vy * tsf) + this.height > p.y && (this.y + this.vy * tsf) < p.y + p.height;
+            
+            if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
+                this.y = p.y - this.height; 
+                this.vy = 0;
+                this.isOnGround = true;
+                this.jumpsLeft = 2;
+                if (this.isPassingThrough) this.isPassingThrough = false;
+                if (!wasOnGround) this.jumpSquash = 15;
             }
         });
+        
+        // Only apply gravity movement if we didn't just snap to a floor
+        if (!this.isOnGround) {
+            this.y += this.vy * tsf;
+        }
 
+        // --- ENHANCED SQUASH/STRETCH ---
         if (this.jumpSquash > 0) {
             const progress = this.jumpSquash / 15;
             this.scaleY = 1 - Math.sin(progress * Math.PI) * 0.3;
             this.scaleX = 1 + Math.sin(progress * Math.PI) * 0.3;
         } else if (this.isOnGround) {
-            const bounce = Math.sin(this.game.gameTime * 0.5) * Math.abs(this.vx) * 0.01;
-            this.scaleX += (1 - this.scaleX) * 0.1 * tsf;
-            this.scaleY += (1 - this.scaleY) * 0.1 * tsf + bounce;
+            this.scaleX += (1 - this.scaleX) * 0.3; 
+            this.scaleY += (1 - this.scaleY) * 0.3;
+            // Breathe/Bounce only when moving
+            if (Math.abs(this.vx) > 0.5) { 
+                const bounce = Math.sin(this.game.gameTime * 0.4) * 0.02;
+                this.scaleY += bounce;
+                this.scaleX -= bounce;
+            }
         } else {
-            const stretch_factor = 0.02;
-            if (this.vy < 0) { // Moving up -> stretch
-                this.scaleY = 1 + Math.abs(this.vy) * stretch_factor;
-                this.scaleX = 1 - Math.abs(this.vy) * stretch_factor * 0.5;
-            } else { // Moving down -> squash
-                this.scaleY = 1 - Math.abs(this.vy) * stretch_factor * 0.5;
-                this.scaleX = 1 + Math.abs(this.vy) * stretch_factor;
+            // Cap the stretch so he doesn't look like a needle when falling fast
+            const stretchVal = Math.min(Math.abs(this.vy) * 0.015, 0.4);
+            if (this.vy < 0) { 
+                this.scaleY = 1 + stretchVal;
+                this.scaleX = 1 - stretchVal * 0.5;
+            } else { 
+                this.scaleY = 1 - stretchVal * 0.5;
+                this.scaleX = 1 + stretchVal;
             }
         }
+
         if (this.game.keys['e'] && !this.keyLock && !this.isControlling) {
             this.game.towers.forEach(t => {
                 if (!this.transitionState && Math.hypot((t.x + 23) - (this.x + 14), (t.y + 23) - (this.y + 20.5)) < 144) {
@@ -202,17 +223,16 @@ export default class Player {
             });
         }
     }
-    draw(ctx) {
+  draw(ctx) {
         if (this.isControlling) return;
 
-        // --- DYNAMIC SHADOW ---
+        // --- 1. DYNAMIC SHADOW ON GROUND ---
         let closestPlatform = null;
         let minDistance = Infinity;
 
         this.game.platforms.forEach(p => {
             const isHorizontallyOverlapping = this.x + this.width > p.x && this.x < p.x + p.width;
             const isBelow = this.y + this.height <= p.y;
-            
             if (isHorizontallyOverlapping && isBelow) {
                 const distance = p.y - (this.y + this.height);
                 if (distance < minDistance) {
@@ -223,186 +243,161 @@ export default class Player {
         });
 
         if (closestPlatform) {
-            const maxShadowDistance = 400; // The distance at which the shadow is fully gone
+            const maxShadowDistance = 400;
             const distance = minDistance;
-            
             if (distance < maxShadowDistance) {
-                let platformColor;
+                let pCol = {r: 0, g: 0, b: 0};
                 if (closestPlatform.type === 'cloud') {
-                    const pink = [255, 182, 193];
-                    const blue = [135, 206, 250];
-                    const ratio = (closestPlatform.y - (this.game.height - 1100)) / ((this.game.height - 250) - (this.game.height - 1100));
-                    const invRatio = 1 - Math.max(0, Math.min(1, ratio));
-                    const r = Math.floor(pink[0] * (1 - invRatio) + blue[0] * invRatio);
-                    const g = Math.floor(pink[1] * (1 - invRatio) + blue[1] * invRatio);
-                    const b = Math.floor(pink[2] * (1 - invRatio) + blue[2] * invRatio);
-                    platformColor = {r, g, b};
-                } else {
-                    // Assuming color is hex #RRGGBB
+                    pCol = {r: 150, g: 150, b: 200};
+                } else if (closestPlatform.color) {
                     const hex = closestPlatform.color.substring(1);
-                    platformColor = {
+                    pCol = {
                         r: parseInt(hex.substring(0, 2), 16),
                         g: parseInt(hex.substring(2, 4), 16),
                         b: parseInt(hex.substring(4, 6), 16)
                     };
                 }
-
-                // Darken the color
-                const darkR = Math.floor(platformColor.r * 0.5);
-                const darkG = Math.floor(platformColor.g * 0.5);
-                const darkB = Math.floor(platformColor.b * 0.5);
-                
                 const shadowFactor = 1 - (distance / maxShadowDistance);
-                const shadowWidth = (this.width * 0.5) * shadowFactor;
-                const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
-                const shadowOpacity = 0.4 * shadowFactor;
-
-                ctx.fillStyle = `rgba(${darkR}, ${darkG}, ${darkB}, ${shadowOpacity})`;
+                ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, closestPlatform.y, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, closestPlatform.y, (this.width * 0.5) * shadowFactor, (this.width * 0.12) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
 
-        const cx = this.x + this.width/2; const cy = this.y + this.height;
-        ctx.save(); ctx.translate(cx, cy);
-        ctx.scale(this.scaleX, this.scaleY); ctx.translate(-cx, -cy);
-        ctx.fillStyle = this.color;
-        ctx.beginPath(); ctx.roundRect(this.x, this.y, this.width, this.height, 5); ctx.fill();
+        // --- 2. PREPARE PLAYER TRANSFORM ---
+        const cx = this.x + this.width/2; 
+        const cy = this.y + this.height;
+        const eyeY = this.y + 12;
+        const mouthY = eyeY + 15;
+        const mouthX = this.x + this.width / 2;
 
-        // Jello Effect
-        const darkerColor = `rgba(0, 0, 0, 0.1)`;
-        ctx.fillStyle = darkerColor;
+        ctx.save(); 
+        ctx.translate(cx, cy);
+        ctx.scale(this.scaleX, this.scaleY); 
+        ctx.translate(-cx, -cy);
+
+        // --- 3. DRAW BODY (3D BEVEL STYLE) ---
+        const bodyColor = this.color;      
+        const depthPink = '#d47b8d'; 
+        const highlightPink = '#ffeef1'; 
+
         ctx.beginPath();
-        ctx.roundRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10, 5);
+        ctx.roundRect(this.x, this.y, this.width, this.height, 10);
+        
+        const gradient = ctx.createRadialGradient(
+            cx - 5, this.y + 10, 0,
+            cx, cy - (this.height/2), this.width
+        );
+        gradient.addColorStop(0, highlightPink); 
+        gradient.addColorStop(0.4, bodyColor);
+        gradient.addColorStop(1, depthPink);
+        ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Air bubbles
-        ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
-        const bubble1X = this.x + this.width / 2 + Math.sin(this.game.gameTime / 20) * (this.width / 3);
-        const bubble1Y = this.y + this.height / 2 + Math.cos(this.game.gameTime / 20) * (this.height / 3);
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(bubble1X, bubble1Y, 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        const bubble2X = this.x + this.width / 2 + Math.cos(this.game.gameTime / 15) * (this.width / 4);
-        const bubble2Y = this.y + this.height / 2 + Math.sin(this.game.gameTime / 15) * (this.height / 4);
-        ctx.beginPath();
-        ctx.arc(bubble2X, bubble2Y, 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        const bubble3X = this.x + this.width / 2 + Math.sin(this.game.gameTime / 25) * (this.width / 3.5);
-        const bubble3Y = this.y + this.height / 2 + Math.cos(this.game.gameTime / 25) * (this.height / 3.5);
-        ctx.beginPath();
-        ctx.arc(bubble3X, bubble3Y, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        const bubble4X = this.x + this.width / 2 + Math.cos(this.game.gameTime / 10) * (this.width / 4.5);
-        const bubble4Y = this.y + this.height / 2 + Math.sin(this.game.gameTime / 10) * (this.height / 4.5);
-        ctx.beginPath();
-        ctx.arc(bubble4X, bubble4Y, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-		
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // Eyes
-        const eyeX = this.x + this.width/2; const eyeY = this.y + 12;
-        const ang = Math.atan2(this.game.mouse.y - eyeY, this.game.mouse.x - eyeX);
-        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(eyeX, eyeY, 8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(eyeX + Math.cos(ang)*3, eyeY + Math.sin(ang)*3, 3, 0, Math.PI*2); ctx.fill();
+        ctx.roundRect(this.x, this.y, this.width, this.height, 10);
+        ctx.clip(); 
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
+        ctx.fillRect(this.x, this.y + this.height * 0.7, this.width, this.height);
         ctx.restore();
 
-        // Unified Glove Drawing Logic
+        // TONE-ON-TONE BORDER
+        ctx.strokeStyle = depthPink; 
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // --- 4. BUBBLES ---
+        ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
+        [20, 15, 25, 10].forEach((speed, i) => {
+            const bx = this.x + this.width / 2 + Math.sin(this.game.gameTime / speed) * (this.width / 3.5);
+            const by = this.y + this.height / 2 + Math.cos(this.game.gameTime / speed) * (this.height / 3.5);
+            ctx.beginPath();
+            ctx.arc(bx, by, 1.5 + (i % 2), 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // --- 5. EYES ---
+        const ang = Math.atan2(this.game.mouse.y - eyeY, this.game.mouse.x - mouthX);
+        ctx.fillStyle = 'white'; 
+        ctx.beginPath(); 
+        ctx.arc(mouthX, eyeY, 7.5, 0, Math.PI*2); 
+        ctx.fill();
+        ctx.fillStyle = '#4a101d'; 
+        ctx.beginPath(); 
+        ctx.arc(mouthX + Math.cos(ang)*3, eyeY + Math.sin(ang)*3, 3.5, 0, Math.PI*2); 
+        ctx.fill();
+
+        ctx.restore(); // END TRANSFORM
+
+        // --- 6. TONGUE ATTACK LOGIC ---
         if (!this.isControlling) {
-            const cx_glove = cx + this.width/2;
-            const cy_glove = cy - (this.height/2);
+            const tongueOriginX = mouthX;
+            const tongueOriginY = mouthY;
+            const mouseAngle = Math.atan2(this.game.mouse.y - tongueOriginY, this.game.mouse.x - tongueOriginX);
 
-            let distance, scale;
-            // Updated baseSlapScale
-            const baseSlapScale = 1.575; // Reverted 10% increase
-            // Updated aimingScale (now baseSlapScale / 3)
-            const aimingScale = baseSlapScale / 3; // Switched back to 1/3rd
-
-            // Updated distances
-            const aimingDistance = 39.0625; // 25% larger than previous 31.25
-            const fullSlapDistance = 78.125; // 25% larger than previous 62.5
-
-            if (this.slapAnim > 0) {
-                const animPhase = (15 - this.slapAnim) / 15; // 0 -> 1 as anim progresses
+            if (this.lickAnim > 0) {
+                const animPhase = (15 - this.lickAnim) / 15; 
                 const animCurve = Math.sin(animPhase * Math.PI);
-                distance = aimingDistance + (fullSlapDistance - aimingDistance) * animCurve; // Interpolate between new distances
-                scale = aimingScale + (baseSlapScale - aimingScale) * animCurve; // Interpolate between new scales
-            } else { // Aiming state
-                distance = aimingDistance;
-                scale = aimingScale;
-            }
-            
-            const angle = Math.atan2(this.game.mouse.y - cy_glove, this.game.mouse.x - cx);
-            const gloveOffsetX = Math.cos(angle) * distance;
-            const gloveOffsetY = Math.sin(angle) * distance;
-            
-            ctx.save();
-            ctx.translate(cx + gloveOffsetX, cy_glove + gloveOffsetY);
-            ctx.scale(scale, scale);
-            ctx.rotate(angle);
+                const lickDistance = 140 * animCurve;
 
-            // --- Gummy Gauntlet Drawing Logic ---
-            const slapLevel = this.game.stats.slapLvl;
-            const maxSlapLevel = this.game.SLAP_DAMAGE_TIERS.length;
+                ctx.save();
+                const mainColor = '#ff5e7a';
+                const shadowCol = '#d6455d';
+                const segments = 20; 
 
-            if (slapLevel >= maxSlapLevel - 1) {
-                // Max Level: Marshmallow fist with licorice straps
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(0, 0, 20, 0, Math.PI * 2); // Larger fist
-                ctx.fill();
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments;
+                    const drag = 2.5;
+                    const shiftX = Math.sin(t * Math.PI) * (this.vx * drag);
+                    const shiftY = Math.sin(t * Math.PI) * (this.vy * drag);
+                    const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - shiftX;
+                    const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - shiftY;
 
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(-10, -15);
-                ctx.lineTo(10, 15);
-                ctx.moveTo(-10, 15);
-                ctx.lineTo(10, -15);
-                ctx.stroke();
+                    let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
+                    size *= animCurve;
 
-            } else if (slapLevel >= Math.floor(maxSlapLevel / 2)) {
-                // Mid Level: Gummy hand with spikes
-                ctx.globalAlpha = 0.8;
-                ctx.fillStyle = '#ff69b4'; // Gummy pink
-                ctx.beginPath();
-                ctx.arc(0, 0, 16, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-                
-                // Spikes
-                ctx.fillStyle = 'white';
-                for(let i=0; i<5; i++) {
-                    const angle = i * (Math.PI * 2 / 5);
-                    ctx.save();
-                    ctx.rotate(angle);
+                    ctx.fillStyle = mainColor;
                     ctx.beginPath();
-                    ctx.moveTo(14, 0);
-                    ctx.lineTo(20, -3);
-                    ctx.lineTo(20, 3);
-                    ctx.closePath();
+                    ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.restore();
+
+                    if (i === segments || i % 5 === 0) {
+                        ctx.strokeStyle = shadowCol;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                    if (i > segments * 0.8) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.beginPath();
+                        ctx.arc(segmentX, segmentY - (size * 0.3), size * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
 
-            } else {
-                // Level 1+: Soft, translucent gummy hand
-                ctx.globalAlpha = 0.7;
-                ctx.fillStyle = '#ff69b4'; // Gummy pink
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.moveTo(tongueOriginX, tongueOriginY);
+                const midX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * 0.5) - (this.vx * 2);
+                const midY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * 0.5) - (this.vy * 2);
+                ctx.quadraticCurveTo(midX, midY, tongueOriginX + Math.cos(mouseAngle) * lickDistance, tongueOriginY + Math.sin(mouseAngle) * lickDistance);
+                ctx.stroke();
+                ctx.restore();
+            } else {
+                const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
+                ctx.fillStyle = '#ff5e7a';
+                ctx.beginPath();
+                ctx.roundRect(mouthX - 6, mouthY - 2, 12, 6 + idleBounce, 6);
                 ctx.fill();
-                ctx.globalAlpha = 1.0;
             }
-            // --- End of Gummy Gauntlet Drawing ---
-            
-            ctx.restore();
+
+            ctx.fillStyle = '#3a0014';
+            ctx.beginPath();
+            const mouthSize = this.lickAnim > 0 ? 8 : 4;
+            ctx.arc(mouthX, mouthY, mouthSize, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 }
