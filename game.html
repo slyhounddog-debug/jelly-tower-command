@@ -40,6 +40,22 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        #stats-btn, #help-btn {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s ease;
+        }
+
+        #stats-btn:hover, #help-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+
+        #stats-btn:active, #help-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
         #emporium-header-plate h2 { /* Override global h2 for emporium header */
             color: #ffd700;
             border-bottom: none;
@@ -540,7 +556,7 @@
 
             <div id="shop-content" style="display: flex; flex-direction: column; flex: 1; padding: 20px; gap: 20px; background-color: rgba(0,0,0,0.7); border-radius: 0 0 15px 15px;">
                 <div id="shop-details">
-                    <div class="detail-icon" id="detail-icon">🔧</div>
+                    <div class="detail-icon" id="detail-icon" style="font-size: 96px; display: flex; align-items: center; justify-content: center;">🔧</div>
                     <div class="detail-info">
                         <h2 id="detail-title">Select an Item</h2>
                         <p id="detail-desc">Hover over items below to see stats.</p>

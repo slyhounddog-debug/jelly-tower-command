@@ -143,7 +143,7 @@ class Game {
             { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
               desc: `Increases tongue damage and knockback.`, type: 'upgrade', 
               getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
-              getValue: () => `D:${this.stats.slapDamage} K:${this.stats.slapKnockback}`, 
+              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`, 
               getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
               getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length}`,
               action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
