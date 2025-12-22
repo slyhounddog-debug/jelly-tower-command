@@ -305,13 +305,7 @@ export default class Player {
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(this.x, this.y, this.width, this.height, 10);
-        ctx.clip(); 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
-        ctx.fillRect(this.x, this.y + this.height * 0.7, this.width, this.height);
-        ctx.restore();
+
 
         // TONE-ON-TONE BORDER
         ctx.strokeStyle = depthPink; 

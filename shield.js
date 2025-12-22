@@ -32,7 +32,7 @@ export default class Shield extends BaseStructure {
         const shadowColor = `rgba(42, 122, 175, ${0.4 + pct * 0.6})`; // Darker blue
         ctx.fillStyle = shadowColor;
         ctx.beginPath();
-        ctx.arc(this.x + this.width / 2, this.y + this.height + shadowOffset, (this.width / 2) * 1.05, Math.PI, 0);
+        ctx.arc(this.x + this.width / 2, this.y + this.height + shadowOffset, (this.width / 2) * 1.07, Math.PI, 0);
         ctx.fill();
 
         // Shield Body

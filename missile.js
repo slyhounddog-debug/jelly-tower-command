@@ -195,7 +195,7 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             ctx.save();
             ctx.fillStyle = shadowColor;
             ctx.translate(cx, cy + shadowOffset);
-            ctx.scale(1.1 * this.squash * sizeMultiplier * 1.05, 1.1 * this.stretch * sizeMultiplier * 1.05);
+            ctx.scale(1.1 * this.squash * sizeMultiplier * 1.1, 1.1 * this.stretch * sizeMultiplier * 1.1);
             ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
 
@@ -238,7 +238,7 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
 
             ctx.save();
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
-            ctx.scale(this.squash * 1.05, this.stretch * 1.05);
+            ctx.scale(this.squash * 1.09, this.stretch * 1.09);
             ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
             
             const borderColor1 = darkenColor(this.color1, shadowDarkness);
@@ -296,7 +296,7 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             ctx.fillStyle = shadowColor;
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
             ctx.rotate(this.angle);
-            ctx.scale(this.squash * 1.05, this.stretch * 1.05);
+            ctx.scale(this.squash * 1.1, this.stretch * 1.1);
             ctx.beginPath();
             ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10);
             ctx.fill();
@@ -339,7 +339,7 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
             ctx.save();
             ctx.translate(cx, cy + shadowOffset);
             ctx.rotate(this.angle);
-            ctx.scale(this.scale * this.squash * 1.05, this.scale * this.stretch * 1.05);
+            ctx.scale(this.scale * this.squash * 1.15, this.scale * this.stretch * 1.15);
             ctx.fillStyle = shadowColor;
             const beanWidth = 45;
             const beanHeight = 30;

@@ -126,7 +126,7 @@ export default class Tower extends BaseStructure {
         const shadowColor = this.isAuto ? 'rgba(120, 150, 200, 0.5)' : 'rgba(200, 200, 200, 0.5)';
         ctx.fillStyle = shadowColor;
         ctx.beginPath();
-        ctx.roundRect(-halfWidth * 1.05, -halfHeight * 1.05 + shadowOffset, this.width * 1.05, this.height * 1.05, 10);
+        ctx.roundRect(-halfWidth * 1.09, -halfHeight * 1.09 + shadowOffset, this.width * 1.09, this.height * 1.09, 10);
         ctx.fill();
 
         // Tower Body

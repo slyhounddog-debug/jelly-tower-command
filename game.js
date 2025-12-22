@@ -1367,7 +1367,7 @@ drawThermometer(ctx) {
         this.gameLoop(0);
     }
     
-    gameLoop(currentTime) {
+gameLoop(currentTime) {
         if (!this.lastTime) this.lastTime = currentTime;
         const deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
@@ -1375,15 +1375,23 @@ drawThermometer(ctx) {
 
         this.screenShake.update(tsf);
 
+        // --- CANDYLAND SKY ---
         const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-        skyGradient.addColorStop(0, '#a1c4fd');
-        skyGradient.addColorStop(1, '#ffdde1');
+        skyGradient.addColorStop(0, '#A1C4FD'); 
+        skyGradient.addColorStop(1, '#FFDDE1'); 
         this.ctx.fillStyle = skyGradient;
         this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // 1. ADD SUNLIGHT EFFECT (2 Streaks)
         this.drawSunlight(this.ctx);
-this.drawMountains(this.ctx);
-// Draw trees sorted by depth (z) so further ones are behind
-[...this.trees].sort((a, b) => a.z - b.z).forEach(t => this.drawTree(this.ctx, t));
+
+        // 2. ADD SUGAR SNOW (70 particles)
+        this.drawSugarSnow(this.ctx, tsf);
+
+        // 3. RENDER ICE CREAM MOUNTAIN (Elevated Summit)
+        this.drawIceCreamBackground(this.ctx);
+        
+        this.clouds.forEach(c => c.draw(this.ctx));
 
         if (!this.isPaused && !this.isGameOver) {
             this.gameTime += tsf;
@@ -1391,22 +1399,22 @@ this.drawMountains(this.ctx);
 
             if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
                 this.shopReminderShown = true;
-                document.getElementById('shop-reminder').style.display = 'block';
+                const reminder = document.getElementById('shop-reminder');
+                if (reminder) reminder.style.display = 'block';
                 this.isPaused = true;
             }
 
-            const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
-            const piggyCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel] * 60; // convert to frames
+            const pLvl = this.emporiumUpgrades.piggy_cooldown.level;
+            const pCooldown = this.emporiumUpgrades.piggy_cooldown.values[pLvl] * 60;
             this.piggyTimer += tsf;
-            if (this.piggyTimer >= piggyCooldown) {
+            if (this.piggyTimer >= pCooldown) {
                 this.piggyTimer = 0;
                 this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
                 if (!this.piggyBankSeen) {
                     this.piggyBankSeen = true;
                     this.isPaused = true;
-                    const piggyCooldownLevel = this.emporiumUpgrades.piggy_cooldown.level;
-                    const currentCooldown = this.emporiumUpgrades.piggy_cooldown.values[piggyCooldownLevel];
-                    document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${currentCooldown} seconds.`;
+                    const curCD = this.emporiumUpgrades.piggy_cooldown.values[pLvl];
+                    document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${curCD} seconds.`;
                     document.getElementById('piggy-modal').style.display = 'block';
                 }
             }
@@ -1438,161 +1446,79 @@ this.drawMountains(this.ctx);
                     this.castleHealthBar.triggerHit();
                     this.missiles.splice(i, 1);
                     this.screenShake.trigger(5, 10);
-                    for (let k = 0; k < 15; k++) {
-                        this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
-                    }
-
-                    const numSpots = 5;
-                    for (let j = 0; j < numSpots; j++) {
-                        const castlePlatforms = this.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
-                        const randomPlatform = castlePlatforms[Math.floor(Math.random() * castlePlatforms.length)];
-                        const spotX = randomPlatform.x + Math.random() * randomPlatform.width;
-                        const spotY = randomPlatform.y + Math.random() * randomPlatform.height;
-                        const spotRadius = Math.random() * 5 + 5;
-                        const spotColor = darkenColor('#f8c8dc', 20);
-                        this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor));
+                    for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
+                    
+                    const castlePlats = this.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
+                    for (let j = 0; j < 5; j++) {
+                        const rPlat = castlePlats[Math.floor(Math.random() * castlePlats.length)];
+                        const sX = rPlat.x + Math.random() * rPlat.width;
+                        const sY = rPlat.y + Math.random() * rPlat.height;
+                        this.damageSpots.push(new DamageSpot(sX, sY, Math.random() * 5 + 5, darkenColor('#f8c8dc', 20)));
                     }
                 }
             }
+
             this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
             document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
-           // --- PASTE THIS INSTEAD ---
-for (let i = this.projectiles.length - 1; i >= 0; i--) {
-    const p = this.projectiles[i];
-    p.update(tsf);
 
-    // Remove if off-screen
-    if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { 
-        this.projectiles.splice(i, 1); 
-        continue; 
-    }
-
-    for (let j = this.missiles.length - 1; j >= 0; j--) {
-        const m = this.missiles[j];
-
-        // Check for hit
-        if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-            // Determine if it's a critical hit
-            const isCritical = (Math.random() * 100 < this.stats.criticalHitChance);
-            let damageAmount = p.hp || 10;
-            if (isCritical) {
-                damageAmount *= 2;
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+                p.update(tsf);
+                if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
+                for (let j = this.missiles.length - 1; j >= 0; j--) {
+                    const m = this.missiles[j];
+                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+                        const isCrit = (Math.random() * 100 < this.stats.criticalHitChance);
+                        let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
+                        if (m.takeDamage(dmg, isCrit)) this.killMissile(m, j);
+                        m.kbVy = -2;
+                        this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                        if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
+                        this.projectiles.splice(i, 1);
+                        break;
+                    }
+                }
             }
-            
-            // Apply damage from projectile to enemy
-            const isDead = m.takeDamage(damageAmount, isCritical);
-            
-            // Visual feedback
-            m.kbVy = -2;
-            this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
-
-            if (!p.hasHit) { 
-                p.hasHit = true; 
-                this.shotsHit++; 
-            }
-
-            // CRITICAL FIX: If enemy is dead, kill it immediately
-            if (isDead) {
-                this.killMissile(m, j);
-            }
-
-            // Remove the projectile so it doesn't hit again
-            this.projectiles.splice(i, 1);
-            break; 
-        }
-    }
-}
 
             for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
             for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
-            for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
-                this.floatingTexts[i].update(tsf);
-                if (this.floatingTexts[i].life <= 0) {
-                    this.floatingTexts.splice(i, 1);
-                }
-            }
+            for (let i = this.floatingTexts.length - 1; i >= 0; i--) { this.floatingTexts[i].update(tsf); if (this.floatingTexts[i].life <= 0) this.floatingTexts.splice(i, 1); }
+            for (let i = this.damageSpots.length - 1; i >= 0; i--) { this.damageSpots[i].update(tsf); if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1); }
 
-            for (let i = this.damageSpots.length - 1; i >= 0; i--) {
-                this.damageSpots[i].update(tsf);
-                if (this.damageSpots[i].opacity <= 0) {
-                    this.damageSpots.splice(i, 1);
-                }
-            }
-            
             if (this.castleHealth <= 0) {
-                this.isGameOver = true;
+                this.isGameOver = true;
                 document.getElementById('open-emporium-btn').style.display = 'block';
-                document.getElementById('restart-btn').style.display = 'block';
-                document.getElementById('game-over-stats').style.display = 'block';
-
+                document.getElementById('restart-btn').style.display = 'block';
+                document.getElementById('game-over-stats').style.display = 'block';
                 saveEmporiumUpgrades(this.emporiumUpgrades);
                 localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
-                
-                const timeSec = (this.gameTime / 60);
-                const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
-                let mult = 0.5;
-                if (accuracy <= 0.5) mult = 0.5 + (accuracy * 100 * 0.01);
-                else mult = 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                
-                // Calculate scores
-                const timeScore = timeSec * 2;
-                const killsScore = this.enemiesKilled * 50;
-                const moneyScore = this.totalMoneyEarned * 1;
-                
-                const scoreBase = timeScore + killsScore + moneyScore;
-                const finalScore = Math.floor(scoreBase * mult);
-                
-                // --- High Score Logic (NEW) ---
-                // Get current high score (default to 0)
-                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
-
-                // Check for a new high score
-                if (finalScore > highScore) {
-                    highScore = finalScore;
-                    localStorage.setItem('myGameHighScore', highScore);
-                }
-                // --- End High Score Logic ---
-
-                // Update HTML elements
-                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
-                document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
-                document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
-                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
-                
-                document.getElementById('go-time-points').textContent = `(+${Math.floor(timeScore).toLocaleString()})`;
-                document.getElementById('go-kills-points').textContent = `(+${Math.floor(killsScore).toLocaleString()})`;
-                document.getElementById('go-money-points').textContent = `(+${Math.floor(moneyScore).toLocaleString()})`;
-                document.getElementById('go-mult-display').textContent = `(${mult.toFixed(2)}x)`;
-                
-                // Display scores
-                document.getElementById('go-score').textContent = finalScore.toLocaleString();
-                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
-            }
+                
+                const timeSec = (this.gameTime / 60);
+                const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
+                let mult = accuracy <= 0.5 ? 0.5 + (accuracy * 100 * 0.01) : 1.0 + ((accuracy - 0.5) * 100 * 0.02);
+                const scoreBase = (timeSec * 2) + (this.enemiesKilled * 50) + (this.totalMoneyEarned);
+                const finalScore = Math.floor(scoreBase * mult);
+                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+                if (finalScore > highScore) { highScore = finalScore; localStorage.setItem('myGameHighScore', highScore); }
+                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
+                document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
+                document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
+                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
+                document.getElementById('go-score').textContent = finalScore.toLocaleString();
+                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
+            }
         }
 
         const offset = this.screenShake.getOffset();
-        this.ctx.save(); this.ctx.translate(offset.x, offset.y);
-
-        this.drawMountains(this.ctx);
-        this.clouds.forEach(c => c.draw(this.ctx));
-
-        this.backgroundCastlePlatforms.forEach(p => {
-            this.ctx.save();
-            this.ctx.fillStyle = p.color;
-            
-            if (p.type === 'castle') { this.ctx.beginPath(); this.ctx.roundRect(p.x, p.y, p.width, p.height, 20); this.ctx.fill(); } else {
-                this.ctx.fillRect(p.x, p.y, p.width, p.height);
-            }
-            this.drawPlatformFrosting(p);
-            this.ctx.restore();
-        });
+        this.ctx.save(); 
+        this.ctx.translate(offset.x, offset.y);
 
         this.platforms.forEach(p => {
             this.ctx.save();
             if (p.type === 'cloud') {
-                const floatingOffset = Math.sin(this.gameTime * 0.03) * 2;
-                this.ctx.drawImage(p.canvas, p.x, p.y + floatingOffset);
-            } else { // Handles 'castle' and 'ground'
+                const fO = Math.sin(this.gameTime * 0.03) * 2;
+                this.ctx.drawImage(p.canvas, p.x, p.y + fO);
+            } else {
                 this.ctx.fillStyle = p.color;
                 this.ctx.beginPath();
                 this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
@@ -1602,17 +1528,7 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
             this.ctx.restore();
         });
 
-        for (const spot of this.damageSpots) {
-            spot.draw(this.ctx);
-        }
-        
-        if (!this.isGameOver) {
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 24px Segoe UI';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText("[F] SHOP", this.width / 2, this.height - 60);
-        }
-
+        this.damageSpots.forEach(s => s.draw(this.ctx));
         this.towers.forEach(t => t.draw(this.ctx));
         this.shields.forEach(s => s.draw(this.ctx));
         this.missiles.forEach(m => m.draw(this.ctx));
@@ -1622,310 +1538,180 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
         this.drawThermometer(this.ctx);
         this.player.draw(this.ctx);
         this.floatingTexts.forEach(ft => ft.draw(this.ctx));
-
         this.drawActionButtons(this.ctx);
 
         this.ctx.restore();
 
-
-        if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
-            this.towers.forEach(t => {
-                if (!t.isAuto && Math.hypot((t.x + 20) - (this.player.x + 12), (t.y + 20) - (this.player.y + 18)) < 80) {
-                    this.ctx.fillStyle = 'white'; this.ctx.font = '20px "Lucky Guy"'; this.ctx.fillText('Press E', t.x + 5, t.y - 15);
-                }
-            });
-        }
-
-        if (this.placementMode) {
-            this.ctx.globalAlpha = 0.6;
-            if (this.placementMode === 'turret') {
-                this.ctx.fillStyle = '#546e7a'; this.ctx.fillRect(this.mouse.x - 23, this.mouse.y - 23, 46, 46);
-                this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y, this.stats.range * 0.5, 0, Math.PI * 2); this.ctx.strokeStyle = 'white'; this.ctx.stroke();
-            } else if (this.placementMode === 'shield') {
-                this.ctx.fillStyle = '#3498db'; this.ctx.beginPath(); this.ctx.arc(this.mouse.x, this.mouse.y + 33, 64, Math.PI, 0); this.ctx.fill();
-            }
-            this.ctx.globalAlpha = 1.0;
-            this.ctx.fillStyle = '#333'; this.ctx.font = 'bold 20px "Lucky Guy"'; this.ctx.textAlign = 'center';
-            this.ctx.fillText('Click to Place | ESC to Cancel', this.mouse.x, this.mouse.y - 50);
-        }
-
-        if (this.sellMode) {
-            let hoverTarget = null;
-            let refundAmount = 0;
-            let targetType = '';
-            for (const t of this.towers) {
-                if (t.isAuto && this.mouse.x > t.x && this.mouse.x < t.x + t.width && this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
-                    hoverTarget = t;
-                    targetType = 'turret';
-                    const costs = [1000, 3000, 5000];
-                    refundAmount = Math.floor(costs[this.stats.turretsBought - 1] * 0.9);
-                    break;
-                }
-            }
-            if (!hoverTarget) {
-                for (const s of this.shields) {
-                    if (this.mouse.x > s.x && this.mouse.x < s.x + s.width && this.mouse.y > s.y && this.mouse.y < s.y + s.height) {
-                        hoverTarget = s;
-                        targetType = 'shield';
-                        refundAmount = Math.floor(this.SHIELD_COSTS[this.shields.length - 1] * 0.9);
-                        break;
-                    }
-                }
-            }
-            if (hoverTarget) {
-                this.ctx.globalAlpha = 0.8;
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                this.ctx.fillRect(this.mouse.x + 10, this.mouse.y - 50, 133, 40);
-                this.ctx.fillStyle = '#2ecc71';
-                this.ctx.font = 'bold 24px "Lucky Guy"';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText(`+$${refundAmount}`, this.mouse.x + 10 + (133 / 2), this.mouse.y - 25);
-                this.ctx.globalAlpha = 0.2;
-                this.ctx.fillStyle = 'white';
-                this.ctx.fillRect(hoverTarget.x, hoverTarget.y, hoverTarget.width, hoverTarget.height);
-                this.ctx.globalAlpha = 1.0;
-            }
-            if (this.mouse.isDown && hoverTarget) {
-                this.money += refundAmount;
-                if (targetType === 'turret') {
-                    this.towers.splice(this.towers.indexOf(hoverTarget), 1);
-                    this.stats.turretsBought--;
-                } else if (targetType === 'shield') {
-                    this.shields.splice(this.shields.indexOf(hoverTarget), 1);
-                }
-                this.sellMode = null;
-                this.isPaused = false;
-                document.getElementById('notification').innerText = "SOLD!";
-                document.getElementById('notification').style.opacity = 1;
-                setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-            }
-        }
-        
         document.getElementById('money-display').innerText = this.money;
-        if (this.isShopOpen) document.getElementById('shop-money-display').innerText = '$' + this.money;
-
-        const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
-        const maxHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
-        document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / maxHealth) * 100) + '%';
-        document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${maxHealth}`;
-
+        const cHealthLvl = this.emporiumUpgrades.castle_health.level;
+        const mHealth = this.emporiumUpgrades.castle_health.values[cHealthLvl];
+        document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / mHealth) * 100) + '%';
+        document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${mHealth}`;
 
         requestAnimationFrame(() => this.gameLoop(performance.now()));
     }
 
-    drawMountains(ctx) {
-    const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
-    for (let i = 0; i < 3; i++) {
-        ctx.fillStyle = mountainColors[i];
-        ctx.beginPath();
-        const yBase = this.height - 100;
-        const mWidth = this.width / 1.5;
-        const xStart = (i * this.width / 4) - 100;
-
-        ctx.moveTo(xStart, yBase);
-        ctx.lineTo(xStart + mWidth / 2, yBase - 300 - (i * 50));
-        ctx.lineTo(xStart + mWidth, yBase);
-        ctx.fill();
-
-        // --- SUNLIGHT GLOW (RIM LIGHTING) ---
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        const glowGrad = ctx.createLinearGradient(xStart, yBase - 300, xStart + mWidth/2, yBase);
-        glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Bright glow on the sunward side
-        glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = glowGrad;
-        ctx.fill();
-        ctx.restore();
-    }
-}
-    
-
-drawTree(ctx, t) {
-    ctx.save();
-    // Use z-index for parallax-like scaling
-    const scale = 0.5 + (t.z * 0.5);
-    const trunkWidth = 20 * scale;
-    const trunkHeight = t.height * 0.4;
-    
-    // --- SPIRAL WRAPPED TRUNK ---
-    ctx.save();
-    ctx.translate(t.x, t.y - trunkHeight);
-    // Draw white base
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-trunkWidth/2, 0, trunkWidth, trunkHeight);
-    
-    // Draw red spiral stripes
-    ctx.clip(new Path2D(`M${-trunkWidth/2} 0 h${trunkWidth} v${trunkHeight} h${-trunkWidth} z`));
-    ctx.strokeStyle = '#ff4d4d';
-    ctx.lineWidth = 8 * scale;
-    for(let j = -20; j < trunkHeight; j += 20 * scale) {
-        ctx.beginPath();
-        ctx.moveTo(-trunkWidth, j);
-        ctx.lineTo(trunkWidth, j + (20 * scale)); // Diagonal line for "wrap" look
-        ctx.stroke();
-    }
-    ctx.restore();
-
-    // --- GLOSSY LOLLIPOP TOP ---
-    const headRadius = (t.width / 2) * scale;
-    const headY = t.y - trunkHeight;
-    
-    const grad = ctx.createRadialGradient(
-        t.x - headRadius * 0.3, headY - headRadius * 0.3, headRadius * 0.1,
-        t.x, headY, headRadius
-    );
-    grad.addColorStop(0, '#ffffff'); // Shine
-    grad.addColorStop(0.2, t.color); // Main candy color
-    grad.addColorStop(1, darkenColor(t.color, 20)); // Shadow edge
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(t.x, headY, headRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Sunlight Glow on the Lollipop
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.beginPath();
-    ctx.arc(t.x, headY, headRadius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.restore();
-}
-
     drawSunlight(ctx) {
-        const centerX = this.width * 0.9;
-        const centerY = this.height * 0.1;
-        const radiusInner = 100;
-        const radiusOuter = 500;
-
-        const gradient = ctx.createRadialGradient(centerX, centerY, radiusInner, centerX, centerY, radiusOuter);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)'); // Faint white glow
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');  // Transparent
-
         ctx.save();
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radiusOuter, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalCompositeOperation = 'overlay';
+        const rayCount = 2;
+        for (let i = 0; i < rayCount; i++) {
+            ctx.beginPath();
+            const grad = ctx.createLinearGradient(0, 0, this.width, this.height);
+            grad.addColorStop(0, 'rgba(255, 255, 220, 0.25)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = grad;
+            ctx.moveTo(150 + (i * 400), -100);
+            ctx.lineTo(400 + (i * 400), -100);
+            ctx.lineTo(-100 + (i * 400), this.height + 100);
+            ctx.lineTo(-350 + (i * 400), this.height + 100);
+            ctx.fill();
+        }
         ctx.restore();
     }
-    drawTree(tree) {
-        this.ctx.save();
-        this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
 
-        const trunkWidth = tree.width * 0.25;
-        const trunkHeight = tree.height;
-        const leafStartY = tree.y - trunkHeight;
-
-        // Trunk
-        this.ctx.fillStyle = '#A0522D'; // Sienna
-        this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
-        
-        // Leaves
-        this.ctx.fillStyle = tree.color;
-        const R = tree.width * 0.315; // base radius
-
-        // bottom row
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x - R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x + R, leafStartY + R*2.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-
-        // middle row
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x - R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x + R*0.7, leafStartY + R*1.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-        
-        // top
-        this.ctx.beginPath(); this.ctx.ellipse(tree.x, leafStartY + R*0.5, R, R*1.2, 0, 0, Math.PI*2); this.ctx.fill();
-
-        this.ctx.restore();
-    }
-    
-    drawLollipopTree(tree) {
-        this.ctx.save();
-        this.ctx.globalAlpha = tree.z * 0.1 + 0.8;
-
-        const trunkWidth = tree.width * 0.15; // Thinner trunk
-        const trunkHeight = tree.height * 0.7; // Shorter trunk for lollipop head
-        const headRadius = tree.width * 0.6; // Large round head
-        const headY = tree.y - trunkHeight - headRadius;
-
-        // Solid white trunk
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(tree.x - trunkWidth / 2, tree.y - trunkHeight, trunkWidth, trunkHeight);
-
-        // Slanted red stripes
-        this.ctx.strokeStyle = '#e74c3c';
-        this.ctx.lineWidth = trunkWidth / 2;
-        const stripeGap = trunkWidth * 1.5;
-        for (let i = -trunkHeight; i < trunkHeight; i += stripeGap) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(tree.x - trunkWidth, tree.y - i);
-            this.ctx.lineTo(tree.x + trunkWidth, tree.y - (i - stripeGap * 0.7));
-            this.ctx.stroke();
+    drawSugarSnow(ctx, tsf) {
+        if (!this.sugarSnowflakes) {
+            this.sugarSnowflakes = Array.from({ length: 70 }, () => ({
+                x: Math.random() * this.width,
+                y: Math.random() * this.height,
+                size: Math.random() * 2.5 + 1,
+                speed: Math.random() * 0.7 + 0.3
+            }));
         }
-
-        // Highlight strip
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        this.ctx.fillRect(tree.x - trunkWidth/2, tree.y - trunkHeight, trunkWidth / 3, trunkHeight);
-
-        // Lollipop Head
-        this.ctx.fillStyle = tree.color;
-        this.ctx.beginPath();
-        this.ctx.arc(tree.x, headY, headRadius, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Swirl pattern
-        this.ctx.strokeStyle = darkenColor(tree.color, 20); // Darker shade of tree color
-        this.ctx.lineWidth = headRadius * 0.1;
-        const numSwirls = 5;
-        for (let i = 0; i < numSwirls; i++) {
-            this.ctx.beginPath();
-            this.ctx.arc(tree.x, headY, headRadius * (1 - (i / numSwirls)), Math.PI * 2 * i / numSwirls, Math.PI * 2 * (i + 1) / numSwirls + Math.PI / numSwirls);
-            this.ctx.stroke();
-        }
-
-        this.ctx.restore();
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+        this.sugarSnowflakes.forEach(f => {
+            f.y += f.speed * tsf;
+            if (f.y > this.height) f.y = -20;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.restore();
     }
-    
+
+    drawIceCreamBackground(ctx) {
+        const centerX = this.width / 2;
+        const scoopData = [
+            // Row 1: Massive Wide Base
+            { x: 0, y: this.height + 300, r: 400, color: '#FF99AC' }, 
+            { x: this.width * 0.25, y: this.height + 320, r: 450, color: '#98FFD9' },
+            { x: this.width * 0.5, y: this.height + 350, r: 500, color: '#FFDAB9' },
+            { x: this.width * 0.75, y: this.height + 320, r: 450, color: '#FFB7C5' },
+            { x: this.width, y: this.height + 300, r: 400, color: '#A1C4FD' },
+            
+            // Row 2: Mid mountain
+            { x: this.width * 0.3, y: this.height + 100, r: 380, color: '#FFF4E1' },
+            { x: this.width * 0.7, y: this.height + 100, r: 380, color: '#98FFD9' },
+            
+            // Row 3: Bridge Scoop (Moved up to support higher summit)
+            { x: centerX, y: this.height - 240, r: 360, color: '#FF99AC' },
+
+            // Row 4: Summit Scoop (Moved significantly UP to clear tower)
+            { x: centerX, y: this.height - 480, r: 295, color: '#FFF4E1', hasCherry: true }
+        ];
+
+        scoopData.forEach(s => {
+            const drawScoopShape = (context, x, y, r) => {
+                context.beginPath();
+                context.moveTo(x - r, y);
+                context.bezierCurveTo(x - r, y - r * 1.35, x + r, y - r * 1.35, x + r, y);
+                const ripples = 12;
+                for (let i = 0; i <= ripples; i++) {
+                    let rx = x + r - (i * (r * 2 / ripples));
+                    let ry = y + (i % 2 === 0 ? 40 : 20);
+                    context.quadraticCurveTo(rx + (r/ripples), ry + 25, rx, y);
+                }
+            };
+            ctx.save();
+            ctx.fillStyle = darkenColor(s.color, 30);
+            drawScoopShape(ctx, s.x, s.y + 15, s.r * 1.02); 
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = darkenColor(s.color, 20);
+            ctx.lineWidth = 8;
+            drawScoopShape(ctx, s.x, s.y, s.r);
+            ctx.fillStyle = s.color;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(s.x - s.r * 0.4, s.y - s.r * 0.9, s.r * 0.25, s.r * 0.15, Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (s.hasCherry) {
+                ctx.globalCompositeOperation = 'source-over';
+                const cherryX = s.x;
+                const cherryY = s.y - s.r * 0.92; 
+                const cherryR = 55;
+                
+                // Stem
+                ctx.beginPath();
+                ctx.strokeStyle = '#4e342e';
+                ctx.lineWidth = 6;
+                ctx.moveTo(cherryX, cherryY - 20);
+                ctx.quadraticCurveTo(cherryX + 35, cherryY - 110, cherryX + 60, cherryY - 130);
+                ctx.stroke();
+                
+                // Cherry Body
+                ctx.fillStyle = '#D32F2F';
+                ctx.beginPath();
+                ctx.arc(cherryX, cherryY, cherryR, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Overlap Layer
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.ellipse(cherryX, cherryY + cherryR - 5, cherryR * 1.2, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Highlight
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(cherryX - 18, cherryY - 18, 14, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+    }
+
     drawPlatformFrosting(platform) {
-        this.ctx.save(); // Save context state
+        this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20); // Use the same rounding as the platform
-        this.ctx.clip(); // Clip to this rounded rectangle
-
-        const frostingColor = lightenColor(platform.color, 10);
-        this.ctx.fillStyle = frostingColor;
+        this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20);
+        this.ctx.clip();
+        const fColor = lightenColor(platform.color, 15);
+        this.ctx.fillStyle = fColor;
         this.ctx.beginPath();
-        let startY = platform.y + 5;
-        this.ctx.moveTo(platform.x, startY);
-        let numDrips = Math.floor(platform.width / 30);
-        let dripHeight = platform.type === 'ground' ? 30 : 20;
-        let dripRandomness = platform.type === 'ground' ? 1.5 : 4;
-        const animSpeed = platform.type === 'ground' ? 82 : 65;
-        const animAmplitude = platform.type === 'ground' ? 11 : 16.5;
-
-        for (let i = 0; i < numDrips; i++) {
-            let x1 = platform.x + (i / numDrips) * platform.width;
-            let x2 = platform.x + ((i + 0.5) / numDrips) * platform.width;
-            let x3 = platform.x + ((i + 1) / numDrips) * platform.width;
-            let staticDrip = (Math.sin((platform.x + i) * dripRandomness) + 1) * dripHeight;
-            let animatedDrip = (Math.sin(this.gameTime / animSpeed + i * (Math.PI / 2)) + 1) * animAmplitude;
-            let dripY = startY + 10 + staticDrip + animatedDrip;
-            this.ctx.lineTo(x1, startY);
-            this.ctx.quadraticCurveTo(x2, dripY, x3, startY);
+        let sY = platform.y + 5;
+        this.ctx.moveTo(platform.x, sY);
+        let nD = Math.floor(platform.width / 25);
+        for (let i = 0; i < nD; i++) {
+            let x1 = platform.x + (i / nD) * platform.width;
+            let x2 = platform.x + ((i + 0.5) / nD) * platform.width;
+            let x3 = platform.x + ((i + 1) / nD) * platform.width;
+            let dY = sY + 18 + (Math.sin(this.gameTime / 60 + i) * 8);
+            this.ctx.quadraticCurveTo(x2, dY, x3, sY);
         }
-        this.ctx.lineTo(platform.x + platform.width, startY);
-        this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height); // Draw frosting over the whole platform
-        this.ctx.lineTo(platform.x, platform.y + platform.height); //
-        this.ctx.closePath();
+        this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height);
+        this.ctx.lineTo(platform.x, platform.y + platform.height);
         this.ctx.fill();
-        this.ctx.restore(); // Restore context state, removing the clip
+        this.ctx.restore();
     }
+
+    drawThermometer(ctx) {}
+    drawActionButtons(ctx) {}
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
-    const game = new Game(canvas);
-    game.start();
+    if (canvas) {
+        const game = new Game(canvas);
+        game.start();
+    }
 });
