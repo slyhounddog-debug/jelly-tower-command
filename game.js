@@ -25,10 +25,10 @@ class Game {
 
         this.levelManager = new initLevel(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
-        this.DAMAGE_TIERS = [10, 15, 20, 25, 35, 45, 55, 70, 85, 100, 118, 137, 160, 180, 200, 250];
+        this.DAMAGE_TIERS = [10, 17, 25, 35, 45, 55, 67, 80, 95, 110, 125, 140, 160, 180, 200, 250];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
-        this.LICK_DAMAGE_TIERS = [10, 20, 30, 40, 50];
-        this.LICK_KNOCKBACK_TIERS = [75, 100, 150, 200, 250];
+        this.LICK_DAMAGE_TIERS = [8, 16, 24, 32, 40];
+        this.LICK_KNOCKBACK_TIERS = [30, 40, 50, 60, 75];
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
         this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [

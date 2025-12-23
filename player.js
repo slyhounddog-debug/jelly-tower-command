@@ -67,7 +67,7 @@ export default class Player {
             if (hitByHand || hitByPlayer) {
                 m.takeDamage(this.game.stats.lickDamage);
                 // Smooth Knockback application
-                m.kbVy = -this.game.stats.lickKnockback * 0.3; // Initial impulse
+                m.kbVy = -this.game.stats.lickKnockback * .3; // Initial impulse
                 this.game.screenShake.trigger(4, 10); // Increased
                 // More particles
                 for (let i = 0; i < 15; i++) { // Increased particle count
