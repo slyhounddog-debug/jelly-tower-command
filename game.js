@@ -10,6 +10,7 @@ import Particle from './particle.js';
 import FloatingText from './floatingText.js?v=25';
 import DamageSpot from './damageSpot.js';
 import CastleHealthBar from './castleHealthBar.js';
+import initLevel from './initLevel.js';
 
 class Game {
     constructor(canvas) {
@@ -18,6 +19,7 @@ class Game {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
 
+        this.levelManager = new initLevel(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [10, 15, 20, 25, 35, 45, 55, 70, 85, 100, 118, 137, 160, 180, 200, 250];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
@@ -705,238 +707,10 @@ class Game {
         document.getElementById('restart-btn').style.display = 'none';
         document.getElementById('open-emporium-btn').style.display = 'none';
         document.getElementById('game-over-stats').style.display = 'none';
-                this.initLevel();
+                this.levelManager = new initLevel(this);
                 this.threatManager.reset();
             }
 
-initLevel() {
-    // --- 1. CORE ENVIRONMENT & COLORS ---
-    const castleColor = '#f8c8dc'; 
-    const groundColor = '#f8c8dc';
-    const lollipopPalette = ['#ff9ff3', '#feca57', '#48dbfb']; 
-    
-    // Platforms Setup
-    const groundPlatform = { x: 0, y: this.height - 60, width: this.width, height: 60, color: groundColor, type: 'ground' };
-    const castlePlatforms = [
-        { x: 50, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
-        { x: this.width - 150, y: this.height - 160, width: 100, height: 160, color: castleColor, type: 'castle' },
-        { x: this.width / 2 - 100, y: this.height - 120, width: 200, height: 120, color: castleColor, type: 'castle' }
-    ];
-
-    this.platforms = [...castlePlatforms, groundPlatform];
-
-    // Cloud Platforms logic
-    const floatingConfigs = [
-        { x: 100, y: this.height - 250, width: 200 }, { x: 900, y: this.height - 350, width: 200 },
-        { x: 500, y: this.height - 550, width: 250 }, { x: 100, y: this.height - 750, width: 180 },
-        { x: 800, y: this.height - 850, width: 180 }, { x: 450, y: this.height - 1100, width: 200 }
-    ];
-
-    floatingConfigs.forEach(cfg => {
-        const platform = { ...cfg, height: 30, type: 'cloud' };
-
-        const shadowOffset = 10;
-        const width = platform.width;
-        const height = platform.height * 1.5;
-
-        // Create an off-screen canvas
-        platform.canvas = document.createElement('canvas');
-        platform.canvas.width = width;
-        platform.canvas.height = height + shadowOffset;
-        const pCtx = platform.canvas.getContext('2d');
-
-        // Draw shadow (as a solid darker shape)
-        pCtx.fillStyle = '#A99075'; // Darker tan for shadow
-        if (pCtx.roundRect) {
-            pCtx.beginPath();
-            pCtx.roundRect(0, shadowOffset, width, height, height * 0.3);
-            pCtx.fill();
-        } else {
-            pCtx.fillRect(0, shadowOffset, width, height);
-        }
-
-        // --- Draw maple bar on the off-screen canvas ---
-        // Base of the maple bar
-        const gradient = pCtx.createLinearGradient(0, 0, 0, height);
-        gradient.addColorStop(0, '#E6CBA7'); // Lighter tan on top
-        gradient.addColorStop(1, '#D2B48C'); // Original tan at the bottom
-        pCtx.fillStyle = gradient;
-        if (pCtx.roundRect) {
-            pCtx.beginPath();
-            pCtx.roundRect(0, 0, width, height, height * 0.3);
-            pCtx.fill();
-        } else {
-            pCtx.fillRect(0, 0, width, height);
-        }
-
-        // Frosting (pink)
-        const frostingHeight = height * 0.6;
-        pCtx.fillStyle = '#FFC0CB'; // Pink color
-        if (pCtx.roundRect) {
-            pCtx.beginPath();
-            pCtx.roundRect(0, 0, width, frostingHeight, [height * 0.3, height * 0.3, 0, 0]);
-            pCtx.fill();
-        } else {
-            pCtx.fillRect(0, 0, width, frostingHeight);
-        }
-
-        // Drips
-        for (let i = 0; i < (width / 40); i++) {
-            const dripX = Math.random() * width;
-            const dripY = frostingHeight - 5;
-            const dripWidth = 8 + Math.random() * 8;
-            const dripHeight = 10 + Math.random() * 10;
-            if (pCtx.roundRect) {
-                pCtx.beginPath();
-                pCtx.roundRect(dripX, dripY, dripWidth, dripHeight, 4);
-                pCtx.fill();
-            } else {
-                pCtx.fillRect(dripX, dripY, dripWidth, dripHeight);
-            }
-        }
-
-        // Sprinkles
-        const sprinkles = ['#FF1493', '#00BFFF', '#ADFF2F', '#FFD700', '#FF4500'];
-        for (let i = 0; i < (width / 10); i++) {
-            const sprinkleX = 5 + Math.random() * (width - 10);
-            const sprinkleY = 5 + Math.random() * (frostingHeight - 20);
-            pCtx.fillStyle = sprinkles[Math.floor(Math.random() * sprinkles.length)];
-            const sprinkleWidth = 2 + Math.random() * 2;
-            const sprinkleHeight = 5 + Math.random() * 3;
-            pCtx.fillRect(sprinkleX, sprinkleY, sprinkleWidth, sprinkleHeight);
-        }
-
-        this.platforms.push(platform);
-    });
-
-    this.towers = floatingConfigs.map(p => new Tower(this, p.x + 72.4, p.y - 55.2));
-    this.clouds = Array.from({ length: 4 }, () => new Cloud(this));
-
-    // --- 2. LOLLIPOP TREES SETUP ---
-    // We generate these here, but drawing order in your main loop is what hides the trunks.
-    this.trees = [];
-    const treeCount = 8;
-    const spacing = this.width / treeCount;
-
-    for (let i = 0; i < treeCount; i++) {
-        const depth = Math.random(); 
-        this.trees.push({
-            x: (spacing * i) + (Math.random() * (spacing * 0.4)),
-            y: this.height - 55, // Slightly lower than ground to ensure no gaps
-            z: depth,
-            width: 110 + (depth * 90), 
-            height: 380 + (depth * 520), 
-            color: lollipopPalette[i % lollipopPalette.length]
-        });
-    }
-
-    // --- 3. REFINED MOUNTAIN DRAWING (Will hide trunks) ---
-    this.drawMountains = (ctx) => {
-        const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
-        
-        // Add a very subtle "Distance Fog" to the mountains
-        ctx.save();
-        ctx.globalAlpha = 0.9;
-        
-        mountainColors.forEach((color, i) => {
-            const yBase = this.height - 60; // Anchored exactly to ground top
-            const mWidth = this.width / 1.4;
-            const xStart = (i * this.width / 4) - 150;
-            const peakX = xStart + mWidth / 2;
-            const peakY = yBase - 280 - (i * 60);
-
-            // Solid Mountain Shape (covers trunks)
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(xStart, yBase + 10); // Overlap slightly with ground
-            ctx.lineTo(peakX, peakY);
-            ctx.lineTo(xStart + mWidth, yBase + 10);
-            ctx.closePath();
-            ctx.fill();
-
-            // Refined Soft Peak Glow
-            const grad = ctx.createLinearGradient(peakX, peakY, peakX, peakY + 200);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = grad;
-            ctx.fill();
-        });
-        ctx.restore();
-    };
-
-    // --- 4. LOLLIPOP DRAWING LOGIC ---
-    this.drawTree = (ctx, t) => {
-        ctx.save();
-        const scale = 0.45 + (t.z * 0.55);
-        ctx.globalAlpha = 0.7 + (t.z * 0.3); // Atmospheric fading for depth
-        
-        const trunkW = 16 * scale;
-        const trunkH = t.height;
-        const headR = (t.width / 2) * scale;
-        const headY = t.y - trunkH;
-
-        // Trunk
-        ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(-trunkW/2, -trunkH, trunkW, trunkH);
-        
-        ctx.beginPath();
-        ctx.rect(-trunkW/2, -trunkH, trunkW, trunkH);
-        ctx.clip();
-        
-        ctx.strokeStyle = "#ffb3c1"; // Softer candy pink stripe
-        ctx.lineWidth = 6 * scale;
-        for (let j = -trunkH - 50; j < 50; j += 40 * scale) {
-            ctx.beginPath();
-            ctx.moveTo(-trunkW, j);
-            ctx.lineTo(trunkW, j + (25 * scale));
-            ctx.stroke();
-        }
-        ctx.restore();
-
-        // Lollipop Top
-        ctx.beginPath();
-        ctx.arc(t.x, headY, headR, 0, Math.PI * 2);
-        ctx.fillStyle = t.color;
-        ctx.fill();
-
-        // Elegant Swirl
-        ctx.save();
-        ctx.translate(t.x, headY);
-        ctx.beginPath();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-        ctx.lineWidth = 2.5 * scale;
-        for (let a = 0; a < 15; a += 0.1) {
-            const radius = (a / 15) * headR;
-            const angle = a * 1.8; 
-            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
-        }
-        ctx.stroke();
-        ctx.restore();
-
-        // Sophisticated Gloss (Rim Lighting)
-        const shine = ctx.createRadialGradient(
-            t.x - headR * 0.4, headY - headR * 0.4, headR * 0.05,
-            t.x - headR * 0.4, headY - headR * 0.4, headR * 0.8
-        );
-        shine.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-        shine.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = shine;
-        ctx.beginPath();
-        ctx.arc(t.x, headY, headR, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    };
-
-    // --- 5. AESTHETIC TWEAKS (Background Castle & Ground Bloom) ---
-    const bgCastleColor = darkenColor(castleColor, 12);
-    this.backgroundCastlePlatforms = castlePlatforms.map(p => ({
-        ...p, x: p.x - 75, y: p.y - 30, color: bgCastleColor
-    }));
-    this.backgroundCastlePlatforms.push({ ...groundPlatform, y: groundPlatform.y - 30, color: bgCastleColor });
-}
 
     killMissile(m, index) {
         // Splitting logic for marshmallows
