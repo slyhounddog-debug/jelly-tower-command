@@ -11,6 +11,8 @@ import FloatingText from './floatingText.js?v=25';
 import DamageSpot from './damageSpot.js';
 import CastleHealthBar from './castleHealthBar.js';
 import initLevel from './initLevel.js';
+import Thermometer from './thermometer.js';
+import Drawing from './drawing.js';
 
 class Game {
     constructor(canvas) {
@@ -67,7 +69,9 @@ class Game {
         this.gummyWormSeen = false;
         this.marshmallowSpawnThreshold = 15;
         this.marshmallowSeen = false;
-        this.thermometerWarn = false;
+
+        this.thermometer = new Thermometer(this);
+        this.drawing = new Drawing(this);
 
         this.iceCreamScoops = 0;
         this.emporiumUpgrades = {}; // Will be populated by loadEmporiumUpgrades
@@ -418,85 +422,7 @@ class Game {
         });
     }
 
-    drawShieldIcon(ctx, x, y, radius) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale((radius / 64) * 0.85, (radius / 64) * 0.85);
-        ctx.fillStyle = '#3498db';
-        ctx.beginPath();
-        ctx.arc(0, 33, 64, Math.PI, 0);
-        ctx.fill();
-        ctx.restore();
-    }
 
-    drawTurretIcon(ctx, x, y, radius) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(radius / 46, radius / 46);
-        ctx.fillStyle = '#a1c4fd';
-        ctx.beginPath();
-        ctx.roundRect(-23, -23, 46, 46, 10);
-        ctx.fill();
-        const gradient = ctx.createLinearGradient(0, 0, 28, 0);
-        gradient.addColorStop(0, 'lightblue');
-        gradient.addColorStop(1, 'lightpink');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.roundRect(0, -11.5, 28, 13, 5);
-        ctx.fill();
-        ctx.restore();
-    }
-
-    drawActionButtons(ctx) {
-        if (this.isGameOver) return;
-        this.actionButtons.forEach(button => {
-            if (button.errorShake > 0) {
-                button.errorShake--;
-            }
-            const shakeX = button.errorShake > 0 ? Math.sin(button.errorShake * 2) * 5 : 0;
-            const radius = button.radius * (button.hovered ? 1.1 : 1);
-            ctx.save();
-            ctx.translate(button.x + shakeX, button.y);
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fill();
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            if (button.id === 'buy_shield') {
-                this.drawShieldIcon(ctx, 0, 0, radius);
-            } else if (button.id === 'buy_turret') {
-                this.drawTurretIcon(ctx, 0, 0, radius);
-            } else {
-                ctx.font = `${radius * 0.8}px 'Lucky Guy'`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#333';
-                ctx.fillText(button.icon, 0, 0);
-            }
-
-            if (button.hovered || button.errorShake > 0) {
-                const cost = button.getCost();
-                if (cost !== 'MAX' && cost !== 'N/A' && cost !== 'SELL') {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    ctx.fill();
-                    ctx.fillStyle = button.errorShake > 0 ? 'red' : '#fff';
-                    ctx.font = `bold ${radius * 0.5}px 'Lucky Guy'`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(`$${cost}`, 0, 0);
-                    ctx.restore();
-                }
-            }
-            ctx.restore();
-        });
-    }
 
     initListeners() {
         this.resizeModals();
@@ -975,163 +901,6 @@ class Game {
         document.getElementById('shop-money-display').innerText = this.money;
     }
 
-drawThermometer(ctx) {
-    // --- 1. DIMENSIONS ---
-    const w = 42;           
-    const h = 375;          
-    const xBase = this.width - 80;
-    const yBase = 100;
-    const bulbRadius = 38;  
-    const bulbY = yBase + h;
-
-    // --- 2. 10-MINUTE TIMER LOGIC ---
-    if (!this.thermometerStartTime) {
-        this.thermometerStartTime = Date.now();
-    }
-    const duration = 10 * 60 * 1000; 
-    const elapsed = Date.now() - this.thermometerStartTime;
-    const fillPercent = Math.min(1, elapsed / duration);
-    
-    const totalFillHeight = (h + bulbRadius) * fillPercent;
-    const jamTopY = (bulbY + bulbRadius) - totalFillHeight;
-
-    const intersectAngle = Math.asin((w / 2) / bulbRadius);
-    const intersectY = bulbY - Math.cos(intersectAngle) * bulbRadius;
-
-    // --- 3. ANIMATION LOGIC (HALF SPEED) ---
-    const time = Date.now() * 0.001; // Slower time (multiplied by 0.001 instead of 0.002)
-    const pulse = (Math.sin(time * 2) + 1) / 2; 
-    const scale = 1 + (pulse * 0.05); 
-    
-    // Wobble: 2 degrees is ~0.035 radians
-    const wobbleAngle = Math.sin(time * 0.8) * 0.035; 
-
-    ctx.save();
-
-    const centerX = xBase;
-    const centerY = yBase + (h / 2);
-    ctx.translate(centerX, centerY);
-    ctx.rotate(wobbleAngle);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-
-    const x = xBase;
-    const y = yBase;
-
-    // 4. REUSABLE GLASS SHAPE
-    const drawGlassShape = () => {
-        ctx.beginPath();
-        ctx.arc(x, y, w / 2, Math.PI, 0); 
-        ctx.lineTo(x + w / 2, intersectY);
-        ctx.arc(x, bulbY, bulbRadius, 1.5 * Math.PI + intersectAngle, 1.5 * Math.PI - intersectAngle);
-        ctx.closePath();
-    };
-
-    // OUTER GLOW
-    ctx.save();
-    ctx.shadowBlur = 15 + (pulse * 10);
-    ctx.shadowColor = `rgba(255, 105, 180, ${0.4 + pulse * 0.3})`; 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 2;
-    drawGlassShape();
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    drawGlassShape();
-    ctx.fill();
-
-    // 5. INTERNAL PINK JAM
-    ctx.save();
-    drawGlassShape();
-    ctx.clip(); 
-
-    const jamGrad = ctx.createLinearGradient(x, jamTopY, x, bulbY + bulbRadius);
-    jamGrad.addColorStop(0, "rgba(255, 180, 220, 0.9)"); // Brighter pink
-    jamGrad.addColorStop(0.3, "rgba(255, 20, 147, 0.75)"); 
-    jamGrad.addColorStop(1, "rgba(139, 0, 139, 0.7)");    
-    ctx.fillStyle = jamGrad;
-
-    ctx.fillRect(x - bulbRadius - 10, jamTopY, (bulbRadius + 10) * 2, (bulbY + bulbRadius) - jamTopY);
-
-    // Wave Surface
-    const waveTime = Date.now() * 0.005;
-    const waveWidth = bulbRadius + 10;
-    ctx.beginPath();
-    ctx.moveTo(x - waveWidth, jamTopY + 10);
-    for (let i = -waveWidth; i <= waveWidth; i++) {
-        const wave = Math.sin(i * 0.15 + waveTime * 1.5) * 4 + Math.cos(i * 0.1 - waveTime * 0.8) * 2;
-        ctx.lineTo(x + i, jamTopY + wave);
-    }
-    ctx.lineTo(x + waveWidth, jamTopY + 10);
-    ctx.fill();
-
-    // SPITTING PARTICLES (Only if > 80% full)
-    if (fillPercent > 0.8) {
-        ctx.fillStyle = "rgba(255, 105, 180, 0.8)";
-        for (let i = 0; i < 5; i++) {
-            const pTime = Date.now() * 0.002 + i;
-            const px = x + Math.cos(pTime * 2) * 15;
-            const py = jamTopY - (Math.abs(Math.sin(pTime * 5)) * 30);
-            ctx.beginPath();
-            ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // SLOW BUBBLES
-    const bTime = Date.now();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    for (let i = 0; i < 8; i++) {
-        const bX = x + Math.sin(bTime * 0.001 + i) * (w * 0.3);
-        const bY = (bulbY + 10) - ((bTime * (0.015 + i * 0.003)) % (totalFillHeight + 20));
-        if (bY > jamTopY + 5) {
-            ctx.beginPath();
-            ctx.arc(bX, bY, 1 + (i % 2), 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    ctx.restore(); 
-
-    // 6. NOTCHES WITH GLOW LOGIC
-    for (let i = 1; i <= 10; i++) {
-        const notchPct = i / 10;
-        const notchY = bulbY - (h * notchPct);
-        const isGlowing = fillPercent >= notchPct;
-
-        ctx.beginPath();
-        ctx.moveTo(x - w / 2 + 5, notchY);
-        ctx.quadraticCurveTo(x, notchY + 5, x + w / 2 - 5, notchY);
-        
-        if (isGlowing) {
-            ctx.strokeStyle = "rgba(255, 180, 220, 0.9)";
-            ctx.lineWidth = 3;
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = "pink";
-        } else {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            ctx.lineWidth = 1.5;
-            ctx.shadowBlur = 0;
-        }
-        ctx.stroke();
-    }
-    ctx.shadowBlur = 0; // Reset shadow
-
-    // Main Border
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.lineWidth = 3;
-    drawGlassShape();
-    ctx.stroke();
-
-    // Glare
-    const glassGlare = ctx.createLinearGradient(x - w/2, 0, x + w/2, 0);
-    glassGlare.addColorStop(0.2, "rgba(255, 255, 255, 0.3)");
-    glassGlare.addColorStop(0.5, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = glassGlare;
-    ctx.fillRect(x - w/2, y - 10, w, h + 10);
-
-    ctx.restore(); 
-}
 
     start() {
         window.closePiggyModal = this.closePiggyModal.bind(this);
@@ -1157,13 +926,13 @@ gameLoop(currentTime) {
         this.ctx.fillRect(0, 0, this.width, this.height);
 
         // 1. ADD SUNLIGHT EFFECT
-        this.drawSunlight(this.ctx);
+        this.drawing.drawSunlight(this.ctx);
 
         // 2. ADD SUGAR SNOW
-        this.drawSugarSnow(this.ctx, tsf);
+        this.drawing.drawSugarSnow(this.ctx, tsf);
 
         // 3. RENDER PRE-RENDERED ICE CREAM MOUNTAIN
-        this.drawIceCreamBackground(this.ctx);
+        this.drawing.drawIceCreamBackground(this.ctx);
         
         this.clouds.forEach(c => c.draw(this.ctx));
 
@@ -1298,7 +1067,7 @@ gameLoop(currentTime) {
                 this.ctx.beginPath();
                 this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
                 this.ctx.fill();
-                this.drawPlatformFrosting(p);
+                this.drawing.drawPlatformFrosting(p);
             }
             this.ctx.restore();
         });
@@ -1310,10 +1079,10 @@ gameLoop(currentTime) {
         this.projectiles.forEach(p => p.draw(this.ctx));
         this.drops.forEach(d => d.draw(this.ctx));
         this.particles.forEach(p => p.draw(this.ctx));
-        this.drawThermometer(this.ctx);
+        this.thermometer.draw(this.ctx);
         this.player.draw(this.ctx);
         this.floatingTexts.forEach(ft => ft.draw(this.ctx));
-        this.drawActionButtons(this.ctx);
+        this.drawing.drawActionButtons(this.ctx);
 
         this.ctx.restore();
 
@@ -1326,187 +1095,12 @@ gameLoop(currentTime) {
         requestAnimationFrame((t) => this.gameLoop(t));
     }
 
-    drawSunlight(ctx) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'overlay';
-        const rayCount = 2;
-        for (let i = 0; i < rayCount; i++) {
-            ctx.beginPath();
-            const grad = ctx.createLinearGradient(0, 0, this.width, this.height);
-            grad.addColorStop(0, 'rgba(255, 255, 220, 0.2)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = grad;
-            ctx.moveTo(150 + (i * 400), -100);
-            ctx.lineTo(400 + (i * 400), -100);
-            ctx.lineTo(-100 + (i * 400), this.height + 100);
-            ctx.lineTo(-350 + (i * 400), this.height + 100);
-            ctx.fill();
-        }
-        ctx.restore();
-    }
 
-    drawSugarSnow(ctx, tsf) {
-        if (!this.sugarSnowflakes) {
-            this.sugarSnowflakes = Array.from({ length: 70 }, () => ({
-                x: Math.random() * this.width,
-                y: Math.random() * this.height,
-                size: Math.random() * 2 + 1,
-                speed: Math.random() * 0.6 + 0.2
-            }));
-        }
-        ctx.save();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-        this.sugarSnowflakes.forEach(f => {
-            f.y += f.speed * tsf;
-            if (f.y > this.height) f.y = -20;
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.restore();
-    }
 
-drawIceCreamBackground(ctx) {
-    if (!this.bgCanvas) {
-        this.bgCanvas = document.createElement('canvas');
-        this.bgCanvas.width = this.width;
-        this.bgCanvas.height = this.height;
-        const bctx = this.bgCanvas.getContext('2d');
 
-        const centerX = this.width / 2;
-        const scoopData = [
-            { x: 0, y: this.height + 300, r: 400, color: '#FFB5C5' }, 
-            { x: this.width * 0.25, y: this.height + 320, r: 450, color: '#C1FFC1' },
-            { x: this.width * 0.5, y: this.height + 350, r: 500, color: '#FFE4B5' },
-            { x: this.width * 0.75, y: this.height + 320, r: 450, color: '#FFC0CB' },
-            { x: this.width, y: this.height + 300, r: 400, color: '#B0E2FF' },
-            { x: this.width * 0.3, y: this.height + 100, r: 380, color: '#FFFACD' },
-            { x: this.width * 0.7, y: this.height + 100, r: 380, color: '#D1FFD1' },
-            { x: centerX, y: this.height - 240, r: 360, color: '#FFB5C5' }, 
-            { x: centerX, y: this.height - 480, r: 295, color: '#FFF9F0', hasCherry: true }
-        ];
 
-        scoopData.forEach((s) => {
-            const drawScoopShape = (context, x, y, r) => {
-                context.beginPath();
-                context.moveTo(x - r, y);
-                context.bezierCurveTo(x - r, y - r * 1.35, x + r, y - r * 1.35, x + r, y);
-                const ripples = 12;
-                for (let i = 0; i <= ripples; i++) {
-                    let rx = x + r - (i * (r * 2 / ripples));
-                    let ry = y + (i % 2 === 0 ? 35 : 15);
-                    context.quadraticCurveTo(rx + (r/ripples), ry + 20, rx, y);
-                }
-            };
 
-            // 1. Scoop Base
-            bctx.save();
-            bctx.fillStyle = s.color;
-            drawScoopShape(bctx, s.x, s.y, s.r);
-            bctx.fill();
-            bctx.strokeStyle = darkenColor(s.color, 10);
-            bctx.lineWidth = 4;
-            bctx.stroke();
-            bctx.restore();
 
-            // 2. Sprinkles
-            const sprColors = ['#FF69B4', '#5DADE2', '#F4D03F', '#58D68D', '#EB984E'];
-            bctx.save();
-            bctx.clip(); 
-            for(let i=0; i < 12; i++) {
-                let angle = Math.PI + (Math.random() * Math.PI); 
-                let dist = (s.r * 0.5) + (Math.random() * s.r * 0.4);
-                let sx = s.x + Math.cos(angle) * dist;
-                let sy = s.y + Math.sin(angle) * dist;
-                if (sy < s.y - (s.r * 0.4)) {
-                    bctx.save();
-                    bctx.translate(sx, sy);
-                    bctx.rotate(Math.random() * Math.PI);
-                    bctx.fillStyle = sprColors[i % sprColors.length];
-                    bctx.beginPath();
-                    bctx.ellipse(0, 0, 14, 5, 0, 0, Math.PI * 2);
-                    bctx.fill();
-                    bctx.restore();
-                }
-            }
-            bctx.restore();
-
-            // 3. REFINED LAYERED CHERRY
-            if (s.hasCherry) {
-                const cx = s.x;
-                const cy = s.y - s.r * 0.92; 
-                const mainR = 60;
-                const bgR = 64;   // Size of the background layers
-                const shift = 3;  // Tightened offset
-
-                // Stem
-                bctx.beginPath();
-                bctx.strokeStyle = '#4E342E';
-                bctx.lineWidth = 6;
-                bctx.moveTo(cx, cy - 10);
-                bctx.quadraticCurveTo(cx + 10, cy - 80, cx + 45, cy - 110);
-                bctx.stroke();
-
-                // LIGHT LAYER (Visible Top Right - Anchored Bottom Left)
-                bctx.fillStyle = '#FFDDE4'; // Even lighter pink
-                bctx.beginPath();
-                bctx.arc(cx + shift, cy - shift, bgR, 0, Math.PI * 2);
-                bctx.fill();
-
-                // DARK LAYER (Visible Bottom Left - Anchored Top Right)
-                bctx.fillStyle = '#800015'; 
-                bctx.beginPath();
-                bctx.arc(cx - shift, cy + shift, bgR, 0, Math.PI * 2);
-                bctx.fill();
-
-                // MAIN LAYER (Center)
-                bctx.fillStyle = '#FF4D6D'; 
-                bctx.beginPath();
-                bctx.arc(cx, cy, mainR, 0, Math.PI * 2);
-                bctx.fill();
-
-                // Small Shine
-                bctx.fillStyle = '#FFFFFF';
-                bctx.globalAlpha = 0.3;
-                bctx.beginPath();
-                bctx.ellipse(cx - 15, cy - 15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
-                bctx.fill();
-                bctx.globalAlpha = 1.0;
-
-                // Tuck-in (Hides clipping from background layers)
-                bctx.fillStyle = s.color;
-                bctx.beginPath();
-                bctx.ellipse(cx, cy + mainR + 5, mainR * 1.6, 25, 0, 0, Math.PI * 2);
-                bctx.fill();
-            }
-        });
-    }
-    ctx.drawImage(this.bgCanvas, 0, 0);
-}
-
-    drawPlatformFrosting(platform) {
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.roundRect(platform.x, platform.y, platform.width, platform.height, 20);
-        this.ctx.clip();
-        const fColor = lightenColor(platform.color, 15);
-        this.ctx.fillStyle = fColor;
-        this.ctx.beginPath();
-        let sY = platform.y + 5;
-        this.ctx.moveTo(platform.x, sY);
-        let nD = Math.floor(platform.width / 25);
-        for (let i = 0; i < nD; i++) {
-            let x1 = platform.x + (i / nD) * platform.width;
-            let x2 = platform.x + ((i + 0.5) / nD) * platform.width;
-            let x3 = platform.x + ((i + 1) / nD) * platform.width;
-            let dY = sY + 18 + (Math.sin(this.gameTime / 60 + i) * 8);
-            this.ctx.quadraticCurveTo(x2, dY, x3, sY);
-        }
-        this.ctx.lineTo(platform.x + platform.width, platform.y + platform.height);
-        this.ctx.lineTo(platform.x, platform.y + platform.height);
-        this.ctx.fill();
-        this.ctx.restore();
-    }
 
     drawThermometer(ctx) {
     // --- 1. DIMENSIONS ---
