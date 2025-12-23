@@ -1382,13 +1382,13 @@ gameLoop(currentTime) {
         this.ctx.fillStyle = skyGradient;
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // 1. ADD SUNLIGHT EFFECT (2 Streaks)
+        // 1. ADD SUNLIGHT EFFECT
         this.drawSunlight(this.ctx);
 
-        // 2. ADD SUGAR SNOW (70 particles)
+        // 2. ADD SUGAR SNOW
         this.drawSugarSnow(this.ctx, tsf);
 
-        // 3. RENDER ICE CREAM MOUNTAIN (Elevated Summit)
+        // 3. RENDER PRE-RENDERED ICE CREAM MOUNTAIN
         this.drawIceCreamBackground(this.ctx);
         
         this.clouds.forEach(c => c.draw(this.ctx));
@@ -1480,6 +1480,7 @@ gameLoop(currentTime) {
                 }
             }
 
+            // Cleanup
             for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
             for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
             for (let i = this.floatingTexts.length - 1; i >= 0; i--) { this.floatingTexts[i].update(tsf); if (this.floatingTexts[i].life <= 0) this.floatingTexts.splice(i, 1); }
@@ -1548,7 +1549,7 @@ gameLoop(currentTime) {
         document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / mHealth) * 100) + '%';
         document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${mHealth}`;
 
-        requestAnimationFrame(() => this.gameLoop(performance.now()));
+        requestAnimationFrame((t) => this.gameLoop(t));
     }
 
     drawSunlight(ctx) {
@@ -1558,7 +1559,7 @@ gameLoop(currentTime) {
         for (let i = 0; i < rayCount; i++) {
             ctx.beginPath();
             const grad = ctx.createLinearGradient(0, 0, this.width, this.height);
-            grad.addColorStop(0, 'rgba(255, 255, 220, 0.25)');
+            grad.addColorStop(0, 'rgba(255, 255, 220, 0.2)');
             grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = grad;
             ctx.moveTo(150 + (i * 400), -100);
@@ -1575,12 +1576,12 @@ gameLoop(currentTime) {
             this.sugarSnowflakes = Array.from({ length: 70 }, () => ({
                 x: Math.random() * this.width,
                 y: Math.random() * this.height,
-                size: Math.random() * 2.5 + 1,
-                speed: Math.random() * 0.7 + 0.3
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 0.6 + 0.2
             }));
         }
         ctx.save();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
         this.sugarSnowflakes.forEach(f => {
             f.y += f.speed * tsf;
             if (f.y > this.height) f.y = -20;
@@ -1591,28 +1592,27 @@ gameLoop(currentTime) {
         ctx.restore();
     }
 
-    drawIceCreamBackground(ctx) {
+drawIceCreamBackground(ctx) {
+    if (!this.bgCanvas) {
+        this.bgCanvas = document.createElement('canvas');
+        this.bgCanvas.width = this.width;
+        this.bgCanvas.height = this.height;
+        const bctx = this.bgCanvas.getContext('2d');
+
         const centerX = this.width / 2;
         const scoopData = [
-            // Row 1: Massive Wide Base
-            { x: 0, y: this.height + 300, r: 400, color: '#FF99AC' }, 
-            { x: this.width * 0.25, y: this.height + 320, r: 450, color: '#98FFD9' },
-            { x: this.width * 0.5, y: this.height + 350, r: 500, color: '#FFDAB9' },
-            { x: this.width * 0.75, y: this.height + 320, r: 450, color: '#FFB7C5' },
-            { x: this.width, y: this.height + 300, r: 400, color: '#A1C4FD' },
-            
-            // Row 2: Mid mountain
-            { x: this.width * 0.3, y: this.height + 100, r: 380, color: '#FFF4E1' },
-            { x: this.width * 0.7, y: this.height + 100, r: 380, color: '#98FFD9' },
-            
-            // Row 3: Bridge Scoop (Moved up to support higher summit)
-            { x: centerX, y: this.height - 240, r: 360, color: '#FF99AC' },
-
-            // Row 4: Summit Scoop (Moved significantly UP to clear tower)
-            { x: centerX, y: this.height - 480, r: 295, color: '#FFF4E1', hasCherry: true }
+            { x: 0, y: this.height + 300, r: 400, color: '#FFB5C5' }, 
+            { x: this.width * 0.25, y: this.height + 320, r: 450, color: '#C1FFC1' },
+            { x: this.width * 0.5, y: this.height + 350, r: 500, color: '#FFE4B5' },
+            { x: this.width * 0.75, y: this.height + 320, r: 450, color: '#FFC0CB' },
+            { x: this.width, y: this.height + 300, r: 400, color: '#B0E2FF' },
+            { x: this.width * 0.3, y: this.height + 100, r: 380, color: '#FFFACD' },
+            { x: this.width * 0.7, y: this.height + 100, r: 380, color: '#D1FFD1' },
+            { x: centerX, y: this.height - 240, r: 360, color: '#FFB5C5' }, 
+            { x: centerX, y: this.height - 480, r: 295, color: '#FFF9F0', hasCherry: true }
         ];
 
-        scoopData.forEach(s => {
+        scoopData.forEach((s) => {
             const drawScoopShape = (context, x, y, r) => {
                 context.beginPath();
                 context.moveTo(x - r, y);
@@ -1620,65 +1620,95 @@ gameLoop(currentTime) {
                 const ripples = 12;
                 for (let i = 0; i <= ripples; i++) {
                     let rx = x + r - (i * (r * 2 / ripples));
-                    let ry = y + (i % 2 === 0 ? 40 : 20);
-                    context.quadraticCurveTo(rx + (r/ripples), ry + 25, rx, y);
+                    let ry = y + (i % 2 === 0 ? 35 : 15);
+                    context.quadraticCurveTo(rx + (r/ripples), ry + 20, rx, y);
                 }
             };
-            ctx.save();
-            ctx.fillStyle = darkenColor(s.color, 30);
-            drawScoopShape(ctx, s.x, s.y + 15, s.r * 1.02); 
-            ctx.fill();
-            ctx.restore();
 
-            ctx.save();
-            ctx.strokeStyle = darkenColor(s.color, 20);
-            ctx.lineWidth = 8;
-            drawScoopShape(ctx, s.x, s.y, s.r);
-            ctx.fillStyle = s.color;
-            ctx.fill();
-            ctx.stroke();
+            // 1. Scoop Base
+            bctx.save();
+            bctx.fillStyle = s.color;
+            drawScoopShape(bctx, s.x, s.y, s.r);
+            bctx.fill();
+            bctx.strokeStyle = darkenColor(s.color, 10);
+            bctx.lineWidth = 4;
+            bctx.stroke();
+            bctx.restore();
 
-            ctx.globalCompositeOperation = 'source-atop';
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.beginPath();
-            ctx.ellipse(s.x - s.r * 0.4, s.y - s.r * 0.9, s.r * 0.25, s.r * 0.15, Math.PI/4, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (s.hasCherry) {
-                ctx.globalCompositeOperation = 'source-over';
-                const cherryX = s.x;
-                const cherryY = s.y - s.r * 0.92; 
-                const cherryR = 55;
-                
-                // Stem
-                ctx.beginPath();
-                ctx.strokeStyle = '#4e342e';
-                ctx.lineWidth = 6;
-                ctx.moveTo(cherryX, cherryY - 20);
-                ctx.quadraticCurveTo(cherryX + 35, cherryY - 110, cherryX + 60, cherryY - 130);
-                ctx.stroke();
-                
-                // Cherry Body
-                ctx.fillStyle = '#D32F2F';
-                ctx.beginPath();
-                ctx.arc(cherryX, cherryY, cherryR, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Overlap Layer
-                ctx.fillStyle = s.color;
-                ctx.beginPath();
-                ctx.ellipse(cherryX, cherryY + cherryR - 5, cherryR * 1.2, 15, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Highlight
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(cherryX - 18, cherryY - 18, 14, 0, Math.PI * 2);
-                ctx.fill();
+            // 2. Sprinkles
+            const sprColors = ['#FF69B4', '#5DADE2', '#F4D03F', '#58D68D', '#EB984E'];
+            bctx.save();
+            bctx.clip(); 
+            for(let i=0; i < 12; i++) {
+                let angle = Math.PI + (Math.random() * Math.PI); 
+                let dist = (s.r * 0.5) + (Math.random() * s.r * 0.4);
+                let sx = s.x + Math.cos(angle) * dist;
+                let sy = s.y + Math.sin(angle) * dist;
+                if (sy < s.y - (s.r * 0.4)) {
+                    bctx.save();
+                    bctx.translate(sx, sy);
+                    bctx.rotate(Math.random() * Math.PI);
+                    bctx.fillStyle = sprColors[i % sprColors.length];
+                    bctx.beginPath();
+                    bctx.ellipse(0, 0, 14, 5, 0, 0, Math.PI * 2);
+                    bctx.fill();
+                    bctx.restore();
+                }
             }
-            ctx.restore();
+            bctx.restore();
+
+            // 3. REFINED LAYERED CHERRY
+            if (s.hasCherry) {
+                const cx = s.x;
+                const cy = s.y - s.r * 0.92; 
+                const mainR = 60;
+                const bgR = 64;   // Size of the background layers
+                const shift = 3;  // Tightened offset
+
+                // Stem
+                bctx.beginPath();
+                bctx.strokeStyle = '#4E342E';
+                bctx.lineWidth = 6;
+                bctx.moveTo(cx, cy - 10);
+                bctx.quadraticCurveTo(cx + 10, cy - 80, cx + 45, cy - 110);
+                bctx.stroke();
+
+                // LIGHT LAYER (Visible Top Right - Anchored Bottom Left)
+                bctx.fillStyle = '#FFDDE4'; // Even lighter pink
+                bctx.beginPath();
+                bctx.arc(cx + shift, cy - shift, bgR, 0, Math.PI * 2);
+                bctx.fill();
+
+                // DARK LAYER (Visible Bottom Left - Anchored Top Right)
+                bctx.fillStyle = '#800015'; 
+                bctx.beginPath();
+                bctx.arc(cx - shift, cy + shift, bgR, 0, Math.PI * 2);
+                bctx.fill();
+
+                // MAIN LAYER (Center)
+                bctx.fillStyle = '#FF4D6D'; 
+                bctx.beginPath();
+                bctx.arc(cx, cy, mainR, 0, Math.PI * 2);
+                bctx.fill();
+
+                // Small Shine
+                bctx.fillStyle = '#FFFFFF';
+                bctx.globalAlpha = 0.3;
+                bctx.beginPath();
+                bctx.ellipse(cx - 15, cy - 15, 10, 5, Math.PI / 4, 0, Math.PI * 2);
+                bctx.fill();
+                bctx.globalAlpha = 1.0;
+
+                // Tuck-in (Hides clipping from background layers)
+                bctx.fillStyle = s.color;
+                bctx.beginPath();
+                bctx.ellipse(cx, cy + mainR + 5, mainR * 1.6, 25, 0, 0, Math.PI * 2);
+                bctx.fill();
+            }
         });
     }
+    ctx.drawImage(this.bgCanvas, 0, 0);
+}
 
     drawPlatformFrosting(platform) {
         this.ctx.save();
