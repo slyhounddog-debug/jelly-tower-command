@@ -13,6 +13,8 @@ import CastleHealthBar from './castleHealthBar.js';
 import initLevel from './initLevel.js';
 import Thermometer from './thermometer.js';
 import Drawing from './drawing.js';
+import Emporium from './emporium.js';
+import GameLoop from './gameloop.js';
 
 class Game {
     constructor(canvas) {
@@ -52,9 +54,6 @@ class Game {
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
 
-        this.isEmporiumOpen = false;
-        this.selectedEmporiumItem = null;
-
        this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
         this.currentScore = 0;
@@ -72,10 +71,8 @@ class Game {
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
-
-        this.iceCreamScoops = 0;
-        this.emporiumUpgrades = {}; // Will be populated by loadEmporiumUpgrades
-        this.emporiumItems = []; // Will be defined below
+        this.emporium = new Emporium(this);
+        this.gameLoop = new GameLoop(this);
 
         this.stats = {
             damageLvl: 0,
@@ -210,73 +207,6 @@ class Game {
             }
         ];
 
-
-        this.emporiumItems = [
-            { 
-                id: 'starting_money', name: 'Initial Funding', icon: '💰', 
-                desc: 'Increases the amount of money you start each run with.',
-                getCost: () => (this.emporiumUpgrades.starting_money.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.starting_money.level],
-                getValue: () => `$${this.emporiumUpgrades.starting_money.values[this.emporiumUpgrades.starting_money.level]}`,
-                getNext: () => (this.emporiumUpgrades.starting_money.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `$${this.emporiumUpgrades.starting_money.values[this.emporiumUpgrades.starting_money.level + 1]}`,
-                getLevel: () => `${this.emporiumUpgrades.starting_money.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.starting_money.level++; }
-            },
-            { 
-                id: 'piggy_cooldown', name: 'Piggy Bank Timer', icon: '🐷', 
-                desc: 'Reduces the cooldown for Piggy Bank spawns.',
-                getCost: () => (this.emporiumUpgrades.piggy_cooldown.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.piggy_cooldown.level],
-                getValue: () => `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level]}s`,
-                getNext: () => (this.emporiumUpgrades.piggy_cooldown.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level + 1]}s`,
-                getLevel: () => `${this.emporiumUpgrades.piggy_cooldown.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.piggy_cooldown.level++; }
-            },
-            { 
-                id: 'castle_health', name: 'Castle Durability', icon: '🏰', 
-                desc: 'Increases the starting health of your castle.',
-                getCost: () => (this.emporiumUpgrades.castle_health.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.castle_health.level],
-                getValue: () => `${this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level]} HP`,
-                getNext: () => (this.emporiumUpgrades.castle_health.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level + 1]} HP`,
-                getLevel: () => `${this.emporiumUpgrades.castle_health.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.castle_health.level++; }
-            },
-            { 
-                id: 'heart_heal', name: 'Heart Heal Amount', icon: '❤️', 
-                desc: 'Increases the amount of health restored by hearts.',
-                getCost: () => (this.emporiumUpgrades.heart_heal.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.heart_heal.level],
-                getValue: () => `+${this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level]} HP`,
-                getNext: () => (this.emporiumUpgrades.heart_heal.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `+${this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level + 1]} HP`,
-                getLevel: () => `${this.emporiumUpgrades.heart_heal.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.heart_heal.level++; }
-            },
-            { 
-                id: 'big_coin_value', name: 'Big Coin Value', icon: '🪙', 
-                desc: 'Increases the value of Big Coins.',
-                getCost: () => (this.emporiumUpgrades.big_coin_value.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.big_coin_value.level],
-                getValue: () => `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level]}`,
-                getNext: () => (this.emporiumUpgrades.big_coin_value.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level + 1]}`,
-                getLevel: () => `${this.emporiumUpgrades.big_coin_value.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.big_coin_value.level++; }
-            },
-            { 
-                id: 'ice_cream_chance', name: 'Ice Cream Scoop Chance', icon: '🍦', 
-                desc: 'Increases the drop chance of Ice Cream Scoops from enemies and piggy banks.',
-                getCost: () => (this.emporiumUpgrades.ice_cream_chance.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.ice_cream_chance.level],
-                getValue: () => `${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level][0]}% / ${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level][1]}%`,
-                getNext: () => (this.emporiumUpgrades.ice_cream_chance.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level + 1][0]}% / ${this.emporiumUpgrades.ice_cream_chance.values[this.emporiumUpgrades.ice_cream_chance.level + 1][1]}%`,
-                getLevel: () => `${this.emporiumUpgrades.ice_cream_chance.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.ice_cream_chance.level++; }
-            },
-            { 
-                id: 'shield_regen', name: 'Shield Regen', icon: '🛡️', 
-                desc: 'Increases the regeneration rate of shields.',
-                getCost: () => (this.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.emporiumUpgrades.shield_regen.level],
-                getValue: () => `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level]}%`,
-                getNext: () => (this.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level + 1]}%`,
-                getLevel: () => `${this.emporiumUpgrades.shield_regen.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.emporiumUpgrades.shield_regen.level++; }
-            }
-        ];
-
         this.keys = {};
         this.mouse = { x: 0, y: 0, isDown: false };
 
@@ -396,23 +326,11 @@ class Game {
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
         
-        this.loadEmporiumUpgrades();
         this.initListeners();
         this.resetGame();
     }
 
-    loadEmporiumUpgrades() {
-        const initialUpgrades = getInitialEmporiumUpgrades();
-        const savedUpgrades = loadEmporiumUpgrades();
-        // Deep merge of initial and saved upgrades
-        for (let key in initialUpgrades) {
-            if (savedUpgrades[key]) {
-                initialUpgrades[key] = { ...initialUpgrades[key], ...savedUpgrades[key] };
-            }
-        }
-        this.emporiumUpgrades = initialUpgrades;
-        this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
-    }
+
 
     resizeModals() {
         const modals = document.querySelectorAll('.modal');
@@ -442,7 +360,7 @@ class Game {
                 else if (this.placementMode) this.cancelPlacement();
                 else if (this.sellMode) this.cancelSell();
                 else if (this.isShopOpen) this.toggleShop();
-                else if (this.isEmporiumOpen) this.toggleEmporium();
+                else if (this.emporium.isEmporiumOpen) this.emporium.toggle();
             }
             if (k === 'a') {
                 if (Date.now() - this.player.lastAPress < 300) {
@@ -533,8 +451,8 @@ class Game {
             this.updateStatsWindow();
             document.getElementById('stats-modal').style.display = 'flex';
         });
-        document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggleEmporium());
-        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.resetEmporiumUpgrades());
+        document.getElementById('open-emporium-btn').addEventListener('click', () => this.emporium.toggle());
+        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.emporium.reset());
         document.getElementById('stats-btn-emporium').addEventListener('click', () => {
             this.updateStatsWindow();
             document.getElementById('stats-modal').style.display = 'block';
@@ -544,29 +462,7 @@ class Game {
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }
 
-    resetEmporiumUpgrades() {
-        let refundedScoops = 0;
-        for (const key in this.emporiumUpgrades) {
-            const upgrade = this.emporiumUpgrades[key];
-            const costs = EMPORIUM_UPGRADE_COSTS;
-            for (let i = 0; i < upgrade.level; i++) {
-                refundedScoops += costs[i];
-            }
-        }
 
-        this.iceCreamScoops += refundedScoops;
-        this.emporiumUpgrades = getInitialEmporiumUpgrades();
-
-        saveEmporiumUpgrades(this.emporiumUpgrades);
-        localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
-
-        // Refresh the emporium display
-        this.renderEmporiumGrid();
-        if (this.selectedEmporiumItem) {
-            this.selectEmporiumItem(this.selectedEmporiumItem);
-        }
-        document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
-    }
 
     closePiggyModal() {
         document.getElementById('piggy-modal').style.display = 'none';
@@ -609,11 +505,9 @@ class Game {
     }
     
     resetGame() {
-        const startingMoneyLevel = this.emporiumUpgrades.starting_money.level;
-        this.money = this.emporiumUpgrades.starting_money.values[startingMoneyLevel];
+        this.money = this.emporium.getStartingMoney();
 
-        const castleHealthLevel = this.emporiumUpgrades.castle_health.level;
-        this.castleHealth = this.emporiumUpgrades.castle_health.values[castleHealthLevel];
+        this.castleHealth = this.emporium.getStartingHealth();
         const maxHealth = this.castleHealth;
         document.getElementById('health-text').innerText = `${this.castleHealth}/${maxHealth}`;
         
@@ -638,57 +532,6 @@ class Game {
             }
 
 
-    killMissile(m, index) {
-        // Splitting logic for marshmallows
-        if (m.type === 'marshmallow_large') {
-            this.missiles.splice(index, 1);
-            for (let i = 0; i < 2; i++) {
-                // Spawn two medium marshmallows with a bit of horizontal offset
-                const newMissile = new Missile(this, m.x + (i * 30) - 15, 'marshmallow_medium', m.y);
-                this.missiles.push(newMissile);
-            }
-            for (let k = 0; k < 20; k++) this.particles.push(new Particle(m.x, m.y, m.color, 'smoke'));
-            return; // Skip loot drop
-        }
-
-        if (m.type === 'marshmallow_medium') {
-            this.missiles.splice(index, 1);
-            for (let i = 0; i < 2; i++) {
-                // Spawn two small marshmallows
-                const newMissile = new Missile(this, m.x + (i * 20) - 10, 'marshmallow_small', m.y);
-                this.missiles.push(newMissile);
-            }
-            for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, m.color, 'smoke'));
-            return; // Skip loot drop
-        }
-
-        // Default kill logic for all other enemies (including small marshmallow)
-        this.missiles.splice(index, 1);
-        const pStats = this.stats.piggyStats;
-        const count = (m.type === 'piggy') ? pStats.mult : 1;
-        if (m.type === 'piggy') {
-            const bonus = Math.floor(this.money * pStats.bonus);
-            this.money += bonus;
-            this.totalMoneyEarned += bonus;
-            document.getElementById('notification').innerText = `PIGGY SMASHED! +$${bonus}`;
-            document.getElementById('notification').style.opacity = 1;
-            setTimeout(() => document.getElementById('notification').style.opacity = 0, 2000);
-        }
-        for (let c = 0; c < count; c++) {
-            this.enemiesKilled++;
-            this.drops.push(new Drop(this, m.x, m.y, 'coin'));
-            if (Math.random() * 100 < this.stats.luckHeart) this.drops.push(new Drop(this, m.x, m.y, 'heart'));
-            if (Math.random() * 100 < this.stats.luckCoin) this.drops.push(new Drop(this, m.x, m.y, 'lucky_coin'));
-
-            const iceCreamChanceLevel = this.emporiumUpgrades.ice_cream_chance.level;
-            const chances = this.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
-            const dropChance = (m.type === 'piggy') ? chances[1] : chances[0];
-            if (Math.random() * 100 < dropChance) {
-                this.drops.push(new Drop(this, m.x, m.y, 'ice_cream_scoop'));
-            }
-        }
-        for (let k = 0; k < 20; k++) this.particles.push(new Particle(m.x, m.y, (m.type === 'piggy' ? '#ff69b4' : m.color), 'smoke'));
-    }
 
     toggleShop() {
         if (this.placementMode) { this.cancelPlacement(); return; }
@@ -784,84 +627,9 @@ class Game {
         document.getElementById('shop-money-display').innerText = '$' + this.money;
     }
 
-    toggleEmporium() {
-        // Only allow opening if game is over
-        if (!this.isEmporiumOpen && !this.isGameOver) {
-            return;
-        }
 
-        this.isEmporiumOpen = !this.isEmporiumOpen;
-        const gamePausedIndicator = document.getElementById('game-paused-indicator');
 
-        if (this.isEmporiumOpen) {
-            this.isPaused = true; // Always pause when emporium is open
-            gamePausedIndicator.style.display = 'flex';
-            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
-            this.renderEmporiumGrid();
-            document.getElementById('emporium-overlay').style.display = 'flex';
-        } else {
-            // When closing, if game is over, remain paused. Otherwise, unpause.
-            if (!this.isGameOver) {
-                this.isPaused = false;
-            }
-            gamePausedIndicator.style.display = 'none';
-            document.getElementById('emporium-overlay').style.display = 'none';
-        }
-    }
 
-    renderEmporiumGrid() {
-        document.getElementById('emporium-grid').innerHTML = '';
-        this.emporiumItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'shop-item';
-            if (this.selectedEmporiumItem === item) div.classList.add('selected');
-            const cost = item.getCost();
-            div.innerHTML = `
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-name">${item.name}</div>
-                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
-                ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
-            `;
-            div.onclick = () => this.selectEmporiumItem(item);
-            document.getElementById('emporium-grid').appendChild(div);
-        });
-    }
-
-    selectEmporiumItem(item) {
-        this.selectedEmporiumItem = item;
-        this.renderEmporiumGrid();
-        document.getElementById('emporium-detail-icon').innerText = item.icon;
-        document.getElementById('emporium-detail-title').innerText = item.name;
-        document.getElementById('emporium-detail-desc').innerText = item.desc;
-        const cost = item.getCost();
-
-        document.getElementById('emporium-buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `UPGRADE (🍦${cost})`;
-        document.getElementById('emporium-buy-btn').disabled = !((typeof cost === 'number' && this.iceCreamScoops >= cost));
-        document.getElementById('emporium-buy-btn').onclick = () => this.buyEmporiumItem(item);
-
-        let nextValue = item.getNext();
-        if (nextValue === "MAX") document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
-        else document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
-
-        const levelDisplay = document.getElementById('emporium-detail-level-display');
-        if (item.getLevel) {
-            levelDisplay.innerText = `Level: ${item.getLevel()}`;
-        } else {
-            levelDisplay.innerText = '';
-        }
-    }
-
-    buyEmporiumItem(item) {
-        const cost = item.getCost();
-        if (typeof cost === 'number' && this.iceCreamScoops >= cost) {
-            this.iceCreamScoops -= cost;
-            item.action();
-            this.selectEmporiumItem(item);
-            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.iceCreamScoops;
-            saveEmporiumUpgrades(this.emporiumUpgrades);
-            localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
-        }
-    }
 
     updateStatsWindow() {
         document.getElementById('stat-shot-damage').innerText = this.stats.damage;
@@ -871,19 +639,18 @@ class Game {
         document.getElementById('stat-lick-damage').innerText = this.stats.lickDamage;
         document.getElementById('stat-lick-knockback').innerText = this.stats.lickKnockback;
         document.getElementById('stat-enemy-health').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
-        document.getElementById('stat-castle-max-health').innerText = this.emporiumUpgrades.castle_health.values[this.emporiumUpgrades.castle_health.level];
-        document.getElementById('stat-shield-regen').innerText = `${this.emporiumUpgrades.shield_regen.values[this.emporiumUpgrades.shield_regen.level]}%`;
+        document.getElementById('stat-castle-max-health').innerText = this.emporium.getCastleMaxHealth();
+        document.getElementById('stat-shield-regen').innerText = `${this.emporium.getShieldRegen()}%`;
         document.getElementById('stat-shield-health').innerText = this.stats.shieldMaxHp;
         document.getElementById('stat-big-coin-chance').innerText = `${this.stats.luckCoin}%`;
-        document.getElementById('stat-big-coin-cash').innerText = `$${this.emporiumUpgrades.big_coin_value.values[this.emporiumUpgrades.big_coin_value.level]}`;
+        document.getElementById('stat-big-coin-cash').innerText = `$${this.emporium.getBigCoinValue()}`;
         document.getElementById('stat-heart-chance').innerText = `${this.stats.luckHeart}%`;
-        document.getElementById('stat-heart-heal').innerText = this.emporiumUpgrades.heart_heal.values[this.emporiumUpgrades.heart_heal.level];
+        document.getElementById('stat-heart-heal').innerText = this.emporium.getHeartHeal();
         document.getElementById('stat-piggy-bonus').innerText = `${(this.stats.piggyStats.bonus*100).toFixed(0)}%`;
         document.getElementById('stat-piggy-multiplier').innerText = `${this.stats.piggyStats.mult}x`;
-        document.getElementById('stat-piggy-cooldown').innerText = `${this.emporiumUpgrades.piggy_cooldown.values[this.emporiumUpgrades.piggy_cooldown.level]}s`;
+        document.getElementById('stat-piggy-cooldown').innerText = `${this.emporium.getPiggyCooldown()}s`;
         document.getElementById('stat-critical-hit-chance').innerText = `${this.stats.criticalHitChance}%`;
-        const iceCreamChanceLevel = this.emporiumUpgrades.ice_cream_chance.level;
-        const iceCreamChances = this.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+        const iceCreamChances = this.emporium.getIceCreamChance();
         document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
     }
     
@@ -907,407 +674,7 @@ class Game {
         window.closeGummyWormModal = this.closeGummyWormModal.bind(this);
         window.closeMarshmallowModal = this.closeMarshmallowModal.bind(this);
         window.closeShopReminder = this.closeShopReminder.bind(this);
-        this.gameLoop(0);
-    }
-    
-gameLoop(currentTime) {
-        if (!this.lastTime) this.lastTime = currentTime;
-        const deltaTime = currentTime - this.lastTime;
-        this.lastTime = currentTime;
-        const tsf = deltaTime / this.targetFrameTime;
-
-        this.screenShake.update(tsf);
-
-        // --- CANDYLAND SKY ---
-        const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-        skyGradient.addColorStop(0, '#A1C4FD'); 
-        skyGradient.addColorStop(1, '#FFDDE1'); 
-        this.ctx.fillStyle = skyGradient;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-
-        // 1. ADD SUNLIGHT EFFECT
-        this.drawing.drawSunlight(this.ctx);
-
-        // 2. ADD SUGAR SNOW
-        this.drawing.drawSugarSnow(this.ctx, tsf);
-
-        // 3. RENDER PRE-RENDERED ICE CREAM MOUNTAIN
-        this.drawing.drawIceCreamBackground(this.ctx);
-        
-        this.clouds.forEach(c => c.draw(this.ctx));
-
-        if (!this.isPaused && !this.isGameOver) {
-            this.gameTime += tsf;
-            this.threatManager.update(tsf);
-
-            if (this.money >= 100 && !this.shopOpenedFirstTime && !this.shopReminderShown) {
-                this.shopReminderShown = true;
-                const reminder = document.getElementById('shop-reminder');
-                if (reminder) reminder.style.display = 'block';
-                this.isPaused = true;
-            }
-
-            const pLvl = this.emporiumUpgrades.piggy_cooldown.level;
-            const pCooldown = this.emporiumUpgrades.piggy_cooldown.values[pLvl] * 60;
-            this.piggyTimer += tsf;
-            if (this.piggyTimer >= pCooldown) {
-                this.piggyTimer = 0;
-                this.missiles.push(new Missile(this, Math.random() * (this.width - 50) + 25, 'piggy'));
-                if (!this.piggyBankSeen) {
-                    this.piggyBankSeen = true;
-                    this.isPaused = true;
-                    const curCD = this.emporiumUpgrades.piggy_cooldown.values[pLvl];
-                    document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${curCD} seconds.`;
-                    document.getElementById('piggy-modal').style.display = 'block';
-                }
-            }
-
-            this.clouds.forEach(c => c.update(tsf));
-            this.player.update(tsf);
-            this.towers.forEach(t => t.update(tsf));
-            this.shields.forEach(s => s.update(tsf));
-            this.castleHealthBar.update(tsf);
-
-            for (let i = this.missiles.length - 1; i >= 0; i--) {
-                const m = this.missiles[i];
-                m.update(tsf);
-                if (m.health <= 0) { this.killMissile(m, i); continue; }
-                let blocked = false;
-                for (let sIdx = this.shields.length - 1; sIdx >= 0; sIdx--) {
-                    const s = this.shields[sIdx];
-                    if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
-                        for (let k = 0; k < 10; k++) this.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
-                        if (s.takeDamage(10)) { this.shields.splice(sIdx, 1); this.screenShake.trigger(3, 5); } else this.screenShake.trigger(1, 3);
-                        this.killMissile(m, i);
-                        blocked = true;
-                        break;
-                    }
-                }
-                if (blocked) continue;
-                if (m.y > this.height - 80) {
-                    this.castleHealth -= 10;
-                    this.castleHealthBar.triggerHit();
-                    this.missiles.splice(i, 1);
-                    this.screenShake.trigger(5, 10);
-                    for (let k = 0; k < 15; k++) this.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
-                    
-                    const castlePlats = this.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
-                    for (let j = 0; j < 5; j++) {
-                        const rPlat = castlePlats[Math.floor(Math.random() * castlePlats.length)];
-                        const sX = rPlat.x + Math.random() * rPlat.width;
-                        const sY = rPlat.y + Math.random() * rPlat.height;
-                        this.damageSpots.push(new DamageSpot(sX, sY, Math.random() * 5 + 5, darkenColor('#f8c8dc', 20)));
-                    }
-                }
-            }
-
-            this.currentScore = (this.enemiesKilled * 50) + (this.totalMoneyEarned) + (this.gameTime / 30);
-            document.getElementById('score-display').textContent = this.currentScore.toFixed(0);
-
-            for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                const p = this.projectiles[i];
-                p.update(tsf);
-                if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height || p.dead) { this.projectiles.splice(i, 1); continue; }
-                for (let j = this.missiles.length - 1; j >= 0; j--) {
-                    const m = this.missiles[j];
-                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-                        const isCrit = (Math.random() * 100 < this.stats.criticalHitChance);
-                        let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
-                        if (m.takeDamage(dmg, isCrit)) this.killMissile(m, j);
-                        m.kbVy = -2;
-                        this.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
-                        if (!p.hasHit) { p.hasHit = true; this.shotsHit++; }
-                        this.projectiles.splice(i, 1);
-                        break;
-                    }
-                }
-            }
-
-            // Cleanup
-            for (let i = this.drops.length - 1; i >= 0; i--) { this.drops[i].update(tsf); if (this.drops[i].life <= 0) this.drops.splice(i, 1); }
-            for (let i = this.particles.length - 1; i >= 0; i--) { this.particles[i].update(tsf); if (this.particles[i].life <= 0) this.particles.splice(i, 1); }
-            for (let i = this.floatingTexts.length - 1; i >= 0; i--) { this.floatingTexts[i].update(tsf); if (this.floatingTexts[i].life <= 0) this.floatingTexts.splice(i, 1); }
-            for (let i = this.damageSpots.length - 1; i >= 0; i--) { this.damageSpots[i].update(tsf); if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1); }
-
-            if (this.castleHealth <= 0) {
-                this.isGameOver = true;
-                document.getElementById('open-emporium-btn').style.display = 'block';
-                document.getElementById('restart-btn').style.display = 'block';
-                document.getElementById('game-over-stats').style.display = 'block';
-                saveEmporiumUpgrades(this.emporiumUpgrades);
-                localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
-                
-                const timeSec = (this.gameTime / 60);
-                const accuracy = (this.shotsFired > 0) ? (this.shotsHit / this.shotsFired) : 0;
-                let mult = accuracy <= 0.5 ? 0.5 + (accuracy * 100 * 0.01) : 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                const scoreBase = (timeSec * 2) + (this.enemiesKilled * 50) + (this.totalMoneyEarned);
-                const finalScore = Math.floor(scoreBase * mult);
-                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
-                if (finalScore > highScore) { highScore = finalScore; localStorage.setItem('myGameHighScore', highScore); }
-                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
-                document.getElementById('go-kills').textContent = this.enemiesKilled.toLocaleString();
-                document.getElementById('go-money').textContent = `$${this.totalMoneyEarned.toLocaleString()}`;
-                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
-                document.getElementById('go-score').textContent = finalScore.toLocaleString();
-                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
-            }
-        }
-
-        const offset = this.screenShake.getOffset();
-        this.ctx.save(); 
-        this.ctx.translate(offset.x, offset.y);
-
-        this.platforms.forEach(p => {
-            this.ctx.save();
-            if (p.type === 'cloud') {
-                const fO = Math.sin(this.gameTime * 0.03) * 2;
-                this.ctx.drawImage(p.canvas, p.x, p.y + fO);
-            } else {
-                this.ctx.fillStyle = p.color;
-                this.ctx.beginPath();
-                this.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
-                this.ctx.fill();
-                this.drawing.drawPlatformFrosting(p);
-            }
-            this.ctx.restore();
-        });
-
-        this.damageSpots.forEach(s => s.draw(this.ctx));
-        this.towers.forEach(t => t.draw(this.ctx));
-        this.shields.forEach(s => s.draw(this.ctx));
-        this.missiles.forEach(m => m.draw(this.ctx));
-        this.projectiles.forEach(p => p.draw(this.ctx));
-        this.drops.forEach(d => d.draw(this.ctx));
-        this.particles.forEach(p => p.draw(this.ctx));
-        this.thermometer.draw(this.ctx);
-        this.player.draw(this.ctx);
-        this.floatingTexts.forEach(ft => ft.draw(this.ctx));
-        this.drawing.drawActionButtons(this.ctx);
-
-        this.ctx.restore();
-
-        document.getElementById('money-display').innerText = this.money;
-        const cHealthLvl = this.emporiumUpgrades.castle_health.level;
-        const mHealth = this.emporiumUpgrades.castle_health.values[cHealthLvl];
-        document.getElementById('health-bar-fill').style.width = Math.max(0, (this.castleHealth / mHealth) * 100) + '%';
-        document.getElementById('health-text').innerText = `${Math.max(0, this.castleHealth)}/${mHealth}`;
-
-        requestAnimationFrame((t) => this.gameLoop(t));
-    }
-
-
-
-
-
-
-
-
-    drawThermometer(ctx) {
-    // --- 1. DIMENSIONS ---
-    const w = 42;           
-    const h = 375;          
-    const xBase = this.width - 80;
-    const yBase = 100;
-    const bulbRadius = 38;  
-    const bulbY = yBase + h;
-
-    // --- 2. 10-MINUTE TIMER LOGIC ---
-    if (!this.thermometerStartTime) {
-        this.thermometerStartTime = Date.now();
-    }
-    const duration = 10 * 60 * 1000; 
-    const elapsed = Date.now() - this.thermometerStartTime;
-    const fillPercent = Math.min(1, elapsed / duration);
-    
-    const totalFillHeight = (h + bulbRadius) * fillPercent;
-    const jamTopY = (bulbY + bulbRadius) - totalFillHeight;
-
-    const intersectAngle = Math.asin((w / 2) / bulbRadius);
-    const intersectY = bulbY - Math.cos(intersectAngle) * bulbRadius;
-
-    // --- 3. ANIMATION LOGIC (HALF SPEED) ---
-    const time = Date.now() * 0.001; // Slower time (multiplied by 0.001 instead of 0.002)
-    const pulse = (Math.sin(time * 2) + 1) / 2; 
-    const scale = 1 + (pulse * 0.05); 
-    
-    // Wobble: 2 degrees is ~0.035 radians
-    const wobbleAngle = Math.sin(time * 0.8) * 0.035; 
-
-    ctx.save();
-
-    const centerX = xBase;
-    const centerY = yBase + (h / 2);
-    ctx.translate(centerX, centerY);
-    ctx.rotate(wobbleAngle);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-
-    const x = xBase;
-    const y = yBase;
-
-    // 4. REUSABLE GLASS SHAPE
-    const drawGlassShape = () => {
-        ctx.beginPath();
-        ctx.arc(x, y, w / 2, Math.PI, 0); 
-        ctx.lineTo(x + w / 2, intersectY);
-        ctx.arc(x, bulbY, bulbRadius, 1.5 * Math.PI + intersectAngle, 1.5 * Math.PI - intersectAngle);
-        ctx.closePath();
-    };
-
-    // OUTER GLOW
-    ctx.save();
-    ctx.shadowBlur = 15 + (pulse * 10);
-    ctx.shadowColor = `rgba(255, 105, 180, ${0.4 + pulse * 0.3})`; 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 2;
-    drawGlassShape();
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    drawGlassShape();
-    ctx.fill();
-
-    // 5. INTERNAL PINK JAM
-    ctx.save();
-    drawGlassShape();
-    ctx.clip(); 
-
-    const jamGrad = ctx.createLinearGradient(x, jamTopY, x, bulbY + bulbRadius);
-    jamGrad.addColorStop(0, "rgba(255, 180, 220, 0.9)"); // Brighter pink
-    jamGrad.addColorStop(0.3, "rgba(255, 20, 147, 0.75)"); 
-    jamGrad.addColorStop(1, "rgba(139, 0, 139, 0.7)");    
-    ctx.fillStyle = jamGrad;
-
-    ctx.fillRect(x - bulbRadius - 10, jamTopY, (bulbRadius + 10) * 2, (bulbY + bulbRadius) - jamTopY);
-
-    // Wave Surface
-    const waveTime = Date.now() * 0.005;
-    const waveWidth = bulbRadius + 10;
-    ctx.beginPath();
-    ctx.moveTo(x - waveWidth, jamTopY + 10);
-    for (let i = -waveWidth; i <= waveWidth; i++) {
-        const wave = Math.sin(i * 0.15 + waveTime * 1.5) * 4 + Math.cos(i * 0.1 - waveTime * 0.8) * 2;
-        ctx.lineTo(x + i, jamTopY + wave);
-    }
-    ctx.lineTo(x + waveWidth, jamTopY + 10);
-    ctx.fill();
-
-    // SPITTING PARTICLES (Only if > 80% full)
-    if (fillPercent > 0.8) {
-        ctx.fillStyle = "rgba(255, 105, 180, 0.8)";
-        for (let i = 0; i < 5; i++) {
-            const pTime = Date.now() * 0.002 + i;
-            const px = x + Math.cos(pTime * 2) * 15;
-            const py = jamTopY - (Math.abs(Math.sin(pTime * 5)) * 30);
-            ctx.beginPath();
-            ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // SLOW BUBBLES
-    const bTime = Date.now();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    for (let i = 0; i < 8; i++) {
-        const bX = x + Math.sin(bTime * 0.001 + i) * (w * 0.3);
-        const bY = (bulbY + 10) - ((bTime * (0.015 + i * 0.003)) % (totalFillHeight + 20));
-        if (bY > jamTopY + 5) {
-            ctx.beginPath();
-            ctx.arc(bX, bY, 1 + (i % 2), 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-    ctx.restore(); 
-
-    // 6. NOTCHES WITH GLOW LOGIC
-    for (let i = 1; i <= 10; i++) {
-        const notchPct = i / 10;
-        const notchY = bulbY - (h * notchPct);
-        const isGlowing = fillPercent >= notchPct;
-
-        ctx.beginPath();
-        ctx.moveTo(x - w / 2 + 5, notchY);
-        ctx.quadraticCurveTo(x, notchY + 5, x + w / 2 - 5, notchY);
-        
-        if (isGlowing) {
-            ctx.strokeStyle = "rgba(255, 180, 220, 0.9)";
-            ctx.lineWidth = 3;
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = "pink";
-        } else {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            ctx.lineWidth = 1.5;
-            ctx.shadowBlur = 0;
-        }
-        ctx.stroke();
-    }
-    ctx.shadowBlur = 0; // Reset shadow
-
-    // Main Border
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.lineWidth = 3;
-    drawGlassShape();
-    ctx.stroke();
-
-    // Glare
-    const glassGlare = ctx.createLinearGradient(x - w/2, 0, x + w/2, 0);
-    glassGlare.addColorStop(0.2, "rgba(255, 255, 255, 0.3)");
-    glassGlare.addColorStop(0.5, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = glassGlare;
-    ctx.fillRect(x - w/2, y - 10, w, h + 10);
-
-    ctx.restore(); 
-}
-    drawActionButtons(ctx) {
-        if (this.isGameOver) return;
-        this.actionButtons.forEach(button => {
-            if (button.errorShake > 0) {
-                button.errorShake--;
-            }
-            const shakeX = button.errorShake > 0 ? Math.sin(button.errorShake * 2) * 5 : 0;
-            const radius = button.radius * (button.hovered ? 1.1 : 1);
-            ctx.save();
-            ctx.translate(button.x + shakeX, button.y);
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fill();
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            if (button.id === 'buy_shield') {
-                this.drawShieldIcon(ctx, 0, 0, radius);
-            } else if (button.id === 'buy_turret') {
-                this.drawTurretIcon(ctx, 0, 0, radius);
-            } else {
-                ctx.font = `${radius * 0.8}px 'Lucky Guy'`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#333';
-                ctx.fillText(button.icon, 0, 0);
-            }
-
-            if (button.hovered || button.errorShake > 0) {
-                const cost = button.getCost();
-                if (cost !== 'MAX' && cost !== 'N/A' && cost !== 'SELL') {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    ctx.fill();
-                    ctx.fillStyle = button.errorShake > 0 ? 'red' : '#fff';
-                    ctx.font = `bold ${radius * 0.5}px 'Lucky Guy'`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(`$${cost}`, 0, 0);
-                    ctx.restore();
-                }
-            }
-            ctx.restore();
-        });
+        this.gameLoop.loop(0);
     }
 }
 

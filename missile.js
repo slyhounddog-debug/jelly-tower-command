@@ -1,4 +1,5 @@
 import Particle from './particle.js';
+import Drop from './drop.js';
 import { darkenColor } from './utils.js?v=25';
 import DamageSpot from './damageSpot.js';
 import FloatingText from './floatingText.js';
@@ -438,5 +439,57 @@ if (this.shakeDuration > 0) this.shakeDuration -= tsf;
         for (const spot of this.damageSpots) {
             spot.draw(ctx);
         }
+    }
+
+    kill(index) {
+        // Splitting logic for marshmallows
+        if (this.type === 'marshmallow_large') {
+            this.game.missiles.splice(index, 1);
+            for (let i = 0; i < 2; i++) {
+                // Spawn two medium marshmallows with a bit of horizontal offset
+                const newMissile = new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', this.y);
+                this.game.missiles.push(newMissile);
+            }
+            for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, this.color, 'smoke'));
+            return; // Skip loot drop
+        }
+
+        if (this.type === 'marshmallow_medium') {
+            this.game.missiles.splice(index, 1);
+            for (let i = 0; i < 2; i++) {
+                // Spawn two small marshmallows
+                const newMissile = new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', this.y);
+                this.game.missiles.push(newMissile);
+            }
+            for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.x, this.y, this.color, 'smoke'));
+            return; // Skip loot drop
+        }
+
+        // Default kill logic for all other enemies (including small marshmallow)
+        this.game.missiles.splice(index, 1);
+        const pStats = this.game.stats.piggyStats;
+        const count = (this.type === 'piggy') ? pStats.mult : 1;
+        if (this.type === 'piggy') {
+            const bonus = Math.floor(this.game.money * pStats.bonus);
+            this.game.money += bonus;
+            this.game.totalMoneyEarned += bonus;
+            document.getElementById('notification').innerText = `PIGGY SMASHED! +$${bonus}`;
+            document.getElementById('notification').style.opacity = 1;
+            setTimeout(() => document.getElementById('notification').style.opacity = 0, 2000);
+        }
+        for (let c = 0; c < count; c++) {
+            this.game.enemiesKilled++;
+            this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
+            if (Math.random() * 100 < this.game.stats.luckHeart) this.game.drops.push(new Drop(this.game, this.x, this.y, 'heart'));
+            if (Math.random() * 100 < this.game.stats.luckCoin) this.game.drops.push(new Drop(this.game, this.x, this.y, 'lucky_coin'));
+
+            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
+            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+            const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
+            if (Math.random() * 100 < dropChance) {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+            }
+        }
+        for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));
     }
 }
