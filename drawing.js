@@ -226,15 +226,32 @@ export default class Drawing {
             }
             const shakeX = button.errorShake > 0 ? Math.sin(button.errorShake * 2) * 5 : 0;
             const radius = button.radius * (button.hovered ? 1.1 : 1);
+            
             ctx.save();
             ctx.translate(button.x + shakeX, button.y);
+
+            // Outer glow
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+
+            // 3D Bubble effect
+            const gradient = ctx.createRadialGradient(-radius * 0.3, -radius * 0.3, radius * 0.1, 0, 0, radius);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+            
+            ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.fill();
-            ctx.strokeStyle = '#333';
+
+            // White border
+            ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            // Reset shadow for icon
+            ctx.shadowBlur = 0;
 
             if (button.id === 'buy_shield') {
                 this.drawShieldIcon(ctx, 0, 0, radius);
