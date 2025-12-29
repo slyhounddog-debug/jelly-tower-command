@@ -207,6 +207,7 @@ export default class Emporium {
     buyItem(item) {
         const cost = item.getCost();
         if (typeof cost === 'number' && this.game.iceCreamScoops >= cost) {
+            this.game.audioManager.playSound('purchase');
             this.game.iceCreamScoops -= cost;
             item.action();
             this.selectItem(item);
@@ -217,6 +218,7 @@ export default class Emporium {
     }
 
     reset() {
+        this.game.audioManager.playSound('reset');
         let refundedScoops = 0;
         for (const key in this.game.emporiumUpgrades) {
             const upgrade = this.game.emporiumUpgrades[key];

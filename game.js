@@ -15,6 +15,8 @@ import Thermometer from './thermometer.js';
 import Drawing from './drawing.js';
 import Emporium from './emporium.js';
 import GameLoop from './gameloop.js';
+import AudioManager from './audioManager.js';
+import LootPopupManager from './lootPopup.js';
 
 class Game {
     constructor(canvas) {
@@ -23,6 +25,8 @@ class Game {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
 
+        this.audioManager = new AudioManager();
+        this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [10, 17, 25, 35, 45, 55, 67, 80, 95, 110, 125, 140, 160, 180, 200, 250];
@@ -626,7 +630,10 @@ class Game {
             setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
         } else {
             if (typeof cost === 'number' && this.money >= cost) {
-                this.money -= cost; item.action(); this.selectShopItem(item);
+                this.money -= cost;
+                item.action();
+                this.selectShopItem(item);
+                this.audioManager.playSound('upgrade');
             }
         }
         document.getElementById('shop-money-display').innerText = '$' + this.money;

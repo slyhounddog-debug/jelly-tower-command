@@ -397,12 +397,12 @@ export default class Missile {
         for (const spot of this.damageSpots) spot.draw(ctx);
     }
 
-   kill(index) {
-        // Trigger global screen shake using the ScreenShake utility
-        let shakeIntensity = 5; 
-        if (this.type === 'marshmallow_large') shakeIntensity = 15;
-        else if (this.type === 'marshmallow_medium') shakeIntensity = 8;
-        else if (this.type === 'marshmallow_small') shakeIntensity = 3;
+       kill(index) {
+           this.game.audioManager.playSound('hit');
+           // Trigger global screen shake using the ScreenShake utility
+           let shakeIntensity = 5; 
+           if (this.type === 'marshmallow_large') shakeIntensity = 15;
+           else if (this.type === 'marshmallow_medium') shakeIntensity = 8;        else if (this.type === 'marshmallow_small') shakeIntensity = 3;
         
         // Use the imported ScreenShake constant
         import('./utils.js?v=25').then(utils => {

@@ -33,6 +33,7 @@ export default class Player {
         if (this.dashCooldown <= 0) {
             this.vx += this.dashSpeed * direction;
             this.dashCooldown = 40; // 75% of 1 second cooldown
+            this.game.audioManager.playSound('dash');
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
@@ -42,6 +43,7 @@ export default class Player {
     }
     tryLick() {
         if (this.lickCooldown > 0) return;
+        this.game.audioManager.playSound('mlem');
         const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
         this.lickOffsetX = Math.cos(this.lickAngle) * 66.5; // Increased range
@@ -145,10 +147,12 @@ export default class Player {
             if (this.isOnGround) {
                 this.vy = this.jumpForce; this.isOnGround = false; this.jumpsLeft = 1; this.jumpLock = true;
                 this.jumpSquash = 15;
+                this.game.audioManager.playSound('jump');
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
                 this.jumpSquash = 15;
                 for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x + this.width / 2, this.y + this.height, '#fff'));
+                this.game.audioManager.playSound('midAirJump');
             }
         }
         if (!this.game.keys[' '] && !this.game.keys['w']) this.jumpLock = false;
@@ -171,6 +175,9 @@ export default class Player {
             const verticalOverlap = (this.y + this.vy * tsf) + this.height > p.y && (this.y + this.vy * tsf) < p.y + p.height;
             
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
+                if (!wasOnGround && this.vy > 5) {
+                    this.game.audioManager.playSound('land');
+                }
                 this.y = p.y - this.height; 
                 this.vy = 0;
                 this.isOnGround = true;

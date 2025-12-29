@@ -54,6 +54,7 @@ export default class Tower extends BaseStructure {
     shoot() {
         this.recoil = 1;
         this.game.shotsFired++;
+        this.game.audioManager.playSound('fire');
         const cx = this.x + 23; const cy = this.y + 12;
         const tx = cx + Math.cos(this.barrelAngle) * 30 * this.scale;
         const ty = cy + Math.sin(this.barrelAngle) * 30 * this.scale;

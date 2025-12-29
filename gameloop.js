@@ -105,7 +105,13 @@ export default class GameLoop {
             for (let i = this.game.projectiles.length - 1; i >= 0; i--) {
                 const p = this.game.projectiles[i];
                 p.update(tsf);
-                if (p.x < 0 || p.x > this.game.width || p.y < 0 || p.y > this.game.height || p.dead) { this.game.projectiles.splice(i, 1); continue; }
+                if (p.x < 0 || p.x > this.game.width || p.y < 0 || p.y > this.game.height || p.dead) {
+                    if (!p.hasHit) {
+                        this.game.audioManager.playSound('miss');
+                    }
+                    this.game.projectiles.splice(i, 1);
+                    continue;
+                }
                 for (let j = this.game.missiles.length - 1; j >= 0; j--) {
                     const m = this.game.missiles[j];
                     if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
@@ -126,6 +132,8 @@ export default class GameLoop {
             for (let i = this.game.particles.length - 1; i >= 0; i--) { this.game.particles[i].update(tsf); if (this.game.particles[i].life <= 0) this.game.particles.splice(i, 1); }
             for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
             for (let i = this.game.damageSpots.length - 1; i >= 0; i--) { this.game.damageSpots[i].update(tsf); if (this.game.damageSpots[i].opacity <= 0) this.game.damageSpots.splice(i, 1); }
+
+            this.game.lootPopupManager.update(deltaTime);
 
             if (this.game.castleHealth <= 0) {
                 this.game.isGameOver = true;
@@ -181,6 +189,8 @@ export default class GameLoop {
         this.game.player.draw(this.game.ctx);
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
         this.game.drawing.drawActionButtons(this.game.ctx);
+
+        this.game.lootPopupManager.draw(this.game.ctx);
 
         this.game.ctx.restore();
 

@@ -32,17 +32,24 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             if (this.type === 'coin') {
                 this.game.money += this.coinValue;
                 this.game.totalMoneyEarned += this.coinValue;
+                this.game.audioManager.playSound('money');
+                this.game.lootPopupManager.addLoot('cash', 'Cash', this.coinValue);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰'));
             }
             if (this.type === 'lucky_coin') {
                 this.game.money += this.coinValue;
                 this.game.totalMoneyEarned += this.coinValue;
+                this.game.audioManager.playSound('money');
+                this.game.lootPopupManager.addLoot('cash', 'Cash', this.coinValue);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰💰'));
             }
             if (this.type === 'heart') {
-                this.game.castleHealth = Math.min(100, this.game.castleHealth + 10);
-                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
+                const healAmount = this.game.emporium.getHeartHeal();
+                this.game.castleHealth = Math.min(this.game.emporium.getCastleMaxHealth(), this.game.castleHealth + healAmount);
                 this.game.castleHealthBar.triggerHeal();
+                this.game.audioManager.playSound('heart');
+                this.game.lootPopupManager.addLoot('health', 'Health', healAmount);
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
                 const spotsToRemove = Math.floor(this.game.damageSpots.length / 5);
                 for (let i = 0; i < spotsToRemove; i++) {
                     if (this.game.damageSpots.length > 0) {
@@ -52,6 +59,8 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             }
             if (this.type === 'ice_cream_scoop') {
                 this.game.iceCreamScoops++;
+                this.game.audioManager.playSound('scoop');
+                this.game.lootPopupManager.addLoot('scoop', 'Scoop', 1);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
             }
             this.life = 0;
