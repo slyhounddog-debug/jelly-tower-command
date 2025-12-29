@@ -3,20 +3,34 @@ import Particle from './particle.js';
 export default class Player {
     constructor(game) {
         this.game = game;
-        this.reset();
         this.width = 37.191; this.height = 54.45825; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
         this.lickCooldown = 0; this.lickAnim = 0;
-        this.maxVel = 12.1; this.acceleration = 1.815; this.gravity = 1.2;
-        this.jumpForce = -26;
-        this.airJumpForce = -26; // Fixed: Same as ground jump
+
+        this.baseAcceleration = 1.815;
+        this.baseJumpForce = -26;
+        this.baseAirJumpForce = -26;
+        this.baseDashCooldown = 40;
+        this.baseLickRange = 66.5;
+
+        this.acceleration = this.baseAcceleration;
+        this.jumpForce = this.baseJumpForce;
+        this.airJumpForce = this.baseAirJumpForce;
+        this.dashCooldown = 0;
+        this.lickRange = this.baseLickRange;
+        this.basePickupRange = 80;
+        this.pickupRange = this.basePickupRange;
+
+        this.maxVel = 12.1; 
+        this.gravity = 1.2;
         this.passThroughTimer = 0;
         this.lickAngle = 0;
-        this.dashCooldown = 0;
         this.lastAPress = 0;
         this.lastDPress = 0;
         this.dashSpeed = 30;
         this.jumpSquash = 0;
+        this.maxJumps = 2;
+        this.reset();
     }
     reset() {
         this.x = this.game.width / 2; this.y = this.game.height - 120; this.vx = 0; this.vy = 0;
@@ -28,12 +42,65 @@ export default class Player {
         this.lastAPress = 0;
         this.lastDPress = 0;
         this.jumpSquash = 0;
+        this.maxJumps = 2;
+        
+        // Leveling
+        this.level = 1;
+        this.xp = 0;
+        this.xpForNextLevel = 100;
+        this.totalMoneyEarned = 0;
+        this.componentPoints = 3;
+        this.upgrades = {
+            // Normals
+            'Quick Boi': 0,
+            'More Gelatin': 0,
+            'Tinkerer': 0,
+            'Greed': 0,
+            'Dashier': 0,
+            'Long Tongue': 0,
+            'Slower Aura Range': 0,
+            // Rares
+            'Winged Boots': 0,
+            'Air Tricks': 0,
+            'Ice Tongue': 0,
+            'Wide Collector': 0,
+            'Marshmallow Landing': 0,
+            'Slow Aura': 0,
+            // Legendaries
+            'Reflective Coating': 0,
+            'Scoop Doubler': 0,
+            'Tongue Whirlwind': 0,
+        };
+
+        this.acceleration = this.baseAcceleration;
+        this.jumpForce = this.baseJumpForce;
+        this.airJumpForce = this.baseAirJumpForce;
+        this.lickRange = this.baseLickRange;
+        this.pickupRange = this.basePickupRange;
+        this.baseSlowAuraRange = 100;
+        this.slowAuraRange = this.baseSlowAuraRange;
+        this.lastDashTime = 0;
+        this.isWhirlwinding = false;
+        this.whirlwindTimer = 0;
+        this.whirlwindAngle = 0;
     }
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
             this.vx += this.dashSpeed * direction;
-            this.dashCooldown = 40; // 75% of 1 second cooldown
+            const dashierMultiplier = 1 - (this.upgrades['Dashier'] * 0.1);
+            this.dashCooldown = this.baseDashCooldown * dashierMultiplier;
             this.game.audioManager.playSound('dash');
+            this.lastDashTime = Date.now();
+
+            if (this.upgrades['Reflective Coating'] > 0) {
+                this.game.missiles.forEach(m => {
+                    if (this.x < m.x + m.width && this.x + this.width > m.x &&
+                        this.y < m.y + m.height && this.y + this.height > m.y) {
+                        m.takeDamage(this.game.stats.lickDamage);
+                        m.kbVy = -this.game.stats.lickKnockback * .3;
+                    }
+                });
+            }
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
@@ -43,11 +110,20 @@ export default class Player {
     }
     tryLick() {
         if (this.lickCooldown > 0) return;
+
+        if (this.upgrades['Tongue Whirlwind'] > 0 && (Date.now() - this.lastDashTime < 200)) {
+            this.isWhirlwinding = true;
+            this.whirlwindTimer = 180; // 3 seconds
+            this.lickCooldown = 240; // 4 second cooldown
+            this.game.audioManager.playSound('dash'); // Temporary sound
+            return;
+        }
+
         this.game.audioManager.playSound('mlem');
         const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
-        this.lickOffsetX = Math.cos(this.lickAngle) * 66.5; // Increased range
-        this.lickOffsetY = Math.sin(this.lickAngle) * 66.5; // Increased range
+        this.lickOffsetX = Math.cos(this.lickAngle) * this.lickRange;
+        this.lickOffsetY = Math.sin(this.lickAngle) * this.lickRange;
         this.lickAnim = 15; this.lickCooldown = 20;
 
         // Hitbox logic
@@ -68,6 +144,10 @@ export default class Player {
 
             if (hitByHand || hitByPlayer) {
                 m.takeDamage(this.game.stats.lickDamage);
+                if (this.upgrades['Ice Tongue'] > 0) {
+                    m.isSlowed = true;
+                    m.slowTimer = 180; // 3 seconds at 60fps
+                }
                 // Smooth Knockback application
                 m.kbVy = -this.game.stats.lickKnockback * .3; // Initial impulse
                 this.game.screenShake.trigger(4, 10); // Increased
@@ -82,6 +162,33 @@ export default class Player {
     update(tsf) {
         if (this.jumpSquash > 0) this.jumpSquash -= tsf;
         if (this.dashCooldown > 0) this.dashCooldown -= tsf;
+
+        if (this.isWhirlwinding) {
+            this.whirlwindTimer -= tsf;
+            if (this.whirlwindTimer <= 0) {
+                this.isWhirlwinding = false;
+            }
+            this.whirlwindAngle += 0.2 * tsf;
+
+            const whirlwindRange = this.lickRange * 1.5;
+            this.game.missiles.forEach(m => {
+                const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                if (dist < whirlwindRange) {
+                    m.takeDamage(this.game.stats.lickDamage * 0.1); // Deal 10% of lick damage per tick
+                }
+            });
+        }
+
+        if (this.upgrades['Slow Aura'] > 0) {
+            this.game.missiles.forEach(m => {
+                m.slowedByAura = false;
+                const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                if (dist < this.slowAuraRange) {
+                    m.isSlowed = true;
+                    m.slowedByAura = true;
+                }
+            });
+        }
 
         if (this.transitionState === 'entering') {
             this.transitionProgress += 0.125 * tsf;
@@ -145,7 +252,7 @@ export default class Player {
 
         if ((this.game.keys[' '] || this.game.keys['w']) && !this.jumpLock) {
             if (this.isOnGround) {
-                this.vy = this.jumpForce; this.isOnGround = false; this.jumpsLeft = 1; this.jumpLock = true;
+                this.vy = this.jumpForce; this.isOnGround = false; this.jumpsLeft = this.maxJumps - 1; this.jumpLock = true;
                 this.jumpSquash = 15;
                 this.game.audioManager.playSound('jump');
             } else if (this.jumpsLeft > 0) {
@@ -158,6 +265,10 @@ export default class Player {
         if (!this.game.keys[' '] && !this.game.keys['w']) this.jumpLock = false;
 
         this.vy += this.gravity * tsf;
+
+        if (this.upgrades['Winged Boots'] > 0 && (this.game.keys[' '] || this.game.keys['w']) && this.vy > 0) {
+            this.vy = 2; // Glide speed
+        }
         
         // --- FIXED COLLISION LOGIC ---
         this.x += this.vx * tsf;
@@ -177,11 +288,28 @@ export default class Player {
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
+                    if (this.upgrades['Marshmallow Landing'] > 0) {
+                        const shockwaveRange = 150;
+                        this.game.missiles.forEach(m => {
+                            const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                            if (dist < shockwaveRange) {
+                                m.takeDamage(this.game.stats.lickDamage);
+                                m.kbVy = -this.game.stats.lickKnockback * .3;
+                            }
+                        });
+                        for (let i = 0; i < 360; i += 10) {
+                            const angle = i * Math.PI / 180;
+                            const speed = 5;
+                            const vx = Math.cos(angle) * speed;
+                            const vy = Math.sin(angle) * speed;
+                            this.game.particles.push(new Particle(this.x + this.width/2, this.y + this.height, 'white', 'spark', 20, vx, vy));
+                        }
+                    }
                 }
                 this.y = p.y - this.height; 
                 this.vy = 0;
                 this.isOnGround = true;
-                this.jumpsLeft = 2;
+                this.jumpsLeft = this.maxJumps;
                 if (this.isPassingThrough) this.isPassingThrough = false;
                 if (!wasOnGround) this.jumpSquash = 15;
             }
@@ -232,6 +360,21 @@ export default class Player {
     }
   draw(ctx) {
         if (this.isControlling) return;
+
+        // Draw whirlwind
+        if (this.isWhirlwinding) {
+            const whirlwindRange = this.lickRange * 1.5;
+            const tongueX = this.x + this.width / 2 + Math.cos(this.whirlwindAngle) * whirlwindRange;
+            const tongueY = this.y + this.height / 2 + Math.sin(this.whirlwindAngle) * whirlwindRange;
+            
+            ctx.save();
+            const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.arc(tongueX, tongueY, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
 
         // --- 1. DYNAMIC SHADOW ON GROUND ---
         let closestPlatform = null;
@@ -354,8 +497,8 @@ export default class Player {
                 const lickDistance = 140 * animCurve;
 
                 ctx.save();
-                const mainColor = '#ff5e7a';
-                const shadowCol = '#d6455d';
+                const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+                const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
                 const segments = 20; 
 
                 for (let i = 0; i <= segments; i++) {
@@ -398,7 +541,7 @@ export default class Player {
                 ctx.restore();
             } else {
                 const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
-                ctx.fillStyle = '#ff5e7a';
+                ctx.fillStyle = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
                 ctx.beginPath();
                 ctx.roundRect(mouthX - 6, mouthY - 2, 12, 6 + idleBounce, 6);
                 ctx.fill();

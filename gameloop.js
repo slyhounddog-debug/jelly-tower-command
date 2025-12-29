@@ -137,6 +137,8 @@ export default class GameLoop {
 
             if (this.game.castleHealth <= 0) {
                 this.game.isGameOver = true;
+                this.game.audioManager.stopMusic('music');
+                this.game.audioManager.playMusic('gameOverMusic');
                 document.getElementById('open-emporium-btn').style.display = 'block';
                 document.getElementById('restart-btn').style.display = 'block';
                 document.getElementById('game-over-stats').style.display = 'block';
@@ -186,11 +188,18 @@ export default class GameLoop {
         this.game.drops.forEach(d => d.draw(this.game.ctx));
         this.game.particles.forEach(p => p.draw(this.game.ctx));
         this.game.thermometer.draw(this.game.ctx);
+        this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
         this.game.drawing.drawActionButtons(this.game.ctx);
 
         this.game.lootPopupManager.draw(this.game.ctx);
+
+        if (this.game.levelingManager.isLevelingUp) {
+            this.game.isPaused = true;
+            this.game.levelUpScreen.update(tsf);
+            this.game.levelUpScreen.draw(this.game.ctx);
+        }
 
         this.game.ctx.restore();
 

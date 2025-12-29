@@ -17,6 +17,9 @@ import Emporium from './emporium.js';
 import GameLoop from './gameloop.js';
 import AudioManager from './audioManager.js';
 import LootPopupManager from './lootPopup.js';
+import LevelUpScreen from './levelUpScreen.js';
+import XPBar from './xpBar.js';
+import LevelingManager from './levelingManager.js';
 
 class Game {
     constructor(canvas) {
@@ -72,9 +75,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 9;
+        this.gummyWormSpawnThreshold = 11;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 15;
+        this.marshmallowSpawnThreshold = 18;
         this.marshmallowSeen = false;
 
         this.thermometer = new Thermometer(this);
@@ -331,6 +334,10 @@ class Game {
         };
 
         this.player = new Player(this);
+        this.levelingManager = new LevelingManager(this);
+        this.levelingManager.initializePlayer(this.player);
+        this.xpBar = new XPBar(this);
+        this.levelUpScreen = new LevelUpScreen(this);
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
@@ -514,6 +521,10 @@ class Game {
     }
     
     resetGame() {
+        this.audioManager.stopMusic('gameOverMusic');
+        this.audioManager.stopMusic('shopMusic');
+        this.audioManager.stopMusic('levelUpMusic');
+        this.audioManager.playMusic('music');
         this.money = this.emporium.getStartingMoney();
 
         this.castleHealth = this.emporium.getStartingHealth();
@@ -532,6 +543,7 @@ class Game {
 
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = [];
         this.player.reset();
+        this.levelingManager.initializePlayer(this.player);
         this.lastTime = 0;
         document.getElementById('restart-btn').style.display = 'none';
         document.getElementById('open-emporium-btn').style.display = 'none';
@@ -554,6 +566,11 @@ class Game {
                     document.getElementById('notification').innerText = 'Game Paused';
                     document.getElementById('notification').style.opacity = 1;
                     setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+                    this.audioManager.stopMusic('music');
+                    this.audioManager.playMusic('shopMusic');
+                } else {
+                    this.audioManager.stopMusic('shopMusic');
+                    this.audioManager.playMusic('music');
                 }
                 document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
                 if (this.isShopOpen) { 

@@ -73,9 +73,13 @@ export default class Missile {
         this.shakeDuration = 0;
         this.shakeMagnitude = 0;
         this.healScale = 1;
+        this.isSlowed = false;
+        this.slowTimer = 0;
+        this.slowedByAura = false;
     }
 
     takeDamage(amount, isCritical = false) {
+        this.game.audioManager.playSound('towerHit');
         const roundedAmount = amount;
         this.health -= roundedAmount;
         this.hitTimer = 10; 
@@ -105,6 +109,14 @@ export default class Missile {
     }
 
     update(tsf) {
+        if (!this.slowedByAura && this.slowTimer > 0) {
+            this.slowTimer -= tsf;
+        } else if (this.slowTimer <= 0) {
+            this.isSlowed = false;
+        }
+
+        const currentSpeed = this.isSlowed ? this.speed * 0.8 : this.speed;
+
         if (this.hitTimer > 0) this.hitTimer -= tsf;
         if (this.damageTextTimer > 0) this.damageTextTimer -= tsf;
         if (this.criticalHitFlashTimer > 0) this.criticalHitFlashTimer -= tsf;
@@ -135,7 +147,7 @@ export default class Missile {
         }
 
         this.kbVy *= 0.9;
-        this.y += (this.speed + this.kbVy) * tsf;
+        this.y += (currentSpeed + this.kbVy) * tsf;
 
         if (this.type === 'gummy_worm') {
             if (this.x < 0) this.x = 0;
@@ -398,7 +410,22 @@ export default class Missile {
     }
 
        kill(index) {
-           this.game.audioManager.playSound('hit');
+        let xpGained = 0;
+        let maxHealthForXp = this.maxHealth;
+
+        if (this.type === 'marshmallow_small') {
+            // Calculate what a standard jelly bean's health would be right now
+            maxHealthForXp = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
+        }
+
+        xpGained = 10 + (maxHealthForXp / 5);
+        
+        // Apply emporium multiplier
+        const xpMultiplier = this.game.emporium.getEnemyXpMultiplier();
+        xpGained *= xpMultiplier;
+
+        this.game.levelingManager.addXp(this.x, this.y, xpGained);
+
            // Trigger global screen shake using the ScreenShake utility
            let shakeIntensity = 5; 
            if (this.type === 'marshmallow_large') shakeIntensity = 15;
@@ -451,6 +478,11 @@ export default class Missile {
             const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
             if (Math.random() * 100 < dropChance) {
                 this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+            }
+            if (this.game.player.upgrades['Scoop Doubler'] > 0) {
+                if (Math.random() < 0.33) {
+                    this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+                }
             }
         }
         for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));

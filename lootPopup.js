@@ -35,42 +35,74 @@ class LootPopup {
 
         const boxWidth = 225;
         const boxHeight = 60;
-        const cornerRadius = 30;
+        const cornerRadius = 15;
         
         let displayX = this.x;
         if (this.shakeTimer > 0) {
             displayX += (Math.random() - 0.5) * 8;
         }
 
-        // Draw the box
         ctx.save();
-        ctx.globalAlpha = alpha * 0.99; // semi-transparent
-        ctx.fillStyle = 'rgba(236, 145, 171, 1)'; // Light pastel pink
-        ctx.strokeStyle = 'rgb(255, 220, 230)'; // Lighter pastel pink 
-        ctx.lineWidth = 3;
+        ctx.globalAlpha = alpha * 0.9; 
 
-        ctx.beginPath();
-        ctx.moveTo(displayX + cornerRadius, this.y);
-        ctx.lineTo(displayX + boxWidth - cornerRadius, this.y);
-        ctx.quadraticCurveTo(displayX + boxWidth, this.y, displayX + boxWidth, this.y + cornerRadius);
-        ctx.lineTo(displayX + boxWidth, this.y + boxHeight - cornerRadius);
-        ctx.quadraticCurveTo(displayX + boxWidth, this.y + boxHeight, displayX + boxWidth - cornerRadius, this.y + boxHeight);
-        ctx.lineTo(displayX + cornerRadius, this.y + boxHeight);
-        ctx.quadraticCurveTo(displayX, this.y + boxHeight, displayX, this.y + boxHeight - cornerRadius);
-        ctx.lineTo(displayX, this.y + cornerRadius);
-        ctx.quadraticCurveTo(displayX, this.y, displayX + cornerRadius, this.y);
-        ctx.closePath();
-        
-        ctx.fill();
-        ctx.stroke();
+        if (this.type === 'xp') {
+            // Teal rectangle for XP
+            ctx.fillStyle = 'rgba(0, 77, 74, 1)'; // Dark Teal
+            ctx.strokeStyle = '#00f2ea'; // Bright Teal
+            ctx.lineWidth = 3;
 
-        // Draw the text
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = 'White';
-        ctx.font = 'bold 34px "Lucky Guy"';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`${this.text} +${this.value}`, displayX + 20, this.y + boxHeight / 2);
+            ctx.beginPath();
+            ctx.moveTo(displayX + cornerRadius, this.y);
+            ctx.lineTo(displayX + boxWidth - cornerRadius, this.y);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y, displayX + boxWidth, this.y + cornerRadius);
+            ctx.lineTo(displayX + boxWidth, this.y + boxHeight - cornerRadius);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y + boxHeight, displayX + boxWidth - cornerRadius, this.y + boxHeight);
+            ctx.lineTo(displayX + cornerRadius, this.y + boxHeight);
+            ctx.quadraticCurveTo(displayX, this.y + boxHeight, displayX, this.y + boxHeight - cornerRadius);
+            ctx.lineTo(displayX, this.y + cornerRadius);
+            ctx.quadraticCurveTo(displayX, this.y, displayX + cornerRadius, this.y);
+            ctx.closePath();
+            
+            ctx.fill();
+            ctx.stroke();
+
+            // Text for XP
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#00f2ea';
+            ctx.font = 'bold 34px "Lucky Guy"';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${this.text} +${Math.floor(this.value)}`, displayX + 20, this.y + boxHeight / 2);
+
+        } else {
+            // Original pink rounded rectangle for other loot
+            ctx.fillStyle = 'rgba(236, 145, 171, 1)'; // Light pastel pink
+            ctx.strokeStyle = 'rgb(255, 220, 230)'; // Lighter pastel pink 
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.moveTo(displayX + cornerRadius, this.y);
+            ctx.lineTo(displayX + boxWidth - cornerRadius, this.y);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y, displayX + boxWidth, this.y + cornerRadius);
+            ctx.lineTo(displayX + boxWidth, this.y + boxHeight - cornerRadius);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y + boxHeight, displayX + boxWidth - cornerRadius, this.y + boxHeight);
+            ctx.lineTo(displayX + cornerRadius, this.y + boxHeight);
+            ctx.quadraticCurveTo(displayX, this.y + boxHeight, displayX, this.y + boxHeight - cornerRadius);
+            ctx.lineTo(displayX, this.y + cornerRadius);
+            ctx.quadraticCurveTo(displayX, this.y, displayX + cornerRadius, this.y);
+            ctx.closePath();
+            
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw the text
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = 'White';
+            ctx.font = 'bold 34px "Lucky Guy"';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${this.text} +${this.value}`, displayX + 20, this.y + boxHeight / 2);
+        }
         
         ctx.restore();
     }

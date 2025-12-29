@@ -10,8 +10,9 @@ export default class Drop {
         this.gravity = 0.3;
         this.life = 1200; // Longer life
        // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
-this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : 30));
+this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : (type === 'xp_orb' ? 20 : 30)));
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
+        this.xpValue = 0;
         this.rot = 0;
         this.glow = 0;
     }
@@ -28,7 +29,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
         if (this.y > this.game.height - 80 - this.width / 2) { this.y = this.game.height - 80 - this.width / 2; this.vy *= -0.5; }
 
-        if (Math.abs(this.game.player.x - this.x) < 80 && Math.abs(this.game.player.y - this.y) < 80) {
+        if (Math.abs(this.game.player.x - this.x) < this.game.player.pickupRange && Math.abs(this.game.player.y - this.y) < this.game.player.pickupRange) {
             if (this.type === 'coin') {
                 this.game.money += this.coinValue;
                 this.game.totalMoneyEarned += this.coinValue;
@@ -62,6 +63,12 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
                 this.game.audioManager.playSound('scoop');
                 this.game.lootPopupManager.addLoot('scoop', 'Scoop', 1);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
+            }
+            if (this.type === 'xp_orb') {
+                this.game.levelingManager.grantXpToPlayer(this.xpValue);
+                this.game.audioManager.playSound('xp');
+                this.game.lootPopupManager.addLoot('xp', 'XP', this.xpValue);
+                this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+XP'));
             }
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
@@ -112,6 +119,9 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         } else if (this.type === 'ice_cream_scoop') {
             baseColor = '#fdfdfd'; // White ice cream
             iconText = '🍦';
+        } else if (this.type === 'xp_orb') {
+            baseColor = '#00f2ea'; // Teal XP orb
+            iconText = 'XP';
         }
 
         const glowColor = lightenColor(baseColor, this.glow * 15); // Lighten more for stronger glow
@@ -127,6 +137,12 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle'; // Center vertically
             ctx.fillText(iconText, 0, 0); // Centered
+        } else if (this.type === 'xp_orb') {
+            ctx.fillStyle = '#004d4a';
+            ctx.font = 'bold 12px "Lucky Guy"'; // Smaller font for "XP"
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(iconText, 0, 0);
         } else {
             ctx.fillStyle = baseColor;
             ctx.font = '48px "Lucky Guy"'; // Increased size for better visibility

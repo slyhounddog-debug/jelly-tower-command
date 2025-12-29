@@ -69,6 +69,15 @@ export default class Emporium {
                 getNext: () => (this.game.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.game.emporiumUpgrades.shield_regen.values[this.game.emporiumUpgrades.shield_regen.level + 1]}%`,
                 getLevel: () => `${this.game.emporiumUpgrades.shield_regen.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
                 action: () => { this.game.emporiumUpgrades.shield_regen.level++; }
+            },
+            { 
+                id: 'enemy_xp', name: 'XP Boost', icon: '✨',
+                desc: 'Increases XP gained from enemies.',
+                getCost: () => (this.game.emporiumUpgrades.enemy_xp.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.game.emporiumUpgrades.enemy_xp.level],
+                getValue: () => `x${this.game.emporiumUpgrades.enemy_xp.values[this.game.emporiumUpgrades.enemy_xp.level].toFixed(1)}`,
+                getNext: () => (this.game.emporiumUpgrades.enemy_xp.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `x${this.game.emporiumUpgrades.enemy_xp.values[this.game.emporiumUpgrades.enemy_xp.level + 1].toFixed(1)}`,
+                getLevel: () => `${this.game.emporiumUpgrades.enemy_xp.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.game.emporiumUpgrades.enemy_xp.level++; }
             }
         ];
     }
@@ -98,11 +107,16 @@ export default class Emporium {
             big_coin_value: { level: 0, values: [100, 120, 140, 160, 180, 200, 220, 240, 260, 300] },
             ice_cream_chance: { level: 0, values: [[0.5, 2], [0.6, 2.2], [0.7, 2.4], [0.8, 2.6], [0.9, 2.8], [1, 3], [1.1, 3.2], [1.2, 3.4]] },
             shield_regen: { level: 0, values: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2] },
+            enemy_xp: { level: 0, values: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] },
         };
     }
     
     saveEmporiumUpgrades(upgrades) {
         localStorage.setItem('emporiumUpgrades', JSON.stringify(upgrades));
+    }
+
+    getEnemyXpMultiplier() {
+        return this.game.emporiumUpgrades.enemy_xp.values[this.game.emporiumUpgrades.enemy_xp.level];
     }
 
     getStartingMoney() {
@@ -147,12 +161,18 @@ export default class Emporium {
         const gamePausedIndicator = document.getElementById('game-paused-indicator');
 
         if (this.isEmporiumOpen) {
+            this.game.audioManager.stopMusic('gameOverMusic');
+            this.game.audioManager.playMusic('shopMusic');
             this.game.isPaused = true; // Always pause when emporium is open
             gamePausedIndicator.style.display = 'flex';
             document.getElementById('emporium-scoops-display').innerText = '🍦' + this.game.iceCreamScoops;
             this.renderGrid();
             document.getElementById('emporium-overlay').style.display = 'flex';
         } else {
+            this.game.audioManager.stopMusic('shopMusic');
+            if (this.game.isGameOver) {
+                this.game.audioManager.playMusic('gameOverMusic');
+            }
             // When closing, if game is over, remain paused. Otherwise, unpause.
             if (!this.game.isGameOver) {
                 this.game.isPaused = false;
