@@ -1,4 +1,4 @@
-const EMPORIUM_UPGRADE_COSTS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 110, 130, 150, 200];
+const EMPORIUM_UPGRADE_COSTS = [1, 3, 6, 10, 15, 20, 25, 30, 40, 50];
 
 export default class Emporium {
     constructor(game) {
@@ -91,13 +91,13 @@ export default class Emporium {
 
     getInitialEmporiumUpgrades() {
         return {
-            starting_money: { level: 0, values: [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 1000] },
-            piggy_cooldown: { level: 0, values: [60, 55, 50, 45, 40, 35, 30, 28, 26, 24, 22, 20, 18, 15, 10] },
-            castle_health: { level: 0, values: [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 215, 230, 250, 300] },
-            heart_heal: { level: 0, values: [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 30] },
-            big_coin_value: { level: 0, values: [100, 110, 120, 130, 140, 150, 160, 170, 180, 200, 220, 240, 260, 280, 300] },
-            ice_cream_chance: { level: 0, values: [[0.5, 2], [0.6, 2.2], [0.7, 2.4], [0.8, 2.6], [0.9, 2.8], [1, 3], [1.1, 3.2], [1.2, 3.4], [1.3, 3.6], [1.5, 4], [1.7, 4.3], [1.9, 4.6], [2.1, 4.9], [2.3, 5.2], [2.5, 5.5]] },
-            shield_regen: { level: 0, values: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3] },
+            starting_money: { level: 0, values: [25, 150, 300, 450, 600, 800, 1000, 1500, 2000, 3000] },
+            piggy_cooldown: { level: 0, values: [60, 55, 50, 45, 40, 35, 30] },
+            castle_health: { level: 0, values: [100, 110, 120, 130, 140, 160, 180, 200, 220, 250] },
+            heart_heal: { level: 0, values: [10, 12, 14, 16, 18, 20, 22, 24, 26, 30] },
+            big_coin_value: { level: 0, values: [100, 120, 140, 160, 180, 200, 220, 240, 260, 300] },
+            ice_cream_chance: { level: 0, values: [[0.5, 2], [0.6, 2.2], [0.7, 2.4], [0.8, 2.6], [0.9, 2.8], [1, 3], [1.1, 3.2], [1.2, 3.4]] },
+            shield_regen: { level: 0, values: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2] },
         };
     }
     

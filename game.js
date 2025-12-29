@@ -46,6 +46,8 @@ class Game {
 
         this.money = 0;
         this.castleHealth = 100;
+        // Initialize currency from localStorage or 0
+        this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
         this.isPaused = true;
         this.isShopOpen = false;
         this.isGameOver = false;
@@ -74,6 +76,7 @@ class Game {
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
         this.emporium = new Emporium(this);
+        this.emporium.loadEmporiumUpgrades(); // Essential to load upgrade levels
         this.gameLoop = new GameLoop(this);
 
         this.stats = {
