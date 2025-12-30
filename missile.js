@@ -17,7 +17,7 @@ export default class Missile {
             this.width = 50; // 45 * 1.1
             this.height = 66;  // 60 * 1.1
             this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-            this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.08));
+            this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         } else if (type === 'gummy_worm') {
             this.width = 25;
             this.height = 80;
