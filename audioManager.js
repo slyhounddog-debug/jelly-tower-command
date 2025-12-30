@@ -13,7 +13,7 @@ class AudioManager {
 
         // 2. Create a Gain Node to lower the music volume globally
         this.musicGain = this.context.createGain();
-        this.musicGain.gain.value = 0.99; // Lowered volume (99% of original)
+        this.musicGain.gain.value = .99; // Raised volume (110% of original)
 
         // Connect the chain: Music Source -> Filter -> Gain -> Output
         this.muffleFilter.connect(this.musicGain);
