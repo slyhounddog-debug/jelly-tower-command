@@ -1,6 +1,7 @@
 import Particle from './particle.js';
 import FloatingText from './floatingText.js';
 import { lightenColor } from './utils.js';
+import { getRandomComponent } from './components.js';
 
 export default class Drop {
     constructor(game, x, y, type) {
@@ -10,11 +11,12 @@ export default class Drop {
         this.gravity = 0.3;
         this.life = 1200; // Longer life
        // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
-this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : (type === 'xp_orb' ? 20 : 30)));
+this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : (type === 'xp_orb' ? 20 : (type === 'component' ? 25 : 30))));
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
         this.xpValue = 0;
         this.rot = 0;
         this.glow = 0;
+        this.hue = 0;
     }
     update(tsf) {
         this.vy += this.gravity * tsf;
@@ -24,6 +26,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         this.glowTimer = (this.glowTimer + 0.03 * tsf) % (Math.PI * 2); // Slower cycle
         this.glow = (Math.sin(this.glowTimer) + 1) / 2;
         this.vx *= 0.95;
+        this.hue = (this.hue + 0.5 * tsf) % 360;
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
@@ -69,6 +72,16 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
                 this.game.audioManager.playSound('xp');
                 this.game.lootPopupManager.addLoot('xp', 'XP', this.xpValue);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+XP'));
+            }
+            if (this.type === 'component') {
+                const componentName = getRandomComponent();
+                this.game.player.collectedComponents.push(componentName);
+                this.game.lootPopupManager.addLoot('component', componentName, 1);
+                if (!this.game.player.firstComponentCollected) {
+                    this.game.player.firstComponentCollected = true;
+                    document.getElementById('component-modal').style.display = 'block';
+                    this.game.isPaused = true;
+                }
             }
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
@@ -122,13 +135,34 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         } else if (this.type === 'xp_orb') {
             baseColor = '#00f2ea'; // Teal XP orb
             iconText = 'XP';
+        } else if (this.type === 'component') {
+            baseColor = `hsl(${this.hue}, 100%, 70%)`;
+            iconText = 'C';
         }
 
         const glowColor = lightenColor(baseColor, this.glow * 15); // Lighten more for stronger glow
-        ctx.fillStyle = glowColor;
-        ctx.beginPath();
-        ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.fill();
+        
+        if (this.type === 'component') {
+            ctx.fillStyle = `hsl(${this.hue}, 100%, 50%)`;
+            ctx.beginPath();
+            ctx.roundRect(-radius, -radius, this.width, this.width, 5);
+            ctx.fill();
+
+            ctx.strokeStyle = `hsl(${this.hue + 180}, 100%, 80%)`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -radius);
+            ctx.lineTo(0, radius);
+            ctx.moveTo(-radius, 0);
+            ctx.lineTo(radius, 0);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = glowColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
 
         // Draw the icon/shape
         if (this.type === 'coin' || this.type === 'lucky_coin') {

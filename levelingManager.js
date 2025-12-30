@@ -12,7 +12,7 @@ export default class LevelingManager {
 
         this.xpLevels = [
 
-            50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, ,600, 650, 700, 750, 800,
+            30, 40, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, ,600, 650, 700, 750, 800,
 
             850, 900, 950, 1000, 1075, 1150, 1225, 1300, 1375, 1450, 1525, 1600, 1700, 1800, 1900,
 
@@ -50,6 +50,9 @@ export default class LevelingManager {
 
                         { name: "Dashier", description: "10% reduced cooldown for dash.", icon: "💨", rarity: "normal" },
 
+
+                        { name: "Wide Collector", description: "20% increase in loot pickup range.", icon: "👐", rarity: "normal" },
+
         
 
                         { name: "Long Tongue", description: "10% increase in tongue length.", icon: "👅", rarity: "normal" },
@@ -80,7 +83,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Wide Collector", description: "20% increase in loot pickup range.", icon: "👐", rarity: "rare" },
+                        
 
         
 
@@ -144,15 +147,11 @@ export default class LevelingManager {
 
         
 
-                player.totalMoneyEarned = 0;
+                        player.totalMoneyEarned = 0;
 
         
 
-                player.componentPoints = 3;
-
-        
-
-                player.upgrades = {};
+                        player.upgrades = {};
 
         
 
@@ -616,15 +615,15 @@ export default class LevelingManager {
 
         
 
-                        case 'Tinkerer':
+                                        case 'Tinkerer':
 
         
 
-                            player.componentPoints++;
+                                            player.maxComponentPoints++;
 
         
 
-                            break;
+                                            break;
 
         
 

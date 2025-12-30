@@ -76,6 +76,15 @@ export default class Missile {
         this.isSlowed = false;
         this.slowTimer = 0;
         this.slowedByAura = false;
+        this.fireStacks = [];
+    }
+
+    applyFire(damage) {
+        this.fireStacks.push({
+            damage: damage * 0.1, // 10% of shot damage
+            duration: 300, // 5 seconds at 60fps
+            timer: 300,
+        });
     }
 
     takeDamage(amount, isCritical = false) {
@@ -109,6 +118,21 @@ export default class Missile {
     }
 
     update(tsf) {
+        // Fire damage
+        for (let i = this.fireStacks.length - 1; i >= 0; i--) {
+            const stack = this.fireStacks[i];
+            stack.timer -= tsf;
+            if (stack.timer <= 0) {
+                this.fireStacks.splice(i, 1);
+            } else {
+                if (Math.floor(stack.timer) % 60 === 0) { // Every second
+                    this.health -= stack.damage;
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
+                    this.hitTimer = 5;
+                }
+            }
+        }
+
         if (!this.slowedByAura && this.slowTimer > 0) {
             this.slowTimer -= tsf;
         } else if (this.slowTimer <= 0) {
@@ -460,6 +484,9 @@ export default class Missile {
         const pStats = this.game.stats.piggyStats;
         const count = (this.type === 'piggy') ? pStats.mult : 1;
         if (this.type === 'piggy') {
+            if (Math.random() < 0.2) {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
+            }
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;

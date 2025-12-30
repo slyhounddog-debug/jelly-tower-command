@@ -56,13 +56,22 @@ export default class Tower extends BaseStructure {
         this.game.shotsFired++;
         this.game.audioManager.playSound('fire');
         const cx = this.x + 23; const cy = this.y + 12;
-        const tx = cx + Math.cos(this.barrelAngle) * 30 * this.scale;
-        const ty = cy + Math.sin(this.barrelAngle) * 30 * this.scale;
-        const damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
-        const projectileSpeed = this.game.stats.projectileSpeed; // get the speed
-        const radius = (this.isAuto ? 7 : 12) + (this.game.stats.damageLvl * 0.5);
-        const projectile = new Projectile(this.game, tx, ty, this.barrelAngle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius); // pass it
-        this.game.projectiles.push(projectile);
+        
+        const numShots = 1 + (this.game.player.equippedComponents['Split Shot'] ? this.game.player.equippedComponents['Split Shot'].cost : 0);
+        const spread = numShots > 1 ? 10 * (Math.PI / 180) : 0; // 10 degrees in radians
+        const totalSpread = spread * (numShots - 1);
+        const startAngle = this.barrelAngle - totalSpread / 2;
+
+        for (let i = 0; i < numShots; i++) {
+            const angle = startAngle + i * spread;
+            const tx = cx + Math.cos(angle) * 30 * this.scale;
+            const ty = cy + Math.sin(angle) * 30 * this.scale;
+            const damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
+            const projectileSpeed = this.game.stats.projectileSpeed;
+            const radius = (this.isAuto ? 7 : 12) + (this.game.stats.damageLvl * 0.5);
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, this.game.player.equippedComponents);
+            this.game.projectiles.push(projectile);
+        }
 
         // Immediate hit-check for controlled towers
         if (this.game.player.isControlling === this) {
@@ -73,8 +82,8 @@ export default class Tower extends BaseStructure {
 
                 // Check for collision within the "arm radius" around the turret's center (cx, cy)
                 if (Math.hypot(missileCx - cx, missileCy - cy) < (30 * this.scale) + m.width / 2) {
-                    const damageDealt = Math.min(projectile.hp, m.health);
-                    projectile.hp -= damageDealt;
+                    const damageDealt = Math.min(this.game.projectiles[this.game.projectiles.length-1].hp, m.health);
+                    this.game.projectiles[this.game.projectiles.length-1].hp -= damageDealt;
                     if (m.takeDamage(damageDealt)) {
                         // The main loop will handle the missile removal
                     }
@@ -82,8 +91,8 @@ export default class Tower extends BaseStructure {
                     m.kbVy += -2;
                     // Create particles
                     this.game.particles.push(new Particle(missileCx, missileCy, '#fff', 'spark'));
-                    if (!projectile.hasHit) {
-                        projectile.hasHit = true;
+                    if (!this.game.projectiles[this.game.projectiles.length-1].hasHit) {
+                        this.game.projectiles[this.game.projectiles.length-1].hasHit = true;
                         this.game.shotsHit++;
                     }
                 }

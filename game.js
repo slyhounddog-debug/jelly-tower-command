@@ -20,6 +20,7 @@ import LootPopupManager from './lootPopup.js';
 import LevelUpScreen from './levelUpScreen.js';
 import XPBar from './xpBar.js';
 import LevelingManager from './levelingManager.js';
+import { COMPONENTS } from './components.js';
 
 class Game {
     constructor(canvas) {
@@ -64,6 +65,7 @@ class Game {
         this.placementItemCost = 0;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
+        this.firstComponentCollected = false;
 
        this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
@@ -469,16 +471,79 @@ class Game {
         });
         document.getElementById('open-emporium-btn').addEventListener('click', () => this.emporium.toggle());
         document.getElementById('emporium-reset-btn').addEventListener('click', () => this.emporium.reset());
-        document.getElementById('stats-btn-emporium').addEventListener('click', () => {
-            this.updateStatsWindow();
-            document.getElementById('stats-modal').style.display = 'block';
-        });
-        document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
-
-        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-    }
-
-
+                document.getElementById('stats-btn-emporium').addEventListener('click', () => {
+                    this.updateStatsWindow();
+                    document.getElementById('stats-modal').style.display = 'block';
+                });
+                document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
+                document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
+        
+                        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+                    }
+                
+                        renderComponentQuarters() {
+                            const bar = document.getElementById('component-points-bar');
+                            bar.innerHTML = '';
+                            const usedPoints = Object.values(this.player.equippedComponents).reduce((sum, component) => sum + component.cost, 0);
+                            for (let i = 0; i < this.player.maxComponentPoints; i++) {
+                                const segment = document.createElement('div');
+                                segment.classList.add('component-point-segment');
+                                if (i < usedPoints) {
+                                    segment.classList.add('used');
+                                } else {
+                                    segment.classList.add('available');
+                                }
+                                bar.appendChild(segment);
+                            }
+                    
+                            const grid = document.getElementById('component-grid');
+                            grid.innerHTML = '';
+                            this.player.collectedComponents.forEach(componentName => {
+                                const component = COMPONENTS[componentName];
+                                const div = document.createElement('div');
+                                div.className = 'component-item';
+                                if (this.player.equippedComponents[componentName]) {
+                                    div.classList.add('equipped');
+                                }
+                                div.innerHTML = `
+                                    <div class="component-name">${componentName}</div>
+                                    <div class="component-cost">${component.cost}</div>
+                                `;
+                                div.onclick = () => {
+                                    if (this.player.equippedComponents[componentName]) {
+                                        // Unequip
+                                        delete this.player.equippedComponents[componentName];
+                                    } else {
+                                        // Equip
+                                        const newUsedPoints = usedPoints + component.cost;
+                                        if (newUsedPoints <= this.player.maxComponentPoints) {
+                                            this.player.equippedComponents[componentName] = component;
+                                        } else {
+                                            // Not enough points
+                                            bar.parentElement.style.animation = 'shake 0.5s';
+                                            setTimeout(() => {
+                                                bar.parentElement.style.animation = '';
+                                            }, 500);
+                                        }
+                                    }
+                                    this.renderComponentQuarters();
+                                };
+                                grid.appendChild(div);
+                            });
+                        }                
+                    toggleComponentQuarters() {
+                        const modal = document.getElementById('component-quarters-overlay');
+                        const isVisible = modal.style.display === 'block';
+                        modal.style.display = isVisible ? 'none' : 'block';
+                        this.isPaused = !isVisible;
+                        if (!isVisible) {
+                            this.renderComponentQuarters();
+                        }
+                    }        
+            closeComponentModal() {
+                document.getElementById('component-modal').style.display = 'none';
+                this.isPaused = false;
+            }
 
     closePiggyModal() {
         document.getElementById('piggy-modal').style.display = 'none';
@@ -703,6 +768,8 @@ class Game {
         window.closeGummyWormModal = this.closeGummyWormModal.bind(this);
         window.closeMarshmallowModal = this.closeMarshmallowModal.bind(this);
         window.closeShopReminder = this.closeShopReminder.bind(this);
+        window.closeComponentModal = this.closeComponentModal.bind(this);
+        window.closeComponentQuarters = this.toggleComponentQuarters.bind(this);
         this.gameLoop.loop(0);
     }
 }

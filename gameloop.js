@@ -117,6 +117,9 @@ export default class GameLoop {
                     if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
                         const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                         let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
+                        if (p.hasFire) {
+                            m.applyFire(dmg);
+                        }
                         if (m.takeDamage(dmg, isCrit)) m.kill(j);
                         m.kbVy = -2;
                         this.game.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));

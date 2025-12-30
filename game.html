@@ -68,8 +68,8 @@
             position: relative;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.2);
             transform-origin: center;
-            max-width: 95vw;
-            max-height: 95vh;
+            max-width: 90vw;
+            max-height: 90vh;
         }
 
         #gameCanvas {
@@ -470,6 +470,66 @@
         #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
         #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
         #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
+
+        /* Component Quarters Styles */
+        #component-points-bar-container {
+            width: 100%;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        #component-points-bar {
+            display: flex;
+            height: 30px;
+            background-color: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .component-point-segment {
+            flex-grow: 1;
+            border-right: 1px solid #555;
+        }
+        .component-point-segment.available {
+            background-color: #ddd;
+        }
+        .component-point-segment.used {
+            background-color: #46a6ff;
+        }
+        #component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            min-height: 200px;
+        }
+        .component-item {
+            background: #444;
+            border: 2px solid #666;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+        }
+        .component-item.equipped {
+            border-color: #46a6ff;
+            box-shadow: 0 0 10px #46a6ff;
+        }
+        .component-cost {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #222;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -545,6 +605,7 @@
             <div id="shop-header-bar" style="background-color: #2d1b2d; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4a2c4a;">
                 <button id="stats-btn" class="modal-internal-button">Stats</button>
                 <span style="font-size: 36px; font-weight: bold; background: linear-gradient(to right, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upgrade Shop</span>
+                <button id="components-btn" class="modal-internal-button">Components</button>
                 <button id="help-btn" class="modal-internal-button">?</button>
             </div>
             
@@ -573,6 +634,13 @@
         </div>
 
         <div id="notification" class="notification">Item Placed!</div>
+
+        <div id="component-quarters-overlay" class="modal" style="display: none;">
+            <h2>Component Quarters</h2>
+            <div id="component-points-bar"></div>
+            <div id="component-grid"></div>
+            <button class="modal-close" onclick="closeComponentQuarters()">Close</button>
+        </div>
 
         <div id="emporium-overlay" class="modal" style="display: none;">
             <div id="emporium-money" style="position: absolute; top: 15px; right: 15px; z-index: 1;">
@@ -699,6 +767,17 @@
                 <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
             </div>
             <button class="modal-close" onclick="closeMarshmallowModal()">Still ready to Die!</button>
+        </div>
+
+        <!-- Component Modal -->
+        <div id="component-modal" class="modal" style="display: none;">
+            <h2>🔧 New Component! 🔧</h2>
+            <div class="modal-content-area">
+                <p>You've found a Component! These are special augments for your towers.</p>
+                <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
+                <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
+            </div>
+            <button class="modal-close" onclick="closeComponentModal()">Got it!</button>
         </div>
 
         <div id="notification" class="notification">Item Placed!</div>

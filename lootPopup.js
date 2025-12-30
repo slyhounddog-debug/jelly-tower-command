@@ -74,6 +74,24 @@ class LootPopup {
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text} +${Math.floor(this.value)}`, displayX + 20, this.y + boxHeight / 2);
 
+        } else if (this.type === 'component') {
+            // Purple rectangle for components
+            ctx.fillStyle = 'rgba(139, 0, 139, 1)'; // Dark Magenta
+            ctx.strokeStyle = '#ff00ff'; // Bright Magenta
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.rect(displayX, this.y, boxWidth, boxHeight);
+            ctx.fill();
+            ctx.stroke();
+
+            // Text for component
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = 'bold 24px "Lucky Guy"';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${this.text}`, displayX + 20, this.y + boxHeight / 2);
         } else {
             // Original pink rounded rectangle for other loot
             ctx.fillStyle = 'rgba(236, 145, 171, 1)'; // Light pastel pink
@@ -124,6 +142,14 @@ class LootPopupManager {
     }
 
     addLoot(type, text, value) {
+        if (type === 'component') {
+            this.popups.forEach(p => {
+                p.targetY -= this.spacing;
+            });
+            const newPopup = new LootPopup(type, text, value, this.baseX, this.baseY);
+            this.popups.push(newPopup);
+            return;
+        }
         const existingPopup = this.popups.find(p => p.type === type);
 
         if (existingPopup) {

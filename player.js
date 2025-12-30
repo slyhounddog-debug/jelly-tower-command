@@ -30,6 +30,10 @@ export default class Player {
         this.dashSpeed = 30;
         this.jumpSquash = 0;
         this.maxJumps = 2;
+        this.firstComponentCollected = false;
+        this.collectedComponents = [];
+        this.equippedComponents = {};
+        this.maxComponentPoints = 3;
         this.reset();
     }
     reset() {
@@ -43,13 +47,16 @@ export default class Player {
         this.lastDPress = 0;
         this.jumpSquash = 0;
         this.maxJumps = 2;
+        this.firstComponentCollected = false;
+        this.collectedComponents = [];
+        this.equippedComponents = {};
+        this.maxComponentPoints = 3;
         
         // Leveling
         this.level = 1;
         this.xp = 0;
         this.xpForNextLevel = 100;
         this.totalMoneyEarned = 0;
-        this.componentPoints = 3;
         this.upgrades = {
             // Normals
             'Quick Boi': 0,
@@ -59,11 +66,12 @@ export default class Player {
             'Dashier': 0,
             'Long Tongue': 0,
             'Slower Aura Range': 0,
+            'Wide Collector': 0,
             // Rares
             'Winged Boots': 0,
             'Air Tricks': 0,
             'Ice Tongue': 0,
-            'Wide Collector': 0,
+            
             'Marshmallow Landing': 0,
             'Slow Aura': 0,
             // Legendaries
@@ -113,8 +121,8 @@ export default class Player {
 
         if (this.upgrades['Tongue Whirlwind'] > 0 && (Date.now() - this.lastDashTime < 200)) {
             this.isWhirlwinding = true;
-            this.whirlwindTimer = 180; // 3 seconds
-            this.lickCooldown = 240; // 4 second cooldown
+            this.whirlwindTimer = 100; // 1.5 seconds
+            this.lickCooldown = 101; // 1.5 second cooldown
             this.game.audioManager.playSound('dash'); // Temporary sound
             return;
         }
@@ -168,13 +176,13 @@ export default class Player {
             if (this.whirlwindTimer <= 0) {
                 this.isWhirlwinding = false;
             }
-            this.whirlwindAngle += 0.2 * tsf;
+            this.whirlwindAngle += 0.4 * tsf;
 
-            const whirlwindRange = this.lickRange * 1.5;
+            const whirlwindRange = this.lickRange * 1.3;
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
-                    m.takeDamage(this.game.stats.lickDamage * 0.1); // Deal 10% of lick damage per tick
+                    m.takeDamage(this.game.stats.lickDamage * 0.3); // Deal 30% of lick damage per tick
                 }
             });
         }
@@ -363,7 +371,7 @@ export default class Player {
 
         // Draw whirlwind
         if (this.isWhirlwinding) {
-            const whirlwindRange = this.lickRange * 1.5;
+            const whirlwindRange = this.lickRange * 1.3;
             const tongueX = this.x + this.width / 2 + Math.cos(this.whirlwindAngle) * whirlwindRange;
             const tongueY = this.y + this.height / 2 + Math.sin(this.whirlwindAngle) * whirlwindRange;
             

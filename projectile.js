@@ -1,13 +1,15 @@
 import Particle from './particle.js';
 
 export default class Projectile {
-    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15) {
+    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, equippedComponents = {}) {
         this.game = game;
         this.x = x; this.y = y; this.damage = damage; this.range = range; this.origin = origin;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
         this.hp = damage; this.dead = false; this.hasHit = false;
         this.rotation = Math.random() * Math.PI * 2; // Start with random rotation
         this.radius = radius;
+        this.equippedComponents = equippedComponents;
+        this.hasFire = !!this.equippedComponents['Fire Damage'];
     }
     update(tsf) {
         this.x += this.vx * tsf; this.y += this.vy * tsf;

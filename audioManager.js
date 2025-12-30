@@ -16,8 +16,8 @@ class AudioManager {
             // Missile sounds
             fire: './assets/sfx/pop.mp3',
             miss: './assets/sfx/whiff.mp3',
-            hit: './assets/sfx/thud.mp3',
-            towerHit: './assets/sfx/towerHit.mp3',
+            hit: './assets/sfx/towerHit.mp3', // Tower kill
+            towerHit: './assets/sfx/thud.mp3', // Tower hit
 
             // UI sounds
             purchase: './assets/sfx/chime.mp3',
