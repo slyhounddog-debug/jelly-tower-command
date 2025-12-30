@@ -1,5 +1,6 @@
 class AudioManager {
-    constructor() {
+    constructor(game) {
+        this.game = game;
         this.context = new (window.AudioContext || window.webkitAudioContext)();
         this.sounds = {}; 
         this.musicSources = {}; 
@@ -29,7 +30,7 @@ class AudioManager {
             // Enemies
             fire: './assets/sfx/pop.mp3',
             miss: './assets/sfx/whiff.mp3',
-            hit: './assets/sfx/towerHit.mp3',
+            hit: './assets/sfx/towerHit.mp3', // Kill
             towerHit: './assets/sfx/thud.mp3',
 
             // UI
@@ -69,6 +70,7 @@ class AudioManager {
     }
 
     playSound(key) {
+        if (!this.game.soundEffectsOn) return;
         if (this.context.state === 'suspended') this.context.resume();
 
         if (this.sounds[key]) {
@@ -81,6 +83,7 @@ class AudioManager {
     }
 
     playMusic(key, loop = true) {
+        if (!this.game.musicOn) return;
         if (this.context.state === 'suspended') this.context.resume();
 
         if (this.sounds[key] && !this.musicSources[key]) {

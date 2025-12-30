@@ -29,7 +29,7 @@ class Game {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
 
-        this.audioManager = new AudioManager();
+        this.audioManager = new AudioManager(this);
         this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
@@ -61,6 +61,8 @@ class Game {
         // Initialize currency from localStorage or 0
         this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
         this.isPaused = true;
+        this.soundEffectsOn = true;
+        this.musicOn = true;
         this.isShopOpen = false;
         this.isGameOver = false;
         this.gameTime = 0;
@@ -496,6 +498,21 @@ class Game {
                 document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
                 document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
         
+                document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
+                document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
+                document.getElementById('sound-effects-toggle').addEventListener('change', (e) => {
+                    this.soundEffectsOn = e.target.checked;
+                });
+                document.getElementById('music-toggle').addEventListener('change', (e) => {
+                    this.musicOn = e.target.checked;
+                    if (this.musicOn) {
+                        this.audioManager.playMusic('music');
+                    } else {
+                        this.audioManager.stopMusic('music');
+                        this.audioManager.stopMusic('gameOverMusic');
+                    }
+                });
+
                         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
                     }
                 
@@ -565,7 +582,15 @@ class Game {
                         if (!isVisible) {
                             this.renderComponentQuarters();
                         }
-                    }        
+                    }
+
+    toggleSettings() {
+        const modal = document.getElementById('settings-modal');
+        const isVisible = modal.style.display === 'block';
+        modal.style.display = isVisible ? 'none' : 'block';
+        this.isPaused = !isVisible;
+    }
+                            
             closeComponentModal() {
                 document.getElementById('component-modal').style.display = 'none';
                 this.isPaused = false;
