@@ -9,28 +9,28 @@ export default class Missile {
         this.game = game;
         this.x = x; 
         this.y = y;
-        this.baseSpeed = (type === 'piggy') ? 0.5 : 0.8;
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.08)) * 0.5;
+        this.baseSpeed = (type === 'piggy') ? 0.2 : 0.4;
+        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.02)) * 0.5;
         this.type = type;
 
         if (type === 'missile') {
             this.width = 50; // 45 * 1.1
             this.height = 66;  // 60 * 1.1
             this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-            this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
+            this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.08));
         } else if (type === 'gummy_worm') {
             this.width = 25;
             this.height = 80;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
-            this.health = 15 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.1)) * 0.5);
+            this.health = 15 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.06)) * 0.5);
             this.baseSpeed = 1.2; 
         } else if (type === 'marshmallow_large') {
             this.width = 76.5;
             this.height = 76.5;
             this.color = '#F8F8FF';
-            this.health = 50 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.1)) * 1.5);
+            this.health = 50 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.08)) * 1.4);
             this.baseSpeed = 0.5;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
         } else if (type === 'marshmallow_medium') {
@@ -73,18 +73,23 @@ export default class Missile {
         this.shakeDuration = 0;
         this.shakeMagnitude = 0;
         this.healScale = 1;
-        this.isSlowed = false;
-        this.slowTimer = 0;
+        this.slowEffects = [];
         this.slowedByAura = false;
         this.fireStacks = [];
+        this.fireFlashTimer = 0;
     }
 
-    applyFire(damage) {
+    applyFire(damage, stacks) {
+        if (stacks <= 0) return;
         this.fireStacks.push({
-            damage: damage * 0.1, // 10% of shot damage
+            damage: damage * 0.1 * stacks, // 10% of shot damage per stack
             duration: 300, // 5 seconds at 60fps
             timer: 300,
         });
+    }
+
+    applySlow(duration, amount) {
+        this.slowEffects.push({ timer: duration, amount: amount });
     }
 
     takeDamage(amount, isCritical = false) {
@@ -118,6 +123,7 @@ export default class Missile {
     }
 
     update(tsf) {
+        if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
         // Fire damage
         for (let i = this.fireStacks.length - 1; i >= 0; i--) {
             const stack = this.fireStacks[i];
@@ -128,18 +134,28 @@ export default class Missile {
                 if (Math.floor(stack.timer) % 60 === 0) { // Every second
                     this.health -= stack.damage;
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
-                    this.hitTimer = 5;
+                    this.fireFlashTimer = 10;
                 }
             }
         }
 
-        if (!this.slowedByAura && this.slowTimer > 0) {
-            this.slowTimer -= tsf;
-        } else if (this.slowTimer <= 0) {
-            this.isSlowed = false;
+        let totalSlow = 0;
+        for (let i = this.slowEffects.length - 1; i >= 0; i--) {
+            this.slowEffects[i].timer -= tsf;
+            if (this.slowEffects[i].timer <= 0) {
+                this.slowEffects.splice(i, 1);
+            } else {
+                totalSlow += this.slowEffects[i].amount;
+            }
+        }
+        
+        if (this.slowedByAura) {
+            totalSlow += 0.2; // Assuming aura is 20% slow
         }
 
-        const currentSpeed = this.isSlowed ? this.speed * 0.8 : this.speed;
+        totalSlow = Math.min(totalSlow, 0.8); // Cap slow at 80%
+
+        const currentSpeed = this.speed * (1 - totalSlow);
 
         if (this.hitTimer > 0) this.hitTimer -= tsf;
         if (this.damageTextTimer > 0) this.damageTextTimer -= tsf;
@@ -213,6 +229,10 @@ export default class Missile {
         ctx.shadowBlur = 15;
         let color = (this.type === 'piggy') ? '#ff69b4' : this.color;
         if(this.hitTimer > 0) color = '#FFFFFF';
+        if (this.fireFlashTimer > 0) {
+            const alpha = (this.fireFlashTimer / 10);
+            color = `rgba(255, 0, 0, ${alpha})`;
+        }
         ctx.shadowColor = color;
         ctx.fillStyle = color;
 

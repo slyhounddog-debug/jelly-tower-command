@@ -106,6 +106,9 @@ export default class GameLoop {
                 const p = this.game.projectiles[i];
                 p.update(tsf);
                 if (p.x < 0 || p.x > this.game.width || p.y < 0 || p.y > this.game.height || p.dead) {
+                    if (p.popRockStacks > 0) {
+                        p.createExplosion();
+                    }
                     if (!p.hasHit) {
                         this.game.audioManager.playSound('miss');
                     }
@@ -117,18 +120,40 @@ export default class GameLoop {
                     if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
                         const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                         let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
-                        if (p.hasFire) {
-                            m.applyFire(dmg);
+                        if (p.fireDamageCount > 0) {
+                            m.applyFire(dmg, p.fireDamageCount);
+                        }
+                        if (p.freezeStacks > 0) {
+                            m.applySlow(300, 0.1 * p.freezeStacks);
                         }
                         if (m.takeDamage(dmg, isCrit)) m.kill(j);
                         m.kbVy = -2;
                         this.game.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
                         if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
+                        if (p.popRockStacks > 0) {
+                            p.createExplosion();
+                        }
                         this.game.projectiles.splice(i, 1);
                         break;
                     }
                 }
             }
+
+            // Gravity Pull component logic
+            this.game.projectiles.forEach(p => {
+                if (p.gravityPullCount > 0) {
+                    const pullRange = 50 * (1 + p.gravityPullCount * 0.15);
+                    const pullForce = 0.1 * (1 + p.gravityPullCount * 0.15);
+                    this.game.missiles.forEach(m => {
+                        const dist = Math.hypot(p.x - m.x, p.y - m.y);
+                        if (dist < pullRange) {
+                            const angle = Math.atan2(p.y - m.y, p.x - m.x);
+                            m.x += Math.cos(angle) * pullForce * tsf;
+                            m.y += Math.sin(angle) * pullForce * tsf;
+                        }
+                    });
+                }
+            });
 
             // Cleanup
             for (let i = this.game.drops.length - 1; i >= 0; i--) { this.game.drops[i].update(tsf); if (this.game.drops[i].life <= 0) this.game.drops.splice(i, 1); }
@@ -199,6 +224,7 @@ export default class GameLoop {
         this.game.lootPopupManager.draw(this.game.ctx);
 
         if (this.game.levelingManager.isLevelingUp) {
+            this.game.audioManager.setMuffled(true);
             this.game.isPaused = true;
             this.game.levelUpScreen.update(tsf);
             this.game.levelUpScreen.draw(this.game.ctx);

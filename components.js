@@ -1,31 +1,31 @@
 export const COMPONENTS = {
     "Fire Damage": {
         cost: 1,
-        description: "Adds a fire effect to shots, dealing 10% of shot damage per second for 5 seconds. This effect can stack."
+        description: "Shots apply a fire DoT for 5s. Each stack adds 10% of shot damage per second."
     },
     "Split Shot": {
         cost: 3,
-        description: "Adds an additional projectile to each tower shot. Spread increases with more stacks."
+        description: "Adds an additional projectile to each tower shot. Each stack adds another shot and widens the spread."
     },
     "Sniper": {
         cost: 1,
-        description: "+20% range, +25% damage, -10% fire rate. Stackable."
+        description: "Each stack adds +20% range, +25% damage, and -10% fire rate."
     },
     "Gravity Pull": {
         cost: 1,
-        description: "Shots pull nearby enemies towards them. Effect and range increase with more stacks."
+        description: "Shots pull nearby enemies. Each stack increases pull range and strength by 15%."
     },
     "Pop-Rock Projectiles": {
         cost: 2,
-        description: "Shots explode on impact or at max range, dealing 50% damage in an area. Explosion size increases with more stacks."
+        description: "Shots explode on impact. Each stack increases explosion area by 50%."
     },
     "Freeze Frosting": {
         cost: 1,
-        description: "Shots slow enemies by 10% for 5 seconds. Stackable."
+        description: "Shots slow enemies for 5s. Each stack adds 10% slow."
     },
     "Bubble Gum Shots": {
         cost: 2,
-        description: "Shots bounce off the edge of the tower's range instead of disappearing."
+        description: "Shots bounce off the tower's range. Each stack adds one bounce."
     }
 };
 

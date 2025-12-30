@@ -81,7 +81,17 @@ class LootPopup {
             ctx.lineWidth = 3;
 
             ctx.beginPath();
-            ctx.rect(displayX, this.y, boxWidth, boxHeight);
+            ctx.moveTo(displayX + cornerRadius, this.y);
+            ctx.lineTo(displayX + boxWidth - cornerRadius, this.y);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y, displayX + boxWidth, this.y + cornerRadius);
+            ctx.lineTo(displayX + boxWidth, this.y + boxHeight - cornerRadius);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y + boxHeight, displayX + boxWidth - cornerRadius, this.y + boxHeight);
+            ctx.lineTo(displayX + cornerRadius, this.y + boxHeight);
+            ctx.quadraticCurveTo(displayX, this.y + boxHeight, displayX, this.y + boxHeight - cornerRadius);
+            ctx.lineTo(displayX, this.y + cornerRadius);
+            ctx.quadraticCurveTo(displayX, this.y, displayX + cornerRadius, this.y);
+            ctx.closePath();
+            
             ctx.fill();
             ctx.stroke();
 

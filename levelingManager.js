@@ -55,7 +55,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Long Tongue", description: "10% increase in tongue length.", icon: "👅", rarity: "normal" },
+                        { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
 
         
 
@@ -219,15 +219,11 @@ export default class LevelingManager {
 
         
 
-                                this.game.audioManager.playSound('levelUp');
-
-        
-
-                                this.game.audioManager.stopMusic('music');
-
-        
-
-                                this.game.audioManager.playMusic('levelUpMusic');
+                               if (this.audio) {
+        this.audio.setMuffled(true); // Muffle the main music
+        this.audio.playSound('levelUp'); // Play a quick jingle on top
+    }
+                               
 
         
 
@@ -659,7 +655,7 @@ export default class LevelingManager {
 
         
 
-                            player.lickRange = player.baseLickRange * (1 + player.upgrades['Long Tongue'] * 0.1);
+                            player.lickRange = player.baseLickRange * (1 + player.upgrades['Long Tongue'] * 0.2);
 
         
 

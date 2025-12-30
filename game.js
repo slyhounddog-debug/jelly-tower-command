@@ -33,20 +33,24 @@ class Game {
         this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
-        this.DAMAGE_TIERS = [10, 17, 25, 35, 45, 55, 67, 80, 95, 110, 125, 140, 160, 180, 200, 250];
-        this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500];
-        this.LICK_DAMAGE_TIERS = [8, 16, 24, 32, 40, 50];
-        this.LICK_KNOCKBACK_TIERS = [30, 40, 50, 60, 70, 80];
-        this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+        this.DAMAGE_TIERS = [13, 19, 26, 35, 45, 55, 67, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
+        this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
+        this.LICK_DAMAGE_TIERS = [10, 15, 20, 26, 32, 39, 46, 54, 62, 70, 80, 90, 100];
+        this.LICK_KNOCKBACK_TIERS = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100];
+        this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
         this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [
-            { bonus: 0.10, mult: 2 },
+            { bonus: 0.8, mult: 2 },
+            { bonus: 0.10, mult: 3 },
             { bonus: 0.12, mult: 3 },
-            { bonus: 0.14, mult: 3 },
-            { bonus: 0.16, mult: 4 },
-            { bonus: 0.18, mult: 4 },
-            { bonus: 0.20, mult: 5 },
-            { bonus: 0.25, mult: 6 } 
+            { bonus: 0.14, mult: 4 },
+            { bonus: 0.15, mult: 4 },
+            { bonus: 0.16, mult: 5 },
+            { bonus: 0.17, mult: 6 },
+            { bonus: 0.18, mult: 7 },
+            { bonus: 0.19, mult: 8 },
+            { bonus: 0.20, mult: 9 },
+            { bonus: 0.20, mult: 10 }
         ];
 
         this.lastTime = 0;
@@ -77,9 +81,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 11;
+        this.gummyWormSpawnThreshold = 12;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 18;
+        this.marshmallowSpawnThreshold = 22;
         this.marshmallowSeen = false;
 
         this.thermometer = new Thermometer(this);
@@ -364,6 +368,15 @@ class Game {
         this.resizeModals();
         window.addEventListener('resize', () => this.resizeModals());
 
+        const startButton = document.getElementById('start-game-btn');
+        startButton.disabled = true;
+        startButton.textContent = 'Loading Sounds...';
+
+        this.audioManager.loadingPromise.then(() => {
+            startButton.disabled = false;
+            startButton.textContent = 'Start Game';
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
@@ -458,9 +471,14 @@ class Game {
         });
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
         document.getElementById('start-game-btn').addEventListener('click', () => {
-            document.getElementById('start-game-modal').style.display = 'none';
-            this.isPaused = false;
-        });
+    document.getElementById('start-game-modal').style.display = 'none';
+    this.isPaused = false;
+
+    // Start the persistent music when the user clicks Start
+    if (this.audioManager) {
+        this.audioManager.playMusic('music');
+    }
+});
 
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
@@ -484,7 +502,7 @@ class Game {
                         renderComponentQuarters() {
                             const bar = document.getElementById('component-points-bar');
                             bar.innerHTML = '';
-                            const usedPoints = Object.values(this.player.equippedComponents).reduce((sum, component) => sum + component.cost, 0);
+                            const usedPoints = Object.values(this.player.equippedComponents).reduce((sum, component) => sum + (component ? component.cost : 0), 0);
                             for (let i = 0; i < this.player.maxComponentPoints; i++) {
                                 const segment = document.createElement('div');
                                 segment.classList.add('component-point-segment');
@@ -498,7 +516,10 @@ class Game {
                     
                             const grid = document.getElementById('component-grid');
                             grid.innerHTML = '';
-                            this.player.collectedComponents.forEach(componentName => {
+                            
+                            const uniqueComponents = [...new Set(this.player.collectedComponents)];
+
+                            uniqueComponents.forEach(componentName => {
                                 const component = COMPONENTS[componentName];
                                 const div = document.createElement('div');
                                 div.className = 'component-item';
@@ -510,20 +531,25 @@ class Game {
                                     <div class="component-cost">${component.cost}</div>
                                 `;
                                 div.onclick = () => {
+                                    const currentUsedPoints = Object.values(this.player.equippedComponents).reduce((sum, c) => sum + (c ? c.cost : 0), 0);
+
                                     if (this.player.equippedComponents[componentName]) {
                                         // Unequip
                                         delete this.player.equippedComponents[componentName];
                                     } else {
                                         // Equip
-                                        const newUsedPoints = usedPoints + component.cost;
+                                        const newUsedPoints = currentUsedPoints + component.cost;
                                         if (newUsedPoints <= this.player.maxComponentPoints) {
                                             this.player.equippedComponents[componentName] = component;
                                         } else {
                                             // Not enough points
-                                            bar.parentElement.style.animation = 'shake 0.5s';
-                                            setTimeout(() => {
-                                                bar.parentElement.style.animation = '';
-                                            }, 500);
+                                            const barContainer = document.getElementById('component-points-bar-container');
+                                            if(barContainer) {
+                                                barContainer.style.animation = 'shake 0.5s';
+                                                setTimeout(() => {
+                                                    barContainer.style.animation = '';
+                                                }, 500);
+                                            }
                                         }
                                     }
                                     this.renderComponentQuarters();
@@ -587,9 +613,6 @@ class Game {
     
     resetGame() {
         this.audioManager.stopMusic('gameOverMusic');
-        this.audioManager.stopMusic('shopMusic');
-        this.audioManager.stopMusic('levelUpMusic');
-        this.audioManager.playMusic('music');
         this.money = this.emporium.getStartingMoney();
 
         this.castleHealth = this.emporium.getStartingHealth();
@@ -631,11 +654,12 @@ class Game {
                     document.getElementById('notification').innerText = 'Game Paused';
                     document.getElementById('notification').style.opacity = 1;
                     setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-                    this.audioManager.stopMusic('music');
-                    this.audioManager.playMusic('shopMusic');
+                   
                 } else {
-                    this.audioManager.stopMusic('shopMusic');
-                    this.audioManager.playMusic('music');
+                   
+                }
+                if (this.audioManager) {
+                    this.audioManager.setMuffled(this.isShopOpen);
                 }
                 document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
                 if (this.isShopOpen) { 

@@ -36,8 +36,7 @@ export default class LevelUpScreen {
         this.game.levelingManager.applyUpgrade(choice);
         this.game.levelingManager.isLevelingUp = false;
         this.game.isPaused = false;
-        this.game.audioManager.stopMusic('levelUpMusic');
-        this.game.audioManager.playMusic('music');
+        this.game.audioManager.setMuffled(false);
     }
 
     update(tsf) {
@@ -100,7 +99,7 @@ export default class LevelUpScreen {
         }
 
         const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
-        gradient.addColorStop(0, '#8A2BE2'); // Purple
+        gradient.addColorStop(0, '#3af8f8ff'); // Purple
         gradient.addColorStop(1, '#FF69B4'); // Pink
 
         ctx.fillStyle = gradient;

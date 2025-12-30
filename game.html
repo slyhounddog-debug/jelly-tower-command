@@ -190,8 +190,18 @@
             font-weight: bold;
         }
 
+        #shop-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 10px;
+            gap: 10px;
+            background-color: rgba(0,0,0,0.7);
+            border-radius: 0 0 15px 15px;
+        }
+
         #shop-details {
-            flex: 2;
+            flex: 1;
             background-color: rgba(0, 0, 0, 0.5); /* Dark background for inset effect */
             border-radius: 10px;
             padding: 20px;
@@ -200,7 +210,7 @@
             justify-content: center;
             gap: 40px;
             box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border: 3px solid #4a2c4a; /* Dark magenta border, matching health bar theme */
         }
 
@@ -615,7 +625,7 @@
                 <span id="shop-money-display" style="font-size: 24px; color: #0f0; text-shadow: 0 0 5px #0f0; margin-left: 5px;">0</span>
             </div>
 
-            <div id="shop-content" style="display: flex; flex-direction: column; flex: 1; padding: 20px; gap: 20px; background-color: rgba(0,0,0,0.7); border-radius: 0 0 15px 15px;">
+            <div id="shop-content">
                 <div id="shop-details">
                     <div class="detail-icon" id="detail-icon" style="font-size: 96px; display: flex; align-items: center; justify-content: center;">🔧</div>
                     <div class="detail-info">
@@ -637,7 +647,9 @@
 
         <div id="component-quarters-overlay" class="modal" style="display: none;">
             <h2>Component Quarters</h2>
-            <div id="component-points-bar"></div>
+            <div id="component-points-bar-container">
+                <div id="component-points-bar"></div>
+            </div>
             <div id="component-grid"></div>
             <button class="modal-close" onclick="closeComponentQuarters()">Close</button>
         </div>
@@ -735,7 +747,7 @@
                 <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
                 <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
             </div>
-            <button class="modal-close" id="start-game-btn">Start Game</button>
+            <button class="modal-close" id="start-game-btn" disabled>Start Game</button>
         </div>
 
         <!-- Piggy Modal -->

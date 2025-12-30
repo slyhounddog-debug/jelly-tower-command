@@ -11,7 +11,7 @@ export default class Player {
         this.baseJumpForce = -26;
         this.baseAirJumpForce = -26;
         this.baseDashCooldown = 40;
-        this.baseLickRange = 66.5;
+        this.baseLickRange = 140;
 
         this.acceleration = this.baseAcceleration;
         this.jumpForce = this.baseJumpForce;
@@ -101,9 +101,14 @@ export default class Player {
             this.lastDashTime = Date.now();
 
             if (this.upgrades['Reflective Coating'] > 0) {
+                const hitboxX = this.x - this.width / 2;
+                const hitboxY = this.y - this.height / 2;
+                const hitboxWidth = this.width * 2;
+                const hitboxHeight = this.height * 2;
+
                 this.game.missiles.forEach(m => {
-                    if (this.x < m.x + m.width && this.x + this.width > m.x &&
-                        this.y < m.y + m.height && this.y + this.height > m.y) {
+                    if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
+                        hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
                         m.takeDamage(this.game.stats.lickDamage);
                         m.kbVy = -this.game.stats.lickKnockback * .3;
                     }
@@ -130,37 +135,36 @@ export default class Player {
         this.game.audioManager.playSound('mlem');
         const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
-        this.lickOffsetX = Math.cos(this.lickAngle) * this.lickRange;
-        this.lickOffsetY = Math.sin(this.lickAngle) * this.lickRange;
         this.lickAnim = 15; this.lickCooldown = 20;
 
-        // Hitbox logic
-        const impactX = cx + this.lickOffsetX;
-        const impactY = cy + this.lickOffsetY;
+        const lickSegments = 5;
+        const lickLength = this.lickRange; 
+
         this.game.missiles.forEach(m => {
-            const missileCx = m.x + m.width / 2;
-            const missileCy = m.y + m.height / 2;
+            let hit = false;
+            for (let i = 1; i <= lickSegments; i++) {
+                const progress = i / lickSegments;
+                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress);
+                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress);
+                
+                const missileCx = m.x + m.width / 2;
+                const missileCy = m.y + m.height / 2;
+                
+                if (Math.hypot(missileCx - checkX, missileCy - checkY) < 30) { 
+                    hit = true;
+                    break; 
+                }
+            }
 
-            // Check for collision with the hand hitbox OR the player's hitbox
-            const hitByHand = Math.hypot(missileCx - impactX, missileCy - impactY) < 80; // Increased hitbox
-            const hitByPlayer = (
-                this.x < m.x + m.width &&
-                this.x + this.width > m.x &&
-                this.y < m.y + m.height &&
-                this.y + this.height > m.y
-            );
-
-            if (hitByHand || hitByPlayer) {
+            if (hit) {
                 m.takeDamage(this.game.stats.lickDamage);
                 if (this.upgrades['Ice Tongue'] > 0) {
                     m.isSlowed = true;
-                    m.slowTimer = 180; // 3 seconds at 60fps
+                    m.slowTimer = 180;
                 }
-                // Smooth Knockback application
-                m.kbVy = -this.game.stats.lickKnockback * .3; // Initial impulse
-                this.game.screenShake.trigger(4, 10); // Increased
-                // More particles
-                for (let i = 0; i < 15; i++) { // Increased particle count
+                m.kbVy = -this.game.stats.lickKnockback * .3;
+                this.game.screenShake.trigger(4, 10);
+                for (let i = 0; i < 15; i++) {
                     this.game.particles.push(new Particle(m.x, m.y, this.color, 'spark'));
                     if (i < 5) this.game.particles.push(new Particle(m.x, m.y, '#fff', 'smoke'));
                 }
@@ -176,13 +180,13 @@ export default class Player {
             if (this.whirlwindTimer <= 0) {
                 this.isWhirlwinding = false;
             }
-            this.whirlwindAngle += 0.4 * tsf;
+            this.whirlwindAngle += 0.8 * tsf; // Faster rotation
 
             const whirlwindRange = this.lickRange * 1.3;
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
-                    m.takeDamage(this.game.stats.lickDamage * 0.3); // Deal 30% of lick damage per tick
+                    m.takeDamage(this.game.stats.lickDamage * 0.1); // Deal 10% of lick damage per tick
                 }
             });
         }
@@ -371,16 +375,33 @@ export default class Player {
 
         // Draw whirlwind
         if (this.isWhirlwinding) {
-            const whirlwindRange = this.lickRange * 1.3;
-            const tongueX = this.x + this.width / 2 + Math.cos(this.whirlwindAngle) * whirlwindRange;
-            const tongueY = this.y + this.height / 2 + Math.sin(this.whirlwindAngle) * whirlwindRange;
-            
-            ctx.save();
+            const whirlwindRange = this.lickRange * 0.8;
+            const tongueOriginX = this.x + this.width / 2;
+            const tongueOriginY = this.y + this.height / 2;
             const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
-            ctx.fillStyle = mainColor;
-            ctx.beginPath();
-            ctx.arc(tongueX, tongueY, 30, 0, Math.PI * 2);
-            ctx.fill();
+            const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
+
+            ctx.save();
+            const segments = 15;
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const segmentX = tongueOriginX + Math.cos(this.whirlwindAngle) * (whirlwindRange * t);
+                const segmentY = tongueOriginY + Math.sin(this.whirlwindAngle) * (whirlwindRange * t);
+
+                let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
+                size *= 0.8;
+
+                ctx.fillStyle = mainColor;
+                ctx.beginPath();
+                ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (i === segments || i % 5 === 0) {
+                    ctx.strokeStyle = shadowCol;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
             ctx.restore();
         }
 
