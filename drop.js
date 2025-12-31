@@ -63,6 +63,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             }
             if (this.type === 'ice_cream_scoop') {
                 this.game.iceCreamScoops++;
+                localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
                 this.game.audioManager.playSound('scoop');
                 this.game.lootPopupManager.addLoot('scoop', 'Scoop', 1);
                 this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
