@@ -492,28 +492,27 @@ export default class Missile {
         let xpGained = 0;
         let maxHealthForXp = this.maxHealth;
 
-        if (this.type === 'marshmallow_small') {
-            // Calculate what a standard jelly bean's health would be right now
-            maxHealthForXp = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
-        }
+       let intensity = 5; 
+        if (this.type === 'marshmallow_large') intensity = 15;
+        else if (this.type === 'marshmallow_medium') intensity = 8;
+        else if (this.type === 'marshmallow_small') intensity = 3;
+        else if (this.type === 'piggy') intensity = 10;
 
+        import('./utils.js?v=25').then(utils => {
+            if (utils.ScreenShake && typeof utils.ScreenShake.trigger === 'function') {
+                utils.ScreenShake.trigger(intensity, 15);
+            }
+        });
         xpGained = 10 + (maxHealthForXp / 5);
         
         // Apply emporium multiplier
         const xpMultiplier = this.game.emporium.getEnemyXpMultiplier();
         xpGained *= xpMultiplier;
 
-        this.game.levelingManager.addXp(this.x, this.y, xpGained);
-
-           // Trigger global screen shake using the ScreenShake utility
-           let shakeIntensity = 5; 
-           if (this.type === 'marshmallow_large') shakeIntensity = 15;
-           else if (this.type === 'marshmallow_medium') shakeIntensity = 8;        else if (this.type === 'marshmallow_small') shakeIntensity = 3;
-        
         // Use the imported ScreenShake constant
         import('./utils.js?v=25').then(utils => {
             if (utils.ScreenShake && typeof utils.ScreenShake.trigger === 'function') {
-                utils.ScreenShake.trigger(shakeIntensity, 15);
+                utils.ScreenShake.trigger(intensity, 15);
             }
         });
 
@@ -542,29 +541,34 @@ export default class Missile {
         this.game.enemiesKilled++;
 
         const dropsToCreate = [];
+        dropsToCreate.push({ type: 'coin', value: 25 });
+        dropsToCreate.push({ type: 'xp_orb', value: xpGained });
         
         for (let c = 0; c < count; c++) {
-            dropsToCreate.push('coin');
-            if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push('heart');
-            if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push('lucky_coin');
+            if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
+            if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });
 
             const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
             const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
             const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
             if (Math.random() * 100 < dropChance) {
-                dropsToCreate.push('ice_cream_scoop');
+                dropsToCreate.push({ type: 'ice_cream_scoop' });
             }
             if (this.game.player.upgrades['Scoop Doubler'] > 0) {
                 if (Math.random() < 0.33) {
-                    dropsToCreate.push('ice_cream_scoop');
+                    dropsToCreate.push({ type: 'ice_cream_scoop' });
                 }
             }
         }
 
-        dropsToCreate.forEach((dropType, i) => {
+        dropsToCreate.forEach((dropData, i) => {
+            const delay = dropData.type === 'coin' ? 0 : (i + 1) * 200;
             setTimeout(() => {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, dropType));
-            }, i * 100);
+                this.game.drops.push(new Drop(this.game, this.x, this.y, dropData.type, dropData.value));
+                for (let j = 0; j < 5; j++) {
+                    this.game.particles.push(new Particle(this.x, this.y, '#fff', 'spark'));
+                }
+            }, delay);
         });
 
         if (this.type === 'piggy') {

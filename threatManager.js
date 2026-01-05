@@ -1,4 +1,5 @@
 import Missile from './missile.js';
+import GummyCluster from './boss.js';
 
 export default class ThreatManager {
     constructor(game) {
@@ -8,12 +9,42 @@ export default class ThreatManager {
     reset() {
         this.spawnTimer = (3600 / this.game.currentRPM) - 60;
         this.diffTimer = 0;
+        this.bossSpawnTimer = 0;
+        this.bossWarningTimer = 0;
+        this.bossWarningActive = false;
     }
     update(tsf) {
         this.diffTimer += tsf;
         if (this.diffTimer >= 80) {
             this.game.currentRPM += 0.1;
             this.diffTimer = 0;
+        }
+
+        this.bossSpawnTimer += tsf;
+        if (this.bossSpawnTimer >= 10800) { // 3 minutes
+            this.bossSpawnTimer = 0;
+            this.bossWarningActive = true;
+            this.bossWarningTimer = 180; // 3 seconds warning
+        }
+
+        if (this.bossWarningActive) {
+            this.bossWarningTimer -= tsf;
+            this.game.thermometer.pulse = true;
+            if (Math.floor(this.bossWarningTimer / 10) % 2 === 0) {
+                this.game.ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                this.game.ctx.fillRect(0, 0, this.game.width, this.game.height);
+            }
+
+            if (this.bossWarningTimer <= 0) {
+                this.bossWarningActive = false;
+                this.game.thermometer.pulse = false;
+                this.game.boss = new GummyCluster(this.game);
+                if (this.game.bossesKilled === 0) {
+                    // Show boss modal
+                    document.getElementById('boss-modal').style.display = 'flex';
+                    this.game.isPaused = true;
+                }
+            }
         }
 
         this.spawnTimer += tsf;

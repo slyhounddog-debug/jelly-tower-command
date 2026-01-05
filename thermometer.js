@@ -5,6 +5,7 @@ export default class Thermometer {
         this.height = this.game.height;
         this.thermometerStartTime = null;
         this.thermometerWarn = false;
+        this.pulse = false;
     }
 
     draw(ctx) {
@@ -32,7 +33,10 @@ export default class Thermometer {
 
         // --- 3. ANIMATION LOGIC (HALF SPEED) ---
         const time = Date.now() * 0.001; // Slower time (multiplied by 0.001 instead of 0.002)
-        const pulse = (Math.sin(time * 2) + 1) / 2; 
+        let pulse = (Math.sin(time * 2) + 1) / 2;
+        if (this.pulse) {
+            pulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
+        }
         const scale = 1 + (pulse * 0.05); 
         
         // Wobble: 2 degrees is ~0.035 radians
@@ -46,7 +50,7 @@ export default class Thermometer {
         ctx.rotate(wobbleAngle);
         ctx.scale(scale, scale);
         ctx.translate(-centerX, -centerY);
-
+        
         const x = xBase;
         const y = yBase;
 
@@ -62,7 +66,10 @@ export default class Thermometer {
         // OUTER GLOW
         ctx.save();
         ctx.shadowBlur = 15 + (pulse * 10);
-        ctx.shadowColor = `rgba(255, 105, 180, ${0.4 + pulse * 0.3})`; 
+        ctx.shadowColor = `rgba(255, 105, 180, ${0.4 + pulse * 0.3})`;
+        if (this.pulse) {
+            ctx.shadowColor = `rgba(255, 0, 255, ${0.7 + pulse * 0.3})`;
+        }
         ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
         ctx.lineWidth = 2;
         drawGlassShape();

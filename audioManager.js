@@ -11,12 +11,18 @@ class AudioManager {
         this.muffleFilter.type = 'lowpass';
         this.muffleFilter.frequency.value = 22000; // Start clear
 
-        // 2. Create a Gain Node to lower the music volume globally
+        // 2. Create a Biquad Filter for the boss high-pass effect
+        this.biquadFilter = this.context.createBiquadFilter();
+        this.biquadFilter.type = 'highpass';
+        this.biquadFilter.frequency.value = 0; // Start with no effect
+
+        // 3. Create a Gain Node to lower the music volume globally
         this.musicGain = this.context.createGain();
         this.musicGain.gain.value = .8; // Lowered volume to 80%
 
-        // Connect the chain: Music Source -> Filter -> Gain -> Output
-        this.muffleFilter.connect(this.musicGain);
+        // Connect the chain: Music Source -> Muffle Filter -> Biquad Filter -> Gain -> Output
+        this.muffleFilter.connect(this.biquadFilter);
+        this.biquadFilter.connect(this.musicGain);
         this.musicGain.connect(this.context.destination);
         
         this.soundSources = {
@@ -32,6 +38,8 @@ class AudioManager {
             miss: './assets/sfx/whiff.mp3',
             hit: './assets/sfx/towerHit.mp3', // Kill
             towerHit: './assets/sfx/thud.mp3',
+            bossHit: './assets/sfx/thud.mp3',
+            bossKilled: './assets/sfx/levelUp.mp3',
 
             // UI
             purchase: './assets/sfx/chime.mp3',
@@ -108,6 +116,22 @@ class AudioManager {
         
         // Smooth transition over 0.2 seconds
         this.muffleFilter.frequency.setTargetAtTime(targetFreq, this.context.currentTime, 0.1);
+    }
+
+    setBossMusic(active) {
+        if (this.context.state === 'suspended') this.context.resume();
+
+        if (active) {
+            this.biquadFilter.frequency.setTargetAtTime(1000, this.context.currentTime, 0.5);
+            if (this.musicSources.music) {
+                this.musicSources.music.playbackRate.setTargetAtTime(1.1, this.context.currentTime, 0.5);
+            }
+        } else {
+            this.biquadFilter.frequency.setTargetAtTime(0, this.context.currentTime, 0.1);
+            if (this.musicSources.music) {
+                this.musicSources.music.playbackRate.setTargetAtTime(1, this.context.currentTime, 0.1);
+            }
+        }
     }
 
     stopMusic(key) {

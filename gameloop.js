@@ -39,6 +39,12 @@ export default class GameLoop {
             this.game.gameTime += tsf;
             this.game.threatManager.update(tsf);
 
+            if (this.game.boss) {
+                this.game.audioManager.setBossMusic(true);
+            } else {
+                this.game.audioManager.setBossMusic(false);
+            }
+
             if (this.game.money >= 100 && !this.game.shopOpenedFirstTime && !this.game.shopReminderShown) {
                 this.game.shopReminderShown = true;
                 const reminder = document.getElementById('shop-reminder');
@@ -66,6 +72,7 @@ export default class GameLoop {
             this.game.towers.forEach(t => t.update(tsf));
             this.game.shields.forEach(s => s.update(tsf));
             this.game.castleHealthBar.update(tsf);
+            if (this.game.boss) this.game.boss.update(tsf);
 
             for (let i = this.game.missiles.length - 1; i >= 0; i--) {
                 const m = this.game.missiles[i];
@@ -84,7 +91,11 @@ export default class GameLoop {
                 }
                 if (blocked) continue;
                 if (m.y > this.game.height - 80) {
-                    this.game.castleHealth -= 10;
+                    if (m.type === 'gummy_bear') {
+                        this.game.castleHealth -= 10;
+                    } else {
+                        this.game.castleHealth -= 10;
+                    }
                     this.game.castleHealthBar.triggerHit();
                     this.game.missiles.splice(i, 1);
                     this.game.screenShake.trigger(5, 10);
@@ -116,6 +127,20 @@ export default class GameLoop {
                     this.game.projectiles.splice(i, 1);
                     continue;
                 }
+                
+                if (this.game.boss && p.x > this.game.boss.x && p.x < this.game.boss.x + this.game.boss.width && p.y > this.game.boss.y && p.y < this.game.boss.y + this.game.boss.height) {
+                    const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
+                    let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
+                    this.game.boss.takeDamage(dmg);
+                    this.game.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                    if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
+                    if (p.popRockStacks > 0) {
+                        p.createExplosion();
+                    }
+                    this.game.projectiles.splice(i, 1);
+                    continue;
+                }
+
                 for (let j = this.game.missiles.length - 1; j >= 0; j--) {
                     const m = this.game.missiles[j];
                     if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
@@ -212,6 +237,7 @@ export default class GameLoop {
         this.game.damageSpots.forEach(s => s.draw(this.game.ctx));
         this.game.towers.forEach(t => t.draw(this.game.ctx));
         this.game.shields.forEach(s => s.draw(this.game.ctx));
+        if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
         this.game.projectiles.forEach(p => p.draw(this.game.ctx));
         this.game.drops.forEach(d => d.draw(this.game.ctx));
@@ -238,6 +264,30 @@ export default class GameLoop {
         const mHealth = this.game.emporiumUpgrades.castle_health.values[cHealthLvl];
         document.getElementById('health-bar-fill').style.width = Math.max(0, (this.game.castleHealth / mHealth) * 100) + '%';
         document.getElementById('health-text').innerText = `${Math.max(0, this.game.castleHealth)}/${mHealth}`;
+
+        const bossHealthContainer = document.getElementById('boss-health-container');
+        const bossPulseOverlay = document.getElementById('boss-pulse-overlay');
+        if (this.game.boss) {
+            bossHealthContainer.style.display = 'block';
+            bossPulseOverlay.style.display = 'block';
+            const bossHealthFill = document.getElementById('boss-health-bar-fill');
+            const bossHealthText = document.getElementById('boss-health-text');
+            const bossHealthPercentage = (this.game.boss.health / this.game.boss.maxHealth) * 100;
+            bossHealthFill.style.width = `${bossHealthPercentage}%`;
+            bossHealthText.innerText = `BOSS: ${Math.ceil(this.game.boss.health)}`;
+            
+            // Rainbow color effect
+            const hue = (this.game.gameTime * 0.5) % 360;
+            bossHealthFill.style.background = `linear-gradient(to right, hsl(${hue}, 100%, 50%), hsl(${(hue + 60) % 360}, 100%, 50%))`;
+
+            // Pulse effect
+            const pulse = (Math.sin(this.game.gameTime * 0.05) + 1) / 2;
+            bossPulseOverlay.style.opacity = 0.1 + (pulse * 0.2);
+
+        } else {
+            bossHealthContainer.style.display = 'none';
+            bossPulseOverlay.style.display = 'none';
+        }
 
         requestAnimationFrame((t) => this.loop(t));
     }

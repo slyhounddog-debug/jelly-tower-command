@@ -4,7 +4,7 @@ import { lightenColor, darkenColor } from './utils.js';
 import { getRandomComponent } from './components.js';
 
 export default class Drop {
-    constructor(game, x, y, type) {
+    constructor(game, x, y, type, value = 0) {
         this.game = game;
         this.x = x + (Math.random() - 0.5) * 20;
         this.y = y + (Math.random() - 0.5) * 20;
@@ -16,7 +16,7 @@ export default class Drop {
        // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
 this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : (type === 'xp_orb' ? 20 : (type === 'component' ? 25 : 30))));
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
-        this.xpValue = 0;
+        this.xpValue = (type === 'xp_orb') ? value : 0;
         this.rot = 0;
         this.glow = 0;
         this.hue = 0;
@@ -33,7 +33,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
-        if (this.y > this.game.height - 80 - this.width / 2) { this.y = this.game.height - 80 - this.width / 2; this.vy *= -0.5; }
+        if (this.y > this.game.height - 80 - this.width / 2) { this.y = this.game.height - 80 - this.width / 2; this.vy *= -0.3; }
 
         if (Math.abs(this.game.player.x - this.x) < this.game.player.pickupRange && Math.abs(this.game.player.y - this.y) < this.game.player.pickupRange) {
             if (this.type === 'coin') {

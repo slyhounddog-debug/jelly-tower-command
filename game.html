@@ -773,6 +773,7 @@
 <body>
 
     <div id="game-wrapper">
+        <div id="boss-pulse-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: radial-gradient(circle, rgba(255,0,255,0.2) 0%, rgba(255,0,255,0) 70%); pointer-events: none;"></div>
         <div id="settings-icon">⚙️</div>
         <div id="component-tooltip" style="display: none; position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 210; pointer-events: none; font-size: 14px; max-width: 200px;"></div>
         <div id="ui-overlay">
@@ -780,6 +781,10 @@
             <div id="health-container">
                 <div id="health-bar-fill"></div>
                 <div id="health-text">CASTLE HP: 100/100</div>
+            </div>
+            <div id="boss-health-container" style="display: none; width: 400px; height: 24px; background: rgba(0,0,0,0.3); border: 2px solid #fff; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 10px;">
+                <div id="boss-health-bar-fill" style="width: 100%; height: 100%; transition: width 0.2s;"></div>
+                <div id="boss-health-text" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; text-align: center; line-height: 24px; font-size: 14px; color: #fff; font-weight: bold; text-shadow: 0px 0px 2px black;">BOSS</div>
             </div>
         </div>
         <div id="bottom-ui-overlay">
@@ -938,7 +943,7 @@
                 <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
                 <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
             </div>
-            <button class="modal-close" onclick="document.getElementById('guide-modal').style.display='none'">Close Guide</button>
+            <button class.modal-close" onclick="document.getElementById('guide-modal').style.display='none'">Close Guide</button>
         </div>
 
         <!-- Stats Modal -->
@@ -1034,6 +1039,18 @@
 
         <div id="notification" class="notification">Item Placed!</div>
 
+        <!-- Boss Modal -->
+        <div id="boss-modal" class="modal" style="display: none;">
+            <h2>🚨 BOSS INCOMING! 🚨</h2>
+            <div class="modal-content-area">
+                <h3>The Gummy Cluster</h3>
+                <p>A massive conglomeration of angry gummy bears approaches! This boss is slow but tough.</p>
+                <p>As you damage the Gummy Cluster, it will shed smaller Gummy Bears that will attack your castle.</p>
+                <p><strong>Rewards:</strong> Defeating the boss will grant a huge loot bonus and make the game more challenging!</p>
+            </div>
+            <button class="modal-close" onclick="closeBossModal()">BRING IT ON!</button>
+        </div>
+
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal" style="display: none;">
             <h2>Settings</h2>
@@ -1049,7 +1066,7 @@
                     <span>Music</span>
                     <label class="switch">
                         <input type="checkbox" id="music-toggle" checked>
-                        <span class="slider round"></span>
+                        <span classs="slider round"></span>
                     </label>
                 </div>
             </div>

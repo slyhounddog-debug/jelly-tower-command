@@ -32,7 +32,7 @@ export default class Player {
         this.maxJumps = 2;
         this.firstComponentCollected = false;
         this.collectedComponents = [];
-        this.equippedComponents = {};
+        this.equippedComponents = [];
         this.maxComponentPoints = 3;
         this.reset();
     }
@@ -49,7 +49,7 @@ export default class Player {
         this.maxJumps = 2;
         this.firstComponentCollected = false;
         this.collectedComponents = [];
-        this.equippedComponents = {};
+        this.equippedComponents = [];
         this.maxComponentPoints = 3;
         
         // Leveling
@@ -392,11 +392,7 @@ export default class Player {
         }
     }
       getEquippedComponentCount(componentName) {
-          // Since equippedComponents stores the component object itself,
-          // we can simply check if the key exists to know if it's equipped.
-          // For components that might stack or have multiple instances, this needs refinement.
-          // But for now, assuming each component can be equipped once for its effect to apply.
-          return this.equippedComponents[componentName] ? 1 : 0;
+          return this.equippedComponents.filter(c => c === componentName).length;
       }
       draw(ctx) {        if (this.isControlling) return;
 

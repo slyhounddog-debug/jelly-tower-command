@@ -21,6 +21,7 @@ import LevelUpScreen from './levelUpScreen.js';
 import XPBar from './xpBar.js';
 import LevelingManager from './levelingManager.js';
 import { COMPONENTS } from './components.js';
+import GummyCluster from './boss.js';
 
 class Game {
     constructor(canvas) {
@@ -28,6 +29,8 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+        this.boss = null;
+        this.bossesKilled = 0;
 
         this.audioManager = new AudioManager(this);
         this.lootPopupManager = new LootPopupManager(this);
@@ -537,7 +540,7 @@ class Game {
                     }
                 
                         renderComponentQuarters() {
-                            const usedPoints = Object.values(this.player.equippedComponents).reduce((sum, component) => sum + (component ? component.cost : 0), 0);
+                            const usedPoints = this.player.equippedComponents.reduce((sum, componentName) => sum + (COMPONENTS[componentName] ? COMPONENTS[componentName].cost : 0), 0);
                             const maxPoints = this.player.maxComponentPoints;
 
                             // Render component points bar
@@ -562,13 +565,14 @@ class Game {
                             const tooltip = document.getElementById('component-tooltip');
                             grid.innerHTML = '';
                             
-                            const uniqueComponents = [...new Set(this.player.collectedComponents)];
-
-                            uniqueComponents.forEach(componentName => {
+                            this.player.collectedComponents.forEach((componentName, index) => {
                                 const component = COMPONENTS[componentName];
                                 const div = document.createElement('div');
                                 div.className = 'component-item';
-                                if (this.player.equippedComponents[componentName]) {
+                                
+                                const isEquipped = this.player.equippedComponents.includes(componentName);
+
+                                if (isEquipped) {
                                     div.classList.add('equipped');
                                 }
                                 div.innerHTML = `
@@ -590,17 +594,20 @@ class Game {
                                 });
 
                                 div.onclick = () => {
-                                    const currentUsedPoints = Object.values(this.player.equippedComponents).reduce((sum, c) => sum + (c ? c.cost : 0), 0);
+                                    const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c] ? COMPONENTS[c].cost : 0), 0);
 
-                                    if (this.player.equippedComponents[componentName]) {
+                                    if (isEquipped) {
                                         // Unequip
-                                        delete this.player.equippedComponents[componentName];
+                                        const equippedIndex = this.player.equippedComponents.indexOf(componentName);
+                                        if (equippedIndex > -1) {
+                                            this.player.equippedComponents.splice(equippedIndex, 1);
+                                        }
                                         this.audioManager.playSound('reset'); // Sound for unequipping
                                     } else {
                                         // Equip
                                         const newUsedPoints = currentUsedPoints + component.cost;
                                         if (newUsedPoints <= this.player.maxComponentPoints) {
-                                            this.player.equippedComponents[componentName] = component;
+                                            this.player.equippedComponents.push(componentName);
                                             this.audioManager.playSound('purchase'); // Sound for equipping
                                         } else {
                                             // Not enough points
@@ -669,6 +676,12 @@ class Game {
         document.getElementById('shop-reminder').style.display = 'none';
         this.isPaused = false;
     }
+
+    closeBossModal() {
+        document.getElementById('boss-modal').style.display = 'none';
+        this.isPaused = false;
+    }
+
     handleVisibilityChange() {
         // document.hidden is true when the tab is not visible/active
         if (document.hidden) {
@@ -873,6 +886,7 @@ class Game {
         window.closeShopReminder = this.closeShopReminder.bind(this);
         window.closeComponentModal = this.closeComponentModal.bind(this);
         window.closeComponentQuarters = this.toggleComponentQuarters.bind(this);
+        window.closeBossModal = this.closeBossModal.bind(this);
         this.gameLoop.loop(0);
     }
 }
