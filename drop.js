@@ -1,13 +1,16 @@
 import Particle from './particle.js';
 import FloatingText from './floatingText.js';
-import { lightenColor } from './utils.js';
+import { lightenColor, darkenColor } from './utils.js';
 import { getRandomComponent } from './components.js';
 
 export default class Drop {
     constructor(game, x, y, type) {
         this.game = game;
-        this.x = x; this.y = y; this.type = type;
-        this.vy = -5; this.vx = (Math.random() - 0.5) * 6;
+        this.x = x + (Math.random() - 0.5) * 20;
+        this.y = y + (Math.random() - 0.5) * 20;
+        this.type = type;
+        this.vy = -6 + (Math.random() - 0.5) * 4;
+        this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
         this.life = 1200; // Longer life
        // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
@@ -78,6 +81,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
                 const componentName = getRandomComponent();
                 this.game.player.collectedComponents.push(componentName);
                 this.game.lootPopupManager.addLoot('component', componentName, 1);
+                this.game.audioManager.playSound('scoop'); // Sound for picking up a component
                 if (!this.game.player.firstComponentCollected) {
                     this.game.player.firstComponentCollected = true;
                     document.getElementById('component-modal').style.display = 'block';
@@ -121,28 +125,23 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         let iconText = '';
         if (this.type === 'coin') {
             baseColor = '#f1c40f'; // Yellow coin
-            iconText = '$';
-            ctx.scale(Math.sin(this.rot) * 0.7 + 0.3, 1); // Keep coin wobble
         } else if (this.type === 'lucky_coin') {
             baseColor = '#ffe082'; // Gold lucky coin
-            iconText = '$';
-            ctx.scale(Math.sin(this.rot) * 0.7 + 0.3, 1); // Keep coin wobble
         } else if (this.type === 'heart') {
             baseColor = '#e74c3c'; // Red heart
-            iconText = '♥';
         } else if (this.type === 'ice_cream_scoop') {
             baseColor = '#fdfdfd'; // White ice cream
             iconText = '🍦';
         } else if (this.type === 'xp_orb') {
-            baseColor = '#00f2ea'; // Teal XP orb
+            baseColor = '#39FF14'; // Neon Green XP orb
             iconText = 'XP';
         } else if (this.type === 'component') {
             baseColor = `hsl(${this.hue}, 100%, 70%)`;
             iconText = 'C';
         }
 
-        const glowColor = lightenColor(baseColor, this.glow * 15); // Lighten more for stronger glow
-        
+        ctx.fillStyle = baseColor;
+
         if (this.type === 'component') {
             ctx.fillStyle = `hsl(${this.hue}, 100%, 50%)`;
             ctx.beginPath();
@@ -157,8 +156,13 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             ctx.moveTo(-radius, 0);
             ctx.lineTo(radius, 0);
             ctx.stroke();
+        } else if (this.type === 'heart') {
+            ctx.beginPath();
+            ctx.moveTo(0, radius * 0.25);
+            ctx.quadraticCurveTo(radius, -radius * 0.5, 0, -radius);
+            ctx.quadraticCurveTo(-radius, -radius * 0.5, 0, radius * 0.25);
+            ctx.fill();
         } else {
-            ctx.fillStyle = glowColor;
             ctx.beginPath();
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
             ctx.fill();
@@ -167,30 +171,27 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
 
         // Draw the icon/shape
         if (this.type === 'coin' || this.type === 'lucky_coin') {
+            ctx.strokeStyle = darkenColor(baseColor, 20);
+            ctx.lineWidth = 2;
+            ctx.stroke();
             ctx.fillStyle = '#000';
             ctx.font = 'bold 18px "Lucky Guy"'; // Adjusted font size
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle'; // Center vertically
-            ctx.fillText(iconText, 0, 0); // Centered
+            ctx.fillText('$', 0, 0); // Centered
         } else if (this.type === 'xp_orb') {
             ctx.fillStyle = '#004d4a';
             ctx.font = 'bold 12px "Lucky Guy"'; // Smaller font for "XP"
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(iconText, 0, 0);
-        } else {
-            ctx.fillStyle = baseColor;
+        } else if (this.type === 'ice_cream_scoop') {
             ctx.font = '48px "Lucky Guy"'; // Increased size for better visibility
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle'; // Center vertically
-            if (this.type === 'heart') {
-                ctx.font = '24px "Lucky Guy"'; // Adjust heart size if needed
-                ctx.fillText(iconText, 0, 0);
-            } else { // Ice cream scoop
-                ctx.fillText(iconText, 0, 0); // Centered
-            }
+            ctx.fillText(iconText, 0, 0); // Centered
         }
-
+    
         ctx.restore();
     }
 }

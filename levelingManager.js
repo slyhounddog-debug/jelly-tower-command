@@ -20,6 +20,10 @@ export default class LevelingManager {
 
             5200, 5400, 5600, 5800, 6000, 6300, 6600, 6900, 7200, 7500, 8000, 8500, 9000, 9500, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000,
 
+            20000, 22000, 24000, 26000, 28000, 31000, 34000, 37000, 40000, 45000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 140000, 160000, 180000, 200000
+
+        
+
         ];
 
         
@@ -623,39 +627,23 @@ export default class LevelingManager {
 
         
 
-                                                case 'Greed':
+                                                                                                case 'Greed':
 
         
 
-                            
+                                                                                                    const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.1));
 
         
 
-                                                    const bonus = 500 + player.totalMoneyEarned;
+                                                                                                    this.game.money += bonus;
 
         
 
-                            
+                                                                                                    this.game.totalMoneyEarned += bonus;
 
         
 
-                                                    this.game.money += bonus;
-
-        
-
-                            
-
-        
-
-                                                    this.game.totalMoneyEarned += bonus;
-
-        
-
-                            
-
-        
-
-                                                    break;
+                                                                                                    break;
 
         
 

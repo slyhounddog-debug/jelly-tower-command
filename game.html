@@ -64,6 +64,19 @@
             margin: 0;
         }
 
+        #component-tooltip {
+            display: none;
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 210; /* Above modal content */
+            pointer-events: none; /* So it doesn't interfere with mouse events on components */
+            font-size: 14px;
+            max-width: 200px;
+        }
+
         #game-wrapper {
             position: relative;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.2);
@@ -71,6 +84,11 @@
             max-width: 90vw;
             max-height: 90vh;
         }
+        
+        #game-wrapper > #component-tooltip {
+            /* Scoping to direct child of game-wrapper */
+        }
+
 
         #gameCanvas {
             /* Background handled in JS for dynamic hue */
@@ -481,64 +499,206 @@
         #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
         #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
 
-        /* Component Quarters Styles */
-        #component-points-bar-container {
+        /* Emporium Styles */
+        #emporium-overlay {
+            /* Styles are now handled by the .modal class */
+        }
+        #emporium-money {
+            text-align: right;
+            font-size: 28px;
+            color: #9b59b6; /* Emporium purple */
+            margin-bottom: 10px;
+            font-weight: bold;
+            padding: 5px 15px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            border: 1px solid #9b59b6; /* Border color matches text */
+            align-self: flex-end; 
+        }
+        #emporium-header {
+            text-align: center; font-size: 32px; color: #8e44ad; margin-bottom: 20px;
+            text-transform: uppercase; letter-spacing: 2px;
+            border-bottom: 2px solid #8e44ad; padding-bottom: 10px;
+        }
+        #emporium-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
+        #emporium-details {
+            flex: 2; background: rgba(0, 0, 0, 0.03); border-radius: 8px;
+            padding: 20px; display: flex; align-items: center; justify-content: center;
+            gap: 40px; border: 1px solid #ddd;
+        }
+        #emporium-grid {
+            flex: 3; display: grid; 
+            grid-template-columns: repeat(4, 1fr); /* Explicitly 4 columns */
+            gap: 10px; padding: 10px; overflow-y: auto;
+        }
+        #emporium-buy-btn {
+            background: #9b59b6; color: white; border: none; padding: 15px 40px;
+            font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
+            box-shadow: 0 4px 0 #8e44ad;
+        }
+        #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
+        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
+        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
+        
+        /* XP BAR STYLES */
+        .xp-bar-container {
             width: 100%;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        #component-points-bar {
-            display: flex;
-            height: 30px;
+            height: 25px;
             background-color: #333;
-            border-radius: 5px;
+            border-radius: 12.5px;
+            position: relative;
             overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
         }
-        .component-point-segment {
-            flex-grow: 1;
-            border-right: 1px solid #555;
+        .xp-bar-container.large { /* Larger bar for component points */
+            height: 40px;
+            border-radius: 20px;
+            margin-bottom: 20px; /* Spacing below the bar */
+            background-color: #222; /* Darker gray */
+            border: 2px solid #444;
         }
-        .component-point-segment.available {
-            background-color: #ddd;
+
+        .xp-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            position: relative;
+            transition: width 0.2s ease-in-out;
+            border-radius: inherit;
+            display: flex; /* For segments */
         }
-        .component-point-segment.used {
-            background-color: #46a6ff;
+        .xp-bar-container.large .xp-bar {
+            background: transparent; /* Fill will be handled by segments */
         }
+        .xp-fill { /* This will be used for XP bar fill */
+            height: 100%;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            transition: width 0.2s ease-in-out;
+            border-radius: inherit;
+        }
+
+        .xp-segments {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            overflow: hidden; /* Ensure lines are clipped to bar shape */
+            border-radius: inherit;
+        }
+
+        .xp-segments .segment-line {
+            width: 2px; /* Thickness of diagonal lines */
+            height: 150%; /* Make sure it covers the full height diagonally */
+            background: rgba(0, 0, 0, 0.3); /* Darker line color */
+            transform: skewX(-30deg); /* Diagonal angle */
+            margin-left: -1px; /* Overlap to prevent gaps */
+            margin-right: -1px;
+            position: relative;
+            left: -1px;
+        }
+        .xp-bar-container.large .xp-segments .segment-line {
+            background: rgba(0, 0, 0, 0.4);
+            width: 3px;
+        }
+
+
+        .xp-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ecf0f1;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+        .xp-bar-container.large .xp-text {
+            font-size: 20px;
+        }
+
+        /* Component Quarters Styles - NEW */
+        #component-quarters-header-plate {
+            text-align: center; 
+            font-size: 32px; 
+            color: #a0c4ff; /* Light blue */
+            margin-bottom: 20px;
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            border-bottom: 2px solid #a0c4ff; /* Light blue border */
+            padding-bottom: 10px;
+        }
+
         #component-grid {
+            flex: 1; /* Allow grid to take available space */
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.2);
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Slightly larger items */
+            gap: 15px; /* Increased gap */
+            padding: 15px; /* More padding */
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.3); /* Match modal-content-area background */
             border-radius: 10px;
-            min-height: 200px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
+            min-height: 200px; /* Ensure a minimum visible area */
         }
+        
         .component-item {
-            background: #444;
-            border: 2px solid #666;
-            border-radius: 10px;
-            padding: 10px;
+            background: #333; /* Darker background */
+            border: 2px solid #666; /* Muted border */
+            border-radius: 8px; /* Slightly smaller radius */
+            padding: 12px;
             cursor: pointer;
             text-align: center;
             position: relative;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* Softer shadow */
+        }
+        .component-item:hover {
+            border-color: #a0c4ff; /* Light blue on hover */
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5), 0 0 15px rgba(160, 196, 255, 0.5); /* Blue glow */
         }
         .component-item.equipped {
-            border-color: #46a6ff;
-            box-shadow: 0 0 10px #46a6ff;
+            border-color: #00bcd4; /* Teal for equipped */
+            box-shadow: 0 0 15px #00bcd4; /* Teal glow */
+            background-color: #2a505c; /* Slightly darker equipped background */
+        }
+        .component-name {
+            font-size: 1.1em;
+            color: #ecf0f1;
+            margin-bottom: 5px;
         }
         .component-cost {
             position: absolute;
             top: 5px;
             right: 5px;
-            background-color: #222;
+            background-color: #4a2c4a; /* Dark magenta to match theme */
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            line-height: 20px;
+            width: 25px; /* Slightly larger */
+            height: 25px;
+            line-height: 25px;
             font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Override xp-bar for component points */
+        #component-points-bar-container .xp-bar {
+            background: lightgray;
+        }
+        #component-points-bar-container .xp-fill {
+            background: teal;
+        }
+        #component-points-bar-container .xp-segments .segment-line {
+            background: #222;
         }
         
                 .slider.round:before {
@@ -614,6 +774,7 @@
 
     <div id="game-wrapper">
         <div id="settings-icon">⚙️</div>
+        <div id="component-tooltip" style="display: none; position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 210; pointer-events: none; font-size: 14px; max-width: 200px;"></div>
         <div id="ui-overlay">
             <div id="game-paused-indicator" style="position: absolute; top: 10px; left: 10px; color: red; font-weight: bold; display: none;">Game Paused</div>
             <div id="health-container">
@@ -715,11 +876,21 @@
         <div id="notification" class="notification">Item Placed!</div>
 
         <div id="component-quarters-overlay" class="modal" style="display: none;">
-            <h2>Component Quarters</h2>
-            <div id="component-points-bar-container">
-                <div id="component-points-bar"></div>
+            <h2 id="component-quarters-header-plate" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin: -20px -20px 20px -20px; padding: 10px 20px; box-sizing: border-box; background-color: rgba(0,0,0,0.3); border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <button id="stats-btn-components" class="modal-internal-button">Stats</button>
+                <span style="color: #ffd700; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Component Quarters</span>
+                <button id="help-btn-components" class="modal-internal-button">?</button>
+            </h2>
+            <div class="modal-content-area" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                <div id="component-points-bar-container" class="xp-bar-container large">
+                    <div id="component-points-bar" class="xp-bar">
+                        <div class="xp-fill"></div>
+                        <div class="xp-segments"></div>
+                    </div>
+                    <div class="xp-text"></div>
+                </div>
+                <div id="component-grid"></div>
             </div>
-            <div id="component-grid"></div>
             <button class="modal-close" onclick="closeComponentQuarters()">Close</button>
         </div>
 
@@ -808,7 +979,7 @@
                 <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
                 <p><strong>Mouse:</strong> Aim your glove</p>
                 <p><strong>Click:</strong> Lick</p>
-                <p><strong>Dash:</strong> Quickly double-tap A or D to dash.</p>
+                <p><strong>Dash:</strong> Quickly double-tap A or D to dash, or press <strong>Shift</strong>.</p>
                 <h3>The Shop</h3>
                 <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
                 <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>

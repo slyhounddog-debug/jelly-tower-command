@@ -40,6 +40,7 @@ export default class CastleHealthBar {
 
     triggerHit() {
         this.hitAnimTimer = 20; // ~0.33 seconds at 60 FPS
+        this.game.audioManager.playSound('towerHit');
     }
 
     triggerHeal() {

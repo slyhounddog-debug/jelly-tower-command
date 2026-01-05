@@ -3,6 +3,7 @@ import Particle from './particle.js';
 import DamageSpot from './damageSpot.js';
 import { darkenColor } from './utils.js';
 
+
 export default class GameLoop {
     constructor(game) {
         this.game = game;

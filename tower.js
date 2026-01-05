@@ -19,16 +19,16 @@ export default class Tower extends BaseStructure {
         this.cloudPlatform = locatedPlatform; // Store the platform object
     }
     update(tsf) {
-        const sniperEquipped = this.game.player.equippedComponents['Sniper'];
+        const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
         let fireRate = this.isAuto ? this.game.stats.fireRate : this.game.stats.fireRate;
-        if (sniperEquipped) {
-            fireRate *= 1.1; // 10% slower
+        if (sniperCount > 0) {
+            fireRate *= (1 + sniperCount * 0.1); // -10% fire rate per stack means *1.1 for smaller number
         }
 
         this.recoil *= 0.9;
         this.range = this.isAuto ? this.game.stats.range * 0.5 : this.game.stats.range;
-        if (sniperEquipped) {
-            this.range *= 1.2; // 20% more range
+        if (sniperCount > 0) {
+            this.range *= (1 + sniperCount * 0.2); // +20% range per stack
         }
         if (this.cooldown > 0) this.cooldown -= tsf;
 
@@ -36,7 +36,7 @@ export default class Tower extends BaseStructure {
         let targetScale = 1;
         if (this.game.player.isControlling === this) {
             this.barrelAngle = Math.atan2(this.game.mouse.y - (this.y + 12), this.game.mouse.x - (this.x + 23));
-            if ((this.game.mouse.isDown || this.game.keys[' ']) && this.cooldown <= 0) { this.shoot(); this.cooldown = fireRate; }
+            if ((this.game.mouse.isDown || this.game.keys[' ']) && this.cooldown <= 0) { this.shoot(fireRate); this.cooldown = fireRate; }
             this.isAnimating = true;
             targetScale = 1.25;
         } else if (this.isAuto) {
@@ -54,42 +54,43 @@ export default class Tower extends BaseStructure {
                     const time = dist / projectileSpeed;
                     const predY = target.y + 20 + (target.speed * time);
                     this.barrelAngle = Math.atan2(predY - cy, target.x + 15 - cx);
-                    this.shoot(); this.cooldown = fireRate;
+                    this.shoot(fireRate); this.cooldown = fireRate;
                 }
             }
         }
         this.scale += (targetScale - this.scale) * 0.1 * tsf;
     }
-    shoot() {
+    shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
         this.game.audioManager.playSound('fire');
         const cx = this.x + 23; const cy = this.y + 12;
         
-        const splitShotCount = this.game.player.equippedComponents['Split Shot'] ? 1 : 0;
+        const splitShotCount = this.game.player.getEquippedComponentCount('Split Shot');
         const numShots = 1 + splitShotCount;
-        const spread = numShots > 1 ? 10 * (Math.PI / 180) : 0; // 10 degrees in radians
-        const totalSpread = spread * (numShots - 1);
+        const spread = numShots > 1 ? 10 * (Math.PI / 180) * splitShotCount : 0; // 10 degrees per stack
+        const totalSpread = spread;
         const startAngle = this.barrelAngle - totalSpread / 2;
 
         for (let i = 0; i < numShots; i++) {
-            const angle = startAngle + i * spread;
+            const angle = startAngle + i * (totalSpread / (numShots > 1 ? numShots - 1 : 1));
             const tx = cx + Math.cos(angle) * 30 * this.scale;
             const ty = cy + Math.sin(angle) * 30 * this.scale;
             let damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
-            if (this.game.player.equippedComponents['Sniper']) {
-                damage *= 1.25; // 25% more damage
+            const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
+            if (sniperCount > 0) {
+                damage *= (1 + sniperCount * 0.25); // +25% damage per stack
             }
             const projectileSpeed = this.game.stats.projectileSpeed;
-            const radius = (this.isAuto ? 7 : 12) + (this.game.stats.damageLvl * 0.5);
+            const radius = (this.isAuto ? 7 : 16) + (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2) + (this.game.stats.critLvl * 0.15);
             
-            const freezeFrostingCount = this.game.player.equippedComponents['Freeze Frosting'] ? 1 : 0;
-            const popRockCount = this.game.player.equippedComponents['Pop-Rock Projectiles'] ? 1 : 0;
-            const bubbleGumCount = this.game.player.equippedComponents['Bubble Gum Shots'] ? 1 : 0;
-            const fireDamageCount = this.game.player.equippedComponents['Fire Damage'] ? 1 : 0;
-            const gravityPullCount = this.game.player.equippedComponents['Gravity Pull'] ? 1 : 0;
+            const freezeFrostingCount = this.game.player.getEquippedComponentCount('Freeze Frosting');
+            const popRockCount = this.game.player.getEquippedComponentCount('Pop-Rock Projectiles');
+            const bubbleGumCount = this.game.player.getEquippedComponentCount('Bubble Gum Shots');
+            const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
+            const gravityPullCount = this.game.player.getEquippedComponentCount('Gravity Pull');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, this.game.player.equippedComponents, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, gravityPullCount);
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, gravityPullCount);
             this.game.projectiles.push(projectile);
         }
 

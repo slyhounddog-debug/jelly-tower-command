@@ -91,6 +91,7 @@ export default class Player {
         this.isWhirlwinding = false;
         this.whirlwindTimer = 0;
         this.whirlwindAngle = 0;
+        this.auraParticleTimer = 0;
     }
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
@@ -159,8 +160,7 @@ export default class Player {
             if (hit) {
                 m.takeDamage(this.game.stats.lickDamage);
                 if (this.upgrades['Ice Tongue'] > 0) {
-                    m.isSlowed = true;
-                    m.slowTimer = 180;
+                    m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
                 }
                 m.kbVy = -this.game.stats.lickKnockback * .3;
                 this.game.screenShake.trigger(4, 10);
@@ -193,13 +193,34 @@ export default class Player {
 
         if (this.upgrades['Slow Aura'] > 0) {
             this.game.missiles.forEach(m => {
-                m.slowedByAura = false;
-                const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                const dist = Math.hypot(this.x + this.width / 2 - m.x - m.width / 2, this.y + this.height / 2 - m.y - m.height / 2);
                 if (dist < this.slowAuraRange) {
-                    m.isSlowed = true;
-                    m.slowedByAura = true;
+                    m.auraSlowTimer = 2;
                 }
             });
+
+            this.auraParticleTimer += tsf;
+            if (this.auraParticleTimer >= 2) { // Emit particles every 2 frames
+                this.auraParticleTimer = 0;
+                const particleCount = 2; // Number of particles per emission
+                const playerCenterX = this.x + this.width / 2;
+                const playerCenterY = this.y + this.height / 2;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = this.slowAuraRange * (0.8 + Math.random() * 0.2); // Particles within 80-100% of range
+                    const px = playerCenterX + Math.cos(angle) * radius;
+                    const py = playerCenterY + Math.sin(angle) * radius;
+
+                    // Emit particles outwards from the player's center
+                    const emitAngle = Math.atan2(py - playerCenterY, px - playerCenterX);
+                    const speed = 0.5 + Math.random();
+                    const vx = Math.cos(emitAngle) * speed;
+                    const vy = Math.sin(emitAngle) * speed;
+
+                    this.game.particles.push(new Particle(px, py, 'rgba(100, 150, 255, 0.6)', 'spark', 30, vx, vy)); // Bluish particles, longer life
+                }
+            }
         }
 
         if (this.transitionState === 'entering') {
@@ -370,8 +391,14 @@ export default class Player {
             });
         }
     }
-  draw(ctx) {
-        if (this.isControlling) return;
+      getEquippedComponentCount(componentName) {
+          // Since equippedComponents stores the component object itself,
+          // we can simply check if the key exists to know if it's equipped.
+          // For components that might stack or have multiple instances, this needs refinement.
+          // But for now, assuming each component can be equipped once for its effect to apply.
+          return this.equippedComponents[componentName] ? 1 : 0;
+      }
+      draw(ctx) {        if (this.isControlling) return;
 
         // Draw whirlwind
         if (this.isWhirlwinding) {

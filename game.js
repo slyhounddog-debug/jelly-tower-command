@@ -61,8 +61,13 @@ class Game {
         // Initialize currency from localStorage or 0
         this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
         this.isPaused = true;
-        this.soundEffectsOn = true;
-        this.musicOn = true;
+
+        this.soundEffectsOn = localStorage.getItem('soundEffectsOn') ? JSON.parse(localStorage.getItem('soundEffectsOn')) : true;
+        this.musicOn = localStorage.getItem('musicOn') ? JSON.parse(localStorage.getItem('musicOn')) : true;
+        
+        document.getElementById('sound-effects-toggle').checked = this.soundEffectsOn;
+        document.getElementById('music-toggle').checked = this.musicOn;
+
         this.isShopOpen = false;
         this.isGameOver = false;
         this.gameTime = 0;
@@ -72,6 +77,7 @@ class Game {
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
         this.firstComponentCollected = false;
+        this.lastMoveDirection = 1;
 
        this.totalMoneyEarned = 0;
         this.enemiesKilled = 0;
@@ -103,8 +109,8 @@ class Game {
             lickLvl: 0,
             piggyLvl: 0,
             baseDamage: 10,
-            baseFireRate: 60,
-            baseRange: 350,
+            baseFireRate: 45,
+            baseRange: 375,
             baseShieldHp: 15,
             turretsBought: 0,
             maxTurrets: 3,
@@ -114,9 +120,9 @@ class Game {
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
             getNextDamage() { return (this.damageLvl >= this.game.DAMAGE_TIERS.length - 1) ? "MAX" : this.game.DAMAGE_TIERS[this.damageLvl + 1]; },
             get fireRate() { return Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.fireRateLvl))); },
-            get projectileSpeed() { return 3 + 1 * this.fireRateLvl; },
-            getNextProjectileSpeed() { return 3 + 1 * (this.fireRateLvl + 1); },
-            get range() { return this.baseRange + (this.rangeLvl * 75); },
+            get projectileSpeed() { return 4 + .5 * this.fireRateLvl; },
+            getNextProjectileSpeed() { return 4 + .5 * (this.fireRateLvl + 1); },
+            get range() { return this.baseRange + (this.rangeLvl * 80); },
             get shieldMaxHp() { return this.baseShieldHp + (this.shieldLvl * 5); },
             getNextShieldHp() { return this.shieldMaxHp + 5; },
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
@@ -138,7 +144,7 @@ class Game {
             { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
               getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
-              getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.85, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
+              getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/15`,
               action: () => this.stats.fireRateLvl++ 
             },
@@ -396,16 +402,21 @@ class Game {
                 else if (this.emporium.isEmporiumOpen) this.emporium.toggle();
             }
             if (k === 'a') {
+                this.lastMoveDirection = -1;
                 if (Date.now() - this.player.lastAPress < 300) {
                     this.player.tryDash(-1);
                 }
                 this.player.lastAPress = Date.now();
             }
             if (k === 'd') {
+                this.lastMoveDirection = 1;
                 if (Date.now() - this.player.lastDPress < 300) {
                     this.player.tryDash(1);
                 }
                 this.player.lastDPress = Date.now();
+            }
+            if (k === 'shift') {
+                this.player.tryDash(this.lastMoveDirection);
             }
         });
         document.addEventListener('keyup', (e) => this.keys[e.key.toLowerCase()] = false);
@@ -497,14 +508,23 @@ class Game {
                 });
                 document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
                 document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
+                document.getElementById('stats-btn-components').addEventListener('click', () => {
+                    this.updateStatsWindow();
+                    document.getElementById('stats-modal').style.display = 'flex';
+                });
+                document.getElementById('help-btn-components').addEventListener('click', () => {
+                    document.getElementById('guide-modal').style.display = 'flex';
+                });
         
                 document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
                 document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
                 document.getElementById('sound-effects-toggle').addEventListener('change', (e) => {
                     this.soundEffectsOn = e.target.checked;
+                    localStorage.setItem('soundEffectsOn', this.soundEffectsOn);
                 });
                 document.getElementById('music-toggle').addEventListener('change', (e) => {
                     this.musicOn = e.target.checked;
+                    localStorage.setItem('musicOn', this.musicOn);
                     if (this.musicOn) {
                         this.audioManager.playMusic('music');
                     } else {
@@ -517,21 +537,29 @@ class Game {
                     }
                 
                         renderComponentQuarters() {
-                            const bar = document.getElementById('component-points-bar');
-                            bar.innerHTML = '';
                             const usedPoints = Object.values(this.player.equippedComponents).reduce((sum, component) => sum + (component ? component.cost : 0), 0);
-                            for (let i = 0; i < this.player.maxComponentPoints; i++) {
+                            const maxPoints = this.player.maxComponentPoints;
+
+                            // Render component points bar
+                            const bar = document.getElementById('component-points-bar');
+                            const barFill = bar.querySelector('.xp-fill');
+                            const barSegmentsContainer = bar.querySelector('.xp-segments');
+                            const barText = bar.parentElement.querySelector('.xp-text');
+                            
+                            barFill.style.width = `${(usedPoints / maxPoints) * 100}%`;
+                            barSegmentsContainer.innerHTML = ''; // Clear existing segments
+
+                            for (let i = 0; i < maxPoints - 1; i++) {
                                 const segment = document.createElement('div');
-                                segment.classList.add('component-point-segment');
-                                if (i < usedPoints) {
-                                    segment.classList.add('used');
-                                } else {
-                                    segment.classList.add('available');
-                                }
-                                bar.appendChild(segment);
+                                segment.classList.add('segment-line');
+                                barSegmentsContainer.appendChild(segment);
                             }
-                    
+
+                            barText.innerText = `POINTS: ${usedPoints} / ${maxPoints}`;
+
+                            // Render component grid
                             const grid = document.getElementById('component-grid');
+                            const tooltip = document.getElementById('component-tooltip');
                             grid.innerHTML = '';
                             
                             const uniqueComponents = [...new Set(this.player.collectedComponents)];
@@ -547,19 +575,36 @@ class Game {
                                     <div class="component-name">${componentName}</div>
                                     <div class="component-cost">${component.cost}</div>
                                 `;
+
+                                // Tooltip events
+                                div.addEventListener('mouseover', (e) => {
+                                    tooltip.style.display = 'block';
+                                    tooltip.innerHTML = `<strong>${componentName}</strong><br>${component.description}`;
+                                });
+                                div.addEventListener('mouseout', () => {
+                                    tooltip.style.display = 'none';
+                                });
+                                div.addEventListener('mousemove', (e) => {
+                                    tooltip.style.left = `${e.clientX + 15}px`;
+                                    tooltip.style.top = `${e.clientY}px`;
+                                });
+
                                 div.onclick = () => {
                                     const currentUsedPoints = Object.values(this.player.equippedComponents).reduce((sum, c) => sum + (c ? c.cost : 0), 0);
 
                                     if (this.player.equippedComponents[componentName]) {
                                         // Unequip
                                         delete this.player.equippedComponents[componentName];
+                                        this.audioManager.playSound('reset'); // Sound for unequipping
                                     } else {
                                         // Equip
                                         const newUsedPoints = currentUsedPoints + component.cost;
                                         if (newUsedPoints <= this.player.maxComponentPoints) {
                                             this.player.equippedComponents[componentName] = component;
+                                            this.audioManager.playSound('purchase'); // Sound for equipping
                                         } else {
                                             // Not enough points
+                                            this.audioManager.playSound('pop'); // Error sound
                                             const barContainer = document.getElementById('component-points-bar-container');
                                             if(barContainer) {
                                                 barContainer.style.animation = 'shake 0.5s';
@@ -573,6 +618,15 @@ class Game {
                                 };
                                 grid.appendChild(div);
                             });
+
+                            // Add event listeners for the new buttons
+                            document.getElementById('stats-btn-components').onclick = () => {
+                                this.updateStatsWindow();
+                                document.getElementById('stats-modal').style.display = 'flex';
+                            };
+                            document.getElementById('help-btn-components').onclick = () => {
+                                document.getElementById('guide-modal').style.display = 'flex';
+                            };
                         }                
                     toggleComponentQuarters() {
                         const modal = document.getElementById('component-quarters-overlay');
@@ -679,9 +733,9 @@ class Game {
                     document.getElementById('notification').innerText = 'Game Paused';
                     document.getElementById('notification').style.opacity = 1;
                     setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-                   
+                    this.audioManager.playSound('purchase'); // Play sound when shop opens
                 } else {
-                   
+                    this.audioManager.playSound('reset'); // Play sound when shop closes
                 }
                 if (this.audioManager) {
                     this.audioManager.setMuffled(this.isShopOpen);

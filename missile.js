@@ -74,9 +74,11 @@ export default class Missile {
         this.shakeMagnitude = 0;
         this.healScale = 1;
         this.slowEffects = [];
-        this.slowedByAura = false;
+        this.auraSlowTimer = 0;
         this.fireStacks = [];
         this.fireFlashTimer = 0;
+        this.totalSlow = 0; // Initialize total slow effect
+        this.slowParticleTimer = 0; // Timer for emitting slow particles
     }
 
     applyFire(damage, stacks) {
@@ -88,8 +90,11 @@ export default class Missile {
         });
     }
 
-    applySlow(duration, amount) {
-        this.slowEffects.push({ timer: duration, amount: amount });
+    applySlow(duration, amount, source = 'generic') {
+        // Prevent stacking the same type of slow from the same source
+        if (!this.slowEffects.some(e => e.source === source)) {
+            this.slowEffects.push({ timer: duration, amount, source });
+        }
     }
 
     takeDamage(amount, isCritical = false) {
@@ -123,6 +128,8 @@ export default class Missile {
     }
 
     update(tsf) {
+        if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
+
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
         // Fire damage
         for (let i = this.fireStacks.length - 1; i >= 0; i--) {
@@ -139,23 +146,42 @@ export default class Missile {
             }
         }
 
-        let totalSlow = 0;
+        let tongueSlow = 0;
         for (let i = this.slowEffects.length - 1; i >= 0; i--) {
-            this.slowEffects[i].timer -= tsf;
-            if (this.slowEffects[i].timer <= 0) {
+            const effect = this.slowEffects[i];
+            effect.timer -= tsf;
+            if (effect.timer <= 0) {
                 this.slowEffects.splice(i, 1);
             } else {
-                totalSlow += this.slowEffects[i].amount;
+                if (effect.source === 'tongue') {
+                    tongueSlow = effect.amount;
+                }
             }
         }
         
-        if (this.slowedByAura) {
-            totalSlow += 0.2; // Assuming aura is 20% slow
+        let auraSlow = this.auraSlowTimer > 0 ? 0.5 : 0;
+        
+        let totalSlow = tongueSlow + auraSlow;
+        if (tongueSlow > 0 && auraSlow > 0) {
+            totalSlow = 0.75; // Cap at 75% if both are active
         }
 
-        totalSlow = Math.min(totalSlow, 0.8); // Cap slow at 80%
+        this.totalSlow = totalSlow;
 
-        const currentSpeed = this.speed * (1 - totalSlow);
+        if (this.totalSlow > 0) {
+            this.slowParticleTimer += tsf;
+            if (this.slowParticleTimer >= 5) { // Emit particles every 5 frames (approx)
+                this.slowParticleTimer = 0;
+                const particleCount = Math.floor(this.totalSlow * 3); // More particles for stronger slow
+                for (let i = 0; i < particleCount; i++) {
+                    const px = this.x + (Math.random() * this.width);
+                    const py = this.y + (Math.random() * this.height);
+                    this.game.particles.push(new Particle(px, py, 'rgba(100, 150, 255, 0.7)', 'spark')); // Bluish particles
+                }
+            }
+        }
+
+        const currentSpeed = this.speed * (1 - this.totalSlow);
 
         if (this.hitTimer > 0) this.hitTimer -= tsf;
         if (this.damageTextTimer > 0) this.damageTextTimer -= tsf;
@@ -224,8 +250,17 @@ export default class Missile {
                 ctx.fill();
             }
         }
-
         ctx.save();
+
+        // Draw blue overlay if slowed
+        if (this.totalSlow > 0) {
+            ctx.fillStyle = `rgba(100, 150, 255, ${this.totalSlow * 0.5})`; // More opaque for stronger slow
+            ctx.beginPath();
+            // Use enemy's actual dimensions
+            ctx.roundRect(this.x, this.y, this.width, this.height, 10);
+            ctx.fill();
+        }
+
         ctx.shadowBlur = 15;
         let color = (this.type === 'piggy') ? '#ff69b4' : this.color;
         if(this.hitTimer > 0) color = '#FFFFFF';
@@ -452,7 +487,7 @@ export default class Missile {
 
         for (const spot of this.damageSpots) spot.draw(ctx);
     }
-
+    
        kill(index) {
         let xpGained = 0;
         let maxHealthForXp = this.maxHealth;
@@ -503,8 +538,37 @@ export default class Missile {
         this.game.missiles.splice(index, 1);
         const pStats = this.game.stats.piggyStats;
         const count = (this.type === 'piggy') ? pStats.mult : 1;
+        
+        this.game.enemiesKilled++;
+
+        const dropsToCreate = [];
+        
+        for (let c = 0; c < count; c++) {
+            dropsToCreate.push('coin');
+            if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push('heart');
+            if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push('lucky_coin');
+
+            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
+            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+            const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
+            if (Math.random() * 100 < dropChance) {
+                dropsToCreate.push('ice_cream_scoop');
+            }
+            if (this.game.player.upgrades['Scoop Doubler'] > 0) {
+                if (Math.random() < 0.33) {
+                    dropsToCreate.push('ice_cream_scoop');
+                }
+            }
+        }
+
+        dropsToCreate.forEach((dropType, i) => {
+            setTimeout(() => {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, dropType));
+            }, i * 100);
+        });
+
         if (this.type === 'piggy') {
-            if (Math.random() < 0.2) {
+            if (Math.random() < 0.99) {
                 this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
             }
             const bonus = Math.floor(this.game.money * pStats.bonus);
@@ -514,24 +578,7 @@ export default class Missile {
             document.getElementById('notification').style.opacity = 1;
             setTimeout(() => document.getElementById('notification').style.opacity = 0, 2000);
         }
-        for (let c = 0; c < count; c++) {
-            this.game.enemiesKilled++;
-            this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
-            if (Math.random() * 100 < this.game.stats.luckHeart) this.game.drops.push(new Drop(this.game, this.x, this.y, 'heart'));
-            if (Math.random() * 100 < this.game.stats.luckCoin) this.game.drops.push(new Drop(this.game, this.x, this.y, 'lucky_coin'));
-
-            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
-            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
-            const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
-            if (Math.random() * 100 < dropChance) {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
-            }
-            if (this.game.player.upgrades['Scoop Doubler'] > 0) {
-                if (Math.random() < 0.33) {
-                    this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
-                }
-            }
-        }
+        
         for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));
     }
 }
