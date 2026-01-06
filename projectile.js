@@ -39,7 +39,6 @@ export default class Projectile {
                 if (this.chainBounceCount > 0 && this.hitEnemies.length < this.bounceDamageFalloff.length) {
                     damage *= this.bounceDamageFalloff[this.hitEnemies.length];
                 }
-                this.hitEnemies.push(m);
 
                 // Apply Pop-Rock Projectiles effect on impact
                 if (this.popRockStacks > 0) {
@@ -55,10 +54,14 @@ export default class Projectile {
                 if (this.freezeStacks > 0) {
                     m.applySlow(5 * 60, 0.1 * this.freezeStacks, 'freeze');
                 }
-
-                if (m.takeDamage(damage)) {
-                    // Missile is dead, main loop will remove it
+                
+                // Only apply direct damage if no explosion occurred
+                if (this.popRockStacks <= 0) {
+                    if (m.takeDamage(damage)) {
+                        // Missile is dead, main loop will remove it
+                    }
                 }
+                this.hitEnemies.push(m);
                 this.hasHit = true;
                 this.game.shotsHit++;
 
@@ -154,6 +157,17 @@ export default class Projectile {
         for (let i = 0; i < this.popRockStacks * 10; i++) {
             this.game.particles.push(new Particle(this.x, this.y, 'rgba(255, 105, 180, 0.9)', 'spark'));
         }
+
+        // Add explosion flash particles
+        const explosionColors = ['rgba(255, 140, 0, 0.6)', 'rgba(255, 69, 0, 0.6)', 'rgba(255, 215, 0, 0.6)', 'rgba(139, 69, 19, 0.6)'];
+        for (let i = 0; i < 5; i++) { // 5 large, fading circles
+            const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
+            const startRadius = explosionRadius * 0.5;
+            const endRadius = explosionRadius * 1.5;
+            const lifespan = 30; // Shorter lifespan for flashes
+            this.game.particles.push(new Particle(this.x, this.y, color, 'explosion', lifespan, 0, 0, startRadius, endRadius));
+        }
+
         this.game.screenShake.trigger(3 * this.popRockStacks, 10);
         this.game.audioManager.playSound('pop');
     }

@@ -19,6 +19,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         this.xpValue = (type === 'xp_orb') ? value : 0;
         this.rot = 0;
         this.glow = 0;
+        this.glowTimer = 0;
         this.hue = 0;
     }
     update(tsf) {
@@ -121,7 +122,40 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
 
         const radius = this.width / 2;
         ctx.save();
+        
+        // --- Initial Translate to center of the loot item (and thus the bubble) ---
         ctx.translate(this.x + radius, this.y + radius);
+
+        // --- Draw Bubble (Shiny, 3D effect) ---
+        const bubbleRadius = 30; // Fixed size for all loot, now 30px
+        const bubbleAlpha = 0.4 + (this.glow * 0.2); // Pulsating alpha
+
+        ctx.beginPath();
+        ctx.arc(0, 0, bubbleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(173, 216, 230, ${bubbleAlpha})`; // Light blue base for bubble
+        ctx.fill();
+
+        // Inner highlight for depth and shine
+        const innerGradient = ctx.createRadialGradient(0, 0, bubbleRadius * 0.3, 0, 0, bubbleRadius * 0.8);
+        innerGradient.addColorStop(0, `rgba(255, 255, 255, ${bubbleAlpha * 0.8})`); // White highlight
+        innerGradient.addColorStop(1, `rgba(255, 255, 255, ${bubbleAlpha * 0.0})`); // Transparent
+        ctx.fillStyle = innerGradient;
+        ctx.fill();
+
+        // Outer rim for depth
+        const outerGradient = ctx.createRadialGradient(0, 0, bubbleRadius * 0.8, 0, 0, bubbleRadius);
+        outerGradient.addColorStop(0, `rgba(173, 216, 230, ${bubbleAlpha * 0.0})`); // Transparent
+        outerGradient.addColorStop(1, `rgba(173, 216, 230, ${bubbleAlpha * 0.5})`); // Light blue
+        ctx.strokeStyle = outerGradient;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // --- End Draw Bubble ---
+
+        // Loot movement inside the bubble
+        // Added a random component to the movement for a more natural float
+        const lootX = (Math.cos(this.glowTimer * 0.5 + this.rot) * 5) + (Math.random() - 0.5) * 2;
+        const lootY = (Math.sin(this.glowTimer * 0.5 + this.rot) * 5) + (Math.random() - 0.5) * 2;
+        ctx.translate(lootX, lootY);
 
         // Determine base color and a lighter variant for glowing
         let baseColor;
@@ -160,10 +194,17 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             ctx.lineTo(radius, 0);
             ctx.stroke();
         } else if (this.type === 'heart') {
+            const x = 0;
+            const y = 0;
+            const w = this.width;
+            const h = this.width;
             ctx.beginPath();
-            ctx.moveTo(0, radius * 0.25);
-            ctx.quadraticCurveTo(radius, -radius * 0.5, 0, -radius);
-            ctx.quadraticCurveTo(-radius, -radius * 0.5, 0, radius * 0.25);
+            ctx.moveTo(x + w / 2, y + h);
+            ctx.bezierCurveTo(x + w / 2, y + h * 0.7, x, y + h * 0.5, x, y + h * 0.25);
+            ctx.bezierCurveTo(x, y, x + w / 2, y, x + w / 2, y + h * 0.25);
+            ctx.bezierCurveTo(x + w / 2, y, x + w, y, x + w, y + h * 0.25);
+            ctx.bezierCurveTo(x + w, y + h * 0.5, x + w / 2, y + h * 0.7, x + w / 2, y + h);
+            ctx.closePath();
             ctx.fill();
         } else {
             ctx.beginPath();

@@ -2,7 +2,6 @@ import Player from './player.js?v=2';
 import Shield from './shield.js';
 import Tower from './tower.js';
 import Missile from './missile.js?v=25';
-import Cloud from './cloud.js?v=25';
 import ThreatManager from './threatManager.js';
 import { ScreenShake, darkenColor, lightenColor } from './utils.js?v=25';
 import Drop from './drop.js?v=25';
@@ -22,6 +21,7 @@ import XPBar from './xpBar.js';
 import LevelingManager from './levelingManager.js';
 import { COMPONENTS } from './components.js';
 import GummyCluster from './boss.js';
+import Background from './background.js';
 
 class Game {
     constructor(canvas) {
@@ -35,6 +35,7 @@ class Game {
         this.audioManager = new AudioManager(this);
         this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
+        this.background = new Background(this);
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
@@ -246,109 +247,9 @@ class Game {
         this.particles = [];
         this.drops = [];
         this.shields = [];
-        this.clouds = [];
         this.floatingTexts = [];
         this.damageSpots = [];
         this.currentRPM = 5.5;
-
-        // --- NEW BACKGROUND LOGIC ---
-        const castleColor = '#ff85a2'; 
-        const castlePlatforms = [
-            { x: 40, y: this.height - 180, width: 120, height: 100 },
-            { x: 70, y: this.height - 240, width: 60, height: 60 }
-        ];
-        const groundPlatform = { x: 0, y: this.height - 80, width: this.width, height: 80 };
-
-        this.backgroundCastlePlatforms = [];
-        castlePlatforms.forEach(p => {
-            this.backgroundCastlePlatforms.push({
-                x: p.x - 75, y: p.y - 38, width: p.width, height: p.height,
-                color: '#d66d85', type: 'castle'
-            });
-        });
-        this.backgroundCastlePlatforms.push({ 
-            x: groundPlatform.x, y: groundPlatform.y - 38, width: groundPlatform.width, height: groundPlatform.height, 
-            color: '#d66d85', type: 'ground' 
-        });
-
-        // Lollipop Trees Setup
-       this.trees = [];
-        const treeColors = ['#ff9ff3', '#feca57', '#48dbfb', '#a29bfe'];
-        for (let i = 0; i < 12; i++) {
-            const z = Math.random();
-            this.trees.push({
-                x: Math.random() * this.width,
-                y: this.height - 80,
-                z: z,
-                width: (z * 40) + 40,
-                // height is now significantly boosted (up to 550px)
-                height: (z * 350) + 200, 
-                color: treeColors[Math.floor(Math.random() * treeColors.length)]
-            });
-        }
-
-        // Draw Logic for Mountains (with Sunlight Glow)
-        this.drawMountains = (ctx) => {
-            const mountainColors = ['#ffafbd', '#ffc3a0', '#ff9ff3'];
-            for (let i = 0; i < 3; i++) {
-                ctx.fillStyle = mountainColors[i];
-                ctx.beginPath();
-                const yBase = this.height - 80;
-                const mWidth = this.width / 1.5;
-                const xStart = (i * this.width / 4) - 100;
-                ctx.moveTo(xStart, yBase);
-                ctx.lineTo(xStart + mWidth / 2, yBase - 300 - (i * 50));
-                ctx.lineTo(xStart + mWidth, yBase);
-                ctx.fill();
-
-                // RIM LIGHTING GLOW
-                ctx.save();
-                ctx.globalCompositeOperation = 'lighter';
-                const glowGrad = ctx.createLinearGradient(xStart, yBase - 300, xStart + mWidth/2, yBase);
-                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
-                glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-                ctx.fillStyle = glowGrad;
-                ctx.fill();
-                ctx.restore();
-            }
-        };
-
-        // Draw Logic for Spiral Trees
-        this.drawTree = (ctx, t) => {
-            ctx.save();
-            const scale = 0.4 + (t.z * 0.6);
-            const trunkW = 20 * scale;
-            const trunkH = t.height * 0.5;
-            
-            // Spiral Trunk
-            ctx.save();
-            ctx.translate(t.x, t.y);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-trunkW/2, -trunkH, trunkW, trunkH);
-            ctx.clip(new Path2D(`M${-trunkW/2} ${-trunkH} h${trunkW} v${trunkH} h${-trunkW} z`));
-            ctx.strokeStyle = '#ff4d4d'; // Red Stripe
-            ctx.lineWidth = 8 * scale;
-            for(let j = -trunkH - 20; j < 20; j += 20 * scale) {
-                ctx.beginPath();
-                ctx.moveTo(-trunkW, j);
-                ctx.lineTo(trunkW, j + (20 * scale));
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // Lollipop Top
-            const r = (t.width / 2) * scale;
-            const headY = t.y - trunkH;
-            const g = ctx.createRadialGradient(t.x - r*0.3, headY - r*0.3, r*0.1, t.x, headY, r);
-            g.addColorStop(0, '#ffffff'); // Shine
-            g.addColorStop(0.2, t.color); 
-            g.addColorStop(1, 'rgba(0,0,0,0.2)'); 
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(t.x, headY, r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        };
 
         this.player = new Player(this);
         this.levelingManager = new LevelingManager(this);
@@ -381,11 +282,14 @@ class Game {
 
         const startButton = document.getElementById('start-game-btn');
         startButton.disabled = true;
-        startButton.textContent = 'Loading Sounds...';
+        startButton.textContent = 'Loading...';
 
-        this.audioManager.loadingPromise.then(() => {
+        Promise.all([this.audioManager.loadingPromise, this.background.load()]).then(() => {
             startButton.disabled = false;
             startButton.textContent = 'Start Game';
+        }).catch(error => {
+            console.error("Failed to load assets:", error);
+            startButton.textContent = 'Error Loading Assets';
         });
 
         document.addEventListener('keydown', (e) => {
@@ -394,15 +298,27 @@ class Game {
             this.keys[k] = true;
             if (k === 'f') this.toggleShop();
             if (k === 'escape') {
-                if (document.getElementById('guide-modal').style.display === 'flex') document.getElementById('guide-modal').style.display = 'none';
-                else if (document.getElementById('stats-modal').style.display === 'flex') document.getElementById('stats-modal').style.display = 'none';
-                else if (document.getElementById('gummy-worm-modal').style.display === 'flex') this.closeGummyWormModal();
-                else if (document.getElementById('marshmallow-modal').style.display === 'flex') this.closeMarshmallowModal();
-                else if (document.getElementById('piggy-modal').style.display === 'block') this.closePiggyModal();
-                else if (this.placementMode) this.cancelPlacement();
-                else if (this.sellMode) this.cancelSell();
-                else if (this.isShopOpen) this.toggleShop();
-                else if (this.emporium.isEmporiumOpen) this.emporium.toggle();
+                if (document.getElementById('guide-modal').style.display === 'flex') {
+                    document.getElementById('guide-modal').style.display = 'none';
+                    this.requestUnpause();
+                } else if (document.getElementById('stats-modal').style.display === 'flex') {
+                    document.getElementById('stats-modal').style.display = 'none';
+                    this.requestUnpause();
+                } else if (document.getElementById('gummy-worm-modal').style.display === 'flex') {
+                    this.closeGummyWormModal();
+                } else if (document.getElementById('marshmallow-modal').style.display === 'flex') {
+                    this.closeMarshmallowModal();
+                } else if (document.getElementById('piggy-modal').style.display === 'block') {
+                    this.closePiggyModal();
+                } else if (this.placementMode) {
+                    this.cancelPlacement();
+                } else if (this.sellMode) {
+                    this.cancelSell();
+                } else if (this.isShopOpen) {
+                    this.toggleShop();
+                } else if (this.emporium.isEmporiumOpen) {
+                    this.emporium.toggle();
+                }
             }
             if (k === 'a') {
                 this.lastMoveDirection = -1;
@@ -635,52 +551,77 @@ class Game {
                             document.getElementById('help-btn-components').onclick = () => {
                                 document.getElementById('guide-modal').style.display = 'flex';
                             };
-                        }                
-                    toggleComponentQuarters() {
-                        const modal = document.getElementById('component-quarters-overlay');
-                        const isVisible = modal.style.display === 'block';
-                        modal.style.display = isVisible ? 'none' : 'block';
-                        this.isPaused = !isVisible;
-                        if (!isVisible) {
-                            this.renderComponentQuarters();
-                        }
-                    }
-
+                                            }
+                                            toggleComponentQuarters() {
+                                                const modal = document.getElementById('component-quarters-overlay');
+                                                const isVisible = modal.style.display === 'block';
+                                                modal.style.display = isVisible ? 'none' : 'block';
+                                                if (isVisible) {
+                                                    this.requestUnpause();
+                                                } else {
+                                                    this.isPaused = true;
+                                                    this.renderComponentQuarters();
+                                                }
+                                            }
     toggleSettings() {
         const modal = document.getElementById('settings-modal');
         const isVisible = modal.style.display === 'block';
         modal.style.display = isVisible ? 'none' : 'block';
-        this.isPaused = !isVisible;
+        if (isVisible) {
+            this.requestUnpause();
+        } else {
+            this.isPaused = true;
+        }
+    }
+
+    isAnyModalOpen(exclude = null) {
+        const modals = [
+            '#component-modal', '#piggy-modal', '#gummy-worm-modal',
+            '#marshmallow-modal', '#shop-reminder', '#boss-modal',
+            '#component-quarters-overlay', '#settings-modal', '#shop-overlay',
+            '#guide-modal', '#stats-modal'
+        ];
+        return modals.some(modalId => {
+            if (modalId === exclude) return false;
+            const modal = document.querySelector(modalId);
+            return modal && (modal.style.display === 'block' || modal.style.display === 'flex');
+        });
+    }
+
+    requestUnpause(exclude = null) {
+        if (!this.isAnyModalOpen(exclude)) {
+            this.isPaused = false;
+        }
     }
                             
             closeComponentModal() {
                 document.getElementById('component-modal').style.display = 'none';
-                this.isPaused = false;
+                this.requestUnpause();
             }
 
     closePiggyModal() {
         document.getElementById('piggy-modal').style.display = 'none';
-        this.isPaused = false;
+        this.requestUnpause();
     }
 
     closeGummyWormModal() {
         document.getElementById('gummy-worm-modal').style.display = 'none';
-        this.isPaused = false;
+        this.requestUnpause();
     }
 
     closeMarshmallowModal() {
         document.getElementById('marshmallow-modal').style.display = 'none';
-        this.isPaused = false;
+        this.requestUnpause();
     }
 
     closeShopReminder() {
         document.getElementById('shop-reminder').style.display = 'none';
-        this.isPaused = false;
+        this.requestUnpause();
     }
 
     closeBossModal() {
         document.getElementById('boss-modal').style.display = 'none';
-        this.isPaused = false;
+        this.requestUnpause();
     }
 
     handleVisibilityChange() {
@@ -729,37 +670,46 @@ class Game {
         document.getElementById('restart-btn').style.display = 'none';
         document.getElementById('open-emporium-btn').style.display = 'none';
         document.getElementById('game-over-stats').style.display = 'none';
-                this.levelManager = new initLevel(this);
-                this.threatManager.reset();
+                        this.levelManager = new initLevel(this);
+                        this.threatManager.reset();
+                        this.background.init();
+                    }
+
+
+        toggleShop() {
+            if (this.placementMode) { this.cancelPlacement(); return; }
+            if (this.isGameOver) return;
+            this.isShopOpen = !this.isShopOpen;
+            document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
+
+            if (this.isShopOpen) {
+                this.isPaused = true;
+            } else {
+                this.requestUnpause('#shop-overlay');
             }
 
-
-
-    toggleShop() {
-        if (this.placementMode) { this.cancelPlacement(); return; }
-        if (this.isGameOver) return;
-        this.isShopOpen = !this.isShopOpen; this.isPaused = this.isShopOpen;
-        const gamePausedIndicator = document.getElementById('game-paused-indicator');
-        gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
-
-                if (this.isShopOpen) { 
-                    this.shopOpenedFirstTime = true;
-                    document.getElementById('notification').innerText = 'Game Paused';
-                    document.getElementById('notification').style.opacity = 1;
-                    setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-                    this.audioManager.playSound('purchase'); // Play sound when shop opens
-                } else {
-                    this.audioManager.playSound('reset'); // Play sound when shop closes
-                }
-                if (this.audioManager) {
-                    this.audioManager.setMuffled(this.isShopOpen);
-                }
-                document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
-                if (this.isShopOpen) { 
-                    document.getElementById('shop-money-display').innerText = this.money; 
-                    this.renderShopGrid(); 
-                    this.selectShopItem(this.shopItems[0]); 
-                }    }
+            const gamePausedIndicator = document.getElementById('game-paused-indicator');
+            gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
+    
+                    if (this.isShopOpen) { 
+                        this.shopOpenedFirstTime = true;
+                        document.getElementById('notification').innerText = 'Game Paused';
+                        document.getElementById('notification').style.opacity = 1;
+                        setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+                        this.audioManager.playSound('purchase'); // Play sound when shop opens
+                    } else {
+                        this.audioManager.playSound('reset'); // Play sound when shop closes
+                    }
+                    if (this.audioManager) {
+                        this.audioManager.setMuffled(this.isShopOpen);
+                    }
+                    
+                    if (this.isShopOpen) { 
+                        document.getElementById('shop-money-display').innerText = this.money; 
+                        this.renderShopGrid(); 
+                        this.selectShopItem(this.shopItems[0]); 
+                    }
+        }
 
     renderShopGrid() {
         document.getElementById('shop-grid').innerHTML = '';
@@ -865,14 +815,14 @@ class Game {
         document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
     }
     
-    cancelPlacement() { this.placementMode = null; this.isPaused = false; document.getElementById('notification').style.opacity = 0; }
-    cancelSell() { this.sellMode = null; this.isPaused = false; document.getElementById('notification').style.opacity = 0; }
+    cancelPlacement() { this.placementMode = null; this.requestUnpause(); document.getElementById('notification').style.opacity = 0; }
+    cancelSell() { this.sellMode = null; this.requestUnpause(); document.getElementById('notification').style.opacity = 0; }
 
     tryPlaceItem() {
         if (this.money < this.placementItemCost) return;
         if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
         else if (this.placementMode === 'shield') { this.shields.push(new Shield(this, this.mouse.x - 64, this.mouse.y - 33)); }
-        this.money -= this.placementItemCost; this.placementMode = null; this.isPaused = false;
+        this.money -= this.placementItemCost; this.placementMode = null; this.requestUnpause();
         document.getElementById('notification').innerText = "DEPLOYED";
         document.getElementById('notification').style.opacity = 1;
         setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);

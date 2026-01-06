@@ -17,24 +17,9 @@ export default class GameLoop {
 
         this.game.screenShake.update(tsf);
 
-        // --- CANDYLAND SKY ---
-        const skyGradient = this.game.ctx.createLinearGradient(0, 0, 0, this.game.height);
-        skyGradient.addColorStop(0, '#A1C4FD'); 
-        skyGradient.addColorStop(1, '#FFDDE1'); 
-        this.game.ctx.fillStyle = skyGradient;
-        this.game.ctx.fillRect(0, 0, this.game.width, this.game.height);
-
-        // 1. ADD SUNLIGHT EFFECT
-        this.game.drawing.drawSunlight(this.game.ctx);
-
-        // 2. ADD SUGAR SNOW
-        this.game.drawing.drawSugarSnow(this.game.ctx, tsf);
-
-        // 3. RENDER PRE-RENDERED ICE CREAM MOUNTAIN
-        this.game.drawing.drawIceCreamBackground(this.game.ctx);
+        this.game.background.update(tsf);
+        this.game.background.draw(this.game.ctx);
         
-        this.game.clouds.forEach(c => c.draw(this.game.ctx));
-
         if (!this.game.isPaused && !this.game.isGameOver) {
             this.game.gameTime += tsf;
             this.game.threatManager.update(tsf);
@@ -67,7 +52,6 @@ export default class GameLoop {
                 }
             }
 
-            this.game.clouds.forEach(c => c.update(tsf));
             this.game.player.update(tsf);
             this.game.towers.forEach(t => t.update(tsf));
             this.game.shields.forEach(s => s.update(tsf));

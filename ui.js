@@ -1,6 +1,3 @@
-
-import { drawMarshmallowPanel, drawPipedBorder, drawSquishyButton, drawCloseButton } from './drawing.js';
-
 const allModals = [
     'start-game-modal', 'shop-overlay', 'guide-modal', 'stats-modal', 
     'piggy-modal', 'gummy-worm-modal', 'marshmallow-modal', 
@@ -26,9 +23,6 @@ function showModal(modalId, callback) {
             
             canvas.width = modalRect.width;
             canvas.height = modalRect.height;
-
-            drawMarshmallowPanel(ctx, 0, 0, canvas.width, canvas.height);
-            drawPipedBorder(ctx, 0, 0, canvas.width, canvas.height);
         }
 
         if (callback) {
