@@ -11,9 +11,9 @@ export const COMPONENTS = {
         cost: 1,
         description: "Each stack adds +20% range, +25% damage, and -10% fire rate."
     },
-    "Gravity Pull": {
-        cost: 1,
-        description: "Shots pull nearby enemies. Each stack increases pull range and strength by 15%."
+    "Chain Bounce": {
+        cost: 2,
+        description: "Shots bounce to nearby enemies with diminishing damage. Each stack adds another bounce."
     },
     "Pop-Rock Projectiles": {
         cost: 2,

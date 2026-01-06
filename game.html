@@ -640,7 +640,7 @@
         #component-grid {
             flex: 1; /* Allow grid to take available space */
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Slightly larger items */
+            grid-template-columns: repeat(2, 1fr); /* Two columns */
             gap: 15px; /* Increased gap */
             padding: 15px; /* More padding */
             overflow-y: auto;
@@ -937,8 +937,6 @@
                 <h3>Enemies</h3>
                 <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
                 <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
-                <h3>Combat</h3>
-                <p><strong>Piercing:</strong> Projectiles pierce until damage potential is exhausted.</p>
                 <h3>Platforming</h3>
                 <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
                 <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>

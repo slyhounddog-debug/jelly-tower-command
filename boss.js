@@ -140,10 +140,10 @@ export default class GummyCluster {
     constructor(game) {
         this.game = game;
         this.x = Math.random() * (this.game.width - 100) + 50;
-        this.y = -100;
+        this.y = -150;
         this.width = 200;
         this.height = 200;
-        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 6; // 1/6th speed of jelly bean
+        this.speed = (0.4 + (this.game.currentRPM * 0.02)) * 0.5 / 6; // 1/6th speed of jelly bean
         this.health = 101 + (this.game.currentRPM * 101);
         this.maxHealth = this.health;
         this.type = 'gummy_cluster_boss';

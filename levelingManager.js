@@ -44,7 +44,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Tinkerer", description: "1 more component point.", icon: "🔧", rarity: "normal" },
+                        { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
 
         
 
@@ -619,7 +619,7 @@ export default class LevelingManager {
 
         
 
-                                            player.maxComponentPoints++;
+                                            player.maxComponentPoints += 2; // two points per upgrade
 
         
 

@@ -79,7 +79,10 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             }
             if (this.type === 'component') {
                 const componentName = getRandomComponent();
-                this.game.player.collectedComponents.push(componentName);
+                this.game.player.collectedComponents.push({
+                    name: componentName,
+                    id: Date.now() + Math.random()
+                });
                 this.game.lootPopupManager.addLoot('component', componentName, 1);
                 this.game.audioManager.playSound('scoop'); // Sound for picking up a component
                 if (!this.game.player.firstComponentCollected) {

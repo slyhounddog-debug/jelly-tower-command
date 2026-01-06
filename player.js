@@ -392,7 +392,7 @@ export default class Player {
         }
     }
       getEquippedComponentCount(componentName) {
-          return this.equippedComponents.filter(c => c === componentName).length;
+          return this.equippedComponents.filter(c => c.name === componentName).length;
       }
       draw(ctx) {        if (this.isControlling) return;
 

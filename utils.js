@@ -49,3 +49,16 @@ export function lightenColor(hex, percent) {
 
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
+
+export function calculateChainBounceDamage(level) {
+    if (level === 0) return [1.0];
+    const falloff = [1.0];
+    let current = 1.0;
+    for (let i = 0; i < level; i++) {
+        current = (current + 0.5) / 2;
+        falloff.push(current);
+    }
+    falloff.push(0.5);
+    falloff.push(0.25);
+    return falloff;
+}

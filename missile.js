@@ -146,28 +146,23 @@ export default class Missile {
             }
         }
 
-        let tongueSlow = 0;
+        let totalSlow = 0;
         for (let i = this.slowEffects.length - 1; i >= 0; i--) {
             const effect = this.slowEffects[i];
             effect.timer -= tsf;
             if (effect.timer <= 0) {
                 this.slowEffects.splice(i, 1);
             } else {
-                if (effect.source === 'tongue') {
-                    tongueSlow = effect.amount;
-                }
+                totalSlow += effect.amount;
             }
         }
         
-        let auraSlow = this.auraSlowTimer > 0 ? 0.5 : 0;
-        
-        let totalSlow = tongueSlow + auraSlow;
-        if (tongueSlow > 0 && auraSlow > 0) {
-            totalSlow = 0.75; // Cap at 75% if both are active
+        if (this.auraSlowTimer > 0) {
+            totalSlow += 0.5;
         }
-
-        this.totalSlow = totalSlow;
-
+        
+        this.totalSlow = Math.min(0.9, totalSlow);
+        
         if (this.totalSlow > 0) {
             this.slowParticleTimer += tsf;
             if (this.slowParticleTimer >= 5) { // Emit particles every 5 frames (approx)

@@ -137,7 +137,7 @@ class Game {
         };
 
         this.shopItems = [
-            { id: 'dmg', name: 'Piercing Ammo', icon: '💥', desc: 'Increases damage & pierce capacity.', type: 'upgrade', 
+            { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade', 
               getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
               getValue: () => this.stats.damage, 
               getNext: () => this.stats.getNextDamage(),
@@ -540,7 +540,7 @@ class Game {
                     }
                 
                         renderComponentQuarters() {
-                            const usedPoints = this.player.equippedComponents.reduce((sum, componentName) => sum + (COMPONENTS[componentName] ? COMPONENTS[componentName].cost : 0), 0);
+                            const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
                             const maxPoints = this.player.maxComponentPoints;
 
                             // Render component points bar
@@ -565,25 +565,26 @@ class Game {
                             const tooltip = document.getElementById('component-tooltip');
                             grid.innerHTML = '';
                             
-                            this.player.collectedComponents.forEach((componentName, index) => {
-                                const component = COMPONENTS[componentName];
+                            this.player.collectedComponents.forEach((component) => {
+                                const componentData = COMPONENTS[component.name];
                                 const div = document.createElement('div');
                                 div.className = 'component-item';
                                 
-                                const isEquipped = this.player.equippedComponents.includes(componentName);
+                                const isEquipped = this.player.equippedComponents.some(equipped => equipped.id === component.id);
 
                                 if (isEquipped) {
                                     div.classList.add('equipped');
+                                    div.style.boxShadow = '0 0 15px #00ff00';
                                 }
                                 div.innerHTML = `
-                                    <div class="component-name">${componentName}</div>
-                                    <div class="component-cost">${component.cost}</div>
+                                    <div class="component-name">${component.name}</div>
+                                    <div class="component-cost">${componentData.cost}</div>
                                 `;
 
                                 // Tooltip events
                                 div.addEventListener('mouseover', (e) => {
                                     tooltip.style.display = 'block';
-                                    tooltip.innerHTML = `<strong>${componentName}</strong><br>${component.description}`;
+                                    tooltip.innerHTML = `<strong>${component.name}</strong><br>${componentData.description}`;
                                 });
                                 div.addEventListener('mouseout', () => {
                                     tooltip.style.display = 'none';
@@ -594,20 +595,20 @@ class Game {
                                 });
 
                                 div.onclick = () => {
-                                    const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c] ? COMPONENTS[c].cost : 0), 0);
+                                    const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
 
                                     if (isEquipped) {
                                         // Unequip
-                                        const equippedIndex = this.player.equippedComponents.indexOf(componentName);
+                                        const equippedIndex = this.player.equippedComponents.findIndex(equipped => equipped.id === component.id);
                                         if (equippedIndex > -1) {
                                             this.player.equippedComponents.splice(equippedIndex, 1);
                                         }
                                         this.audioManager.playSound('reset'); // Sound for unequipping
                                     } else {
                                         // Equip
-                                        const newUsedPoints = currentUsedPoints + component.cost;
+                                        const newUsedPoints = currentUsedPoints + componentData.cost;
                                         if (newUsedPoints <= this.player.maxComponentPoints) {
-                                            this.player.equippedComponents.push(componentName);
+                                            this.player.equippedComponents.push(component);
                                             this.audioManager.playSound('purchase'); // Sound for equipping
                                         } else {
                                             // Not enough points

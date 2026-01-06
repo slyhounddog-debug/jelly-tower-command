@@ -88,9 +88,9 @@ export default class Tower extends BaseStructure {
             const popRockCount = this.game.player.getEquippedComponentCount('Pop-Rock Projectiles');
             const bubbleGumCount = this.game.player.getEquippedComponentCount('Bubble Gum Shots');
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
-            const gravityPullCount = this.game.player.getEquippedComponentCount('Gravity Pull');
+            const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, gravityPullCount);
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount);
             this.game.projectiles.push(projectile);
         }
 
