@@ -281,8 +281,21 @@ export default class Player {
         this.vx *= (0.85 ** tsf);
 
         if (this.game.keys['s'] && this.isOnGround && this.passThroughTimer <= 0) {
-            const pIdx = this.game.platforms.findIndex(p => p.type === 'cloud' && this.x < p.x + p.width && this.x + this.width > p.x && this.y + this.height >= p.y - 1 && this.y + this.height <= p.y + 10);
-            if (pIdx !== -1) { this.isPassingThrough = true; this.y += 10; this.passThroughTimer = 20; this.isOnGround = false; }
+            const pIdx = this.game.platforms.findIndex(p => {
+                const hitboxY = p.y + (p.hitboxOffsetY || 0);
+                const hitboxX = p.x + (p.hitboxOffsetX || 0);
+                return (p.type === 'cloud' || p.type === 'castle') &&
+                       this.x < hitboxX + p.width &&
+                       this.x + this.width > hitboxX &&
+                       this.y + this.height >= hitboxY - 1 &&
+                       this.y + this.height <= hitboxY + 10;
+            });
+            if (pIdx !== -1) {
+                this.isPassingThrough = true;
+                this.y += 10;
+                this.passThroughTimer = 20;
+                this.isOnGround = false;
+            }
         }
         if (this.passThroughTimer > 0) { this.passThroughTimer -= tsf; if (this.passThroughTimer <= 0) this.isPassingThrough = false; }
 
@@ -315,11 +328,15 @@ export default class Player {
         this.isOnGround = false;
 
         this.game.platforms.forEach((p) => {
-            if (p.type === 'cloud' && this.isPassingThrough) return;
+            // NOTE: Added hitbox offsets for platforms that have them.
+            const hitboxX = p.x + (p.hitboxOffsetX || 0);
+            const hitboxY = p.y + (p.hitboxOffsetY || 0);
+
+            if ((p.type === 'cloud' || p.type === 'castle') && this.isPassingThrough) return;
             const isMovingDown = this.vy >= 0;
-            const playerWasAbove = (this.y) + this.height <= p.y + 2; 
-            const horizontalOverlap = this.x < p.x + p.width && this.x + this.width > p.x;
-            const verticalOverlap = (this.y + this.vy * tsf) + this.height > p.y && (this.y + this.vy * tsf) < p.y + p.height;
+            const playerWasAbove = (this.y) + this.height <= hitboxY + 2; 
+            const horizontalOverlap = this.x < hitboxX + p.width && this.x + this.width > hitboxX;
+            const verticalOverlap = (this.y + this.vy * tsf) + this.height > hitboxY && (this.y + this.vy * tsf) < hitboxY + p.height;
             
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
                 if (!wasOnGround && this.vy > 5) {
@@ -342,7 +359,7 @@ export default class Player {
                         }
                     }
                 }
-                this.y = p.y - this.height; 
+                this.y = hitboxY - this.height; 
                 this.vy = 0;
                 this.isOnGround = true;
                 this.jumpsLeft = this.maxJumps;

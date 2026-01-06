@@ -36,6 +36,12 @@ class Game {
         this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
         this.background = new Background(this);
+        this.platformImage = new Image();
+        this.platformImage.src = 'assets/Images/platform.png';
+        this.groundImage = new Image();
+        this.groundImage.src = 'assets/Images/ground.png';
+        this.castleImage = new Image();
+        this.castleImage.src = 'assets/Images/castle.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
@@ -284,7 +290,13 @@ class Game {
         startButton.disabled = true;
         startButton.textContent = 'Loading...';
 
-        Promise.all([this.audioManager.loadingPromise, this.background.load()]).then(() => {
+        Promise.all([
+            this.audioManager.loadingPromise, 
+            this.background.load(),
+            new Promise(r => this.platformImage.onload = r),
+            new Promise(r => this.groundImage.onload = r),
+            new Promise(r => this.castleImage.onload = r),
+        ]).then(() => {
             startButton.disabled = false;
             startButton.textContent = 'Start Game';
         }).catch(error => {

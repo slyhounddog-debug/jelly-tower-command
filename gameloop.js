@@ -206,9 +206,35 @@ export default class GameLoop {
         this.game.platforms.forEach(p => {
             this.game.ctx.save();
             if (p.type === 'cloud') {
-                const fO = Math.sin(this.game.gameTime * 0.03) * 2;
-                this.game.ctx.drawImage(p.canvas, p.x, p.y + fO);
-            } else {
+                this.game.ctx.drawImage(this.game.platformImage, p.x, p.y, p.width, p.height);
+           } else if (p.type === 'ground') {
+    // If you are floating, subtract pixels (e.g., p.y - 10)
+    // If you are sinking, add pixels (e.g., p.y + 10)
+    const yOffset = -170; // Change this number until it looks perfect
+    this.game.ctx.drawImage(this.game.groundImage, p.x, p.y + yOffset, p.width, p.height);
+           } else if (p.type === 'castle') {
+    const img = this.game.castleImage;
+
+    // Use visual properties if they exist, otherwise fallback to standard dimensions
+    const drawW = p.vWidth || p.width;
+    const drawH = p.vHeight || p.height;
+
+    const offX = p.hitboxOffsetX || 0;
+    const offY = p.hitboxOffsetY || 0;
+
+    // This math ensures the bottom of the image meets the bottom of the collision box
+    // (p.height - drawH) creates a negative offset that "lifts" the image up
+    const yOffset = p.height - drawH;
+
+    this.game.ctx.drawImage(
+        img, 
+        p.x, 
+        p.y + yOffset, 
+        drawW, 
+        drawH
+    );
+}
+ else {
                 this.game.ctx.fillStyle = p.color;
                 this.game.ctx.beginPath();
                 this.game.ctx.roundRect(p.x, p.y, p.width, p.height, 20);
