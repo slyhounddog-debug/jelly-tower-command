@@ -33,6 +33,7 @@ export default class LevelUpScreen {
     }
 
     applyUpgrade(choice) {
+        this.game.lootPopupManager.addLoot('upgrade', choice.name, null);
         this.game.levelingManager.applyUpgrade(choice);
         this.game.audioManager.playSound('upgrade'); // Play sound when selecting an upgrade card
         this.game.levelingManager.isLevelingUp = false;

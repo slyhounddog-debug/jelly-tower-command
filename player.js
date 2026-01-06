@@ -138,7 +138,7 @@ export default class Player {
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
         this.lickAnim = 15; this.lickCooldown = 20;
 
-        const lickSegments = 5;
+        const lickSegments = 10;
         const lickLength = this.lickRange; 
 
         this.game.missiles.forEach(m => {
@@ -151,7 +151,7 @@ export default class Player {
                 const missileCx = m.x + m.width / 2;
                 const missileCy = m.y + m.height / 2;
                 
-                if (Math.hypot(missileCx - checkX, missileCy - checkY) < 30) { 
+                if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) { 
                     hit = true;
                     break; 
                 }
@@ -187,6 +187,9 @@ export default class Player {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
                     m.takeDamage(this.game.stats.lickDamage * 0.1); // Deal 10% of lick damage per tick
+                    if (this.upgrades['Ice Tongue'] > 0) {
+                        m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
+                    }
                 }
             });
         }

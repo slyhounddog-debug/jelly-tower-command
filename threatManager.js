@@ -50,7 +50,7 @@ export default class ThreatManager {
         this.spawnTimer += tsf;
         if (this.spawnTimer >= 3600 / this.game.currentRPM) {
             this.spawnTimer = 0;
-            const spawnX = Math.random() * (this.game.width - 50) + 25;
+            const spawnX = Math.random() * (this.game.width - 100) + 50;
 
             // Marshmallow spawn logic
             if (this.game.currentRPM >= this.game.marshmallowSpawnThreshold && Math.random() < 0.25) {

@@ -11,7 +11,7 @@ export class GummyBear {
         this.y = y;
         this.width = 30;
         this.height = 40;
-        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 1.5; // Slightly slower than a jelly bean
+        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 2; // Slightly faster than a jelly bean
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
         this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];

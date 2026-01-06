@@ -9,8 +9,8 @@ export default class Missile {
         this.game = game;
         this.x = x; 
         this.y = y;
-        this.baseSpeed = (type === 'piggy') ? 0.2 : 0.4;
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.001)) * 0.5;
+        this.baseSpeed = (type === 'piggy') ? 0.3 : .6;
+        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.type = type;
 
         if (type === 'missile') {
@@ -57,7 +57,7 @@ export default class Missile {
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
             this.baseSpeed = 0.7;
         }
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.001)) * 0.5;
+        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
         this.kbVy = 0; 
         this.damageSpots = [];

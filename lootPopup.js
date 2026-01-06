@@ -102,6 +102,34 @@ class LootPopup {
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text}`, displayX + 20, this.y + boxHeight / 2);
+        } else if (this.type === 'upgrade') {
+            // Dark blue rectangle for upgrades
+            ctx.fillStyle = 'rgba(0, 0, 139, 1)'; // Dark Blue
+            ctx.strokeStyle = '#add8e6'; // Light Blue
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.moveTo(displayX + cornerRadius, this.y);
+            ctx.lineTo(displayX + boxWidth - cornerRadius, this.y);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y, displayX + boxWidth, this.y + cornerRadius);
+            ctx.lineTo(displayX + boxWidth, this.y + boxHeight - cornerRadius);
+            ctx.quadraticCurveTo(displayX + boxWidth, this.y + boxHeight, displayX + boxWidth - cornerRadius, this.y + boxHeight);
+            ctx.lineTo(displayX + cornerRadius, this.y + boxHeight);
+            ctx.quadraticCurveTo(displayX, this.y + boxHeight, displayX, this.y + boxHeight - cornerRadius);
+            ctx.lineTo(displayX, this.y + cornerRadius);
+            ctx.quadraticCurveTo(displayX, this.y, displayX + cornerRadius, this.y);
+            ctx.closePath();
+
+            ctx.fill();
+            ctx.stroke();
+
+            // Text for upgrade
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#add8e6';
+            ctx.font = 'bold 24px "Lucky Guy"';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${this.text}`, displayX + 20, this.y + boxHeight / 2);
         } else {
             // Original pink rounded rectangle for other loot
             ctx.fillStyle = 'rgba(236, 145, 171, 1)'; // Light pastel pink
@@ -152,7 +180,7 @@ class LootPopupManager {
     }
 
     addLoot(type, text, value) {
-        if (type === 'component') {
+        if (type === 'component' || type === 'upgrade') {
             this.popups.forEach(p => {
                 p.targetY -= this.spacing;
             });
