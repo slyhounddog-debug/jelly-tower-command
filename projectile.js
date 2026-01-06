@@ -27,13 +27,14 @@ export default class Projectile {
         }
 
         // Collision detection with missiles
+        let hitSomething = false;
         for (let i = this.game.missiles.length - 1; i >= 0; i--) {
             const m = this.game.missiles[i];
             if (this.hitEnemies.includes(m)) continue;
 
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < this.radius + m.width / 2) { // Simplified collision
-                
+                hitSomething = true;
                 let damage = this.damage;
                 if (this.chainBounceCount > 0 && this.hitEnemies.length < this.bounceDamageFalloff.length) {
                     damage *= this.bounceDamageFalloff[this.hitEnemies.length];
@@ -90,9 +91,40 @@ export default class Projectile {
                     this.hp -= m.maxHealth; // Reduce projectile HP by missile health
                     if (this.hp <= 0) { // Projectile runs out of damage or pierces
                         this.dead = true;
-                        break;
                     }
                 }
+                if(this.dead) break;
+            }
+        }
+
+        // Check if out of range
+        if (!hitSomething && Math.hypot(this.x - this.origin.x, this.y - this.origin.y) > this.range) {
+            if (this.bouncesLeft > 0 && !this.dead && this.chainBounceCount === 0) { // Only bounce if not already dead from damage and no chain bounce
+                this.bouncesLeft--;
+                
+                // Add particles for bounce
+                for(let i = 0; i < 5; i++) {
+                    this.game.particles.push(new Particle(this.x, this.y, 'rgba(255, 255, 255, 0.8)', 'spark'));
+                }
+                this.game.audioManager.playSound('pop'); // Bounce sound
+
+                // Invert velocity
+                this.vx *= -1;
+                this.vy *= -1;
+
+                // Add random angle change to make bounces less predictable
+                const currentAngle = Math.atan2(this.vy, this.vx);
+                const randomAngle = (Math.random() - 0.5) * (Math.PI / 4); // +/- 22.5 degrees
+                const speed = Math.hypot(this.vx, this.vy);
+                this.vx = Math.cos(currentAngle + randomAngle) * speed;
+                this.vy = Math.sin(currentAngle + randomAngle) * speed;
+                
+                // Reset origin to current position for next bounce's range check
+                this.origin.x = this.x;
+                this.origin.y = this.y;
+
+            } else {
+                this.dead = true;
             }
         }
     }

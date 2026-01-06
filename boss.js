@@ -11,7 +11,7 @@ export class GummyBear {
         this.y = y;
         this.width = 30;
         this.height = 40;
-        this.speed = (0.1 + (this.game.currentRPM * 0.001)); // Slightly slower than a jelly bean
+        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 1.5; // Slightly slower than a jelly bean
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
         this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
@@ -93,9 +93,52 @@ export class GummyBear {
     }
 
     update(tsf) {
-        this.vy += this.gravity * tsf;
-        this.x += this.vx * tsf;
-        this.y += this.vy * tsf;
+        if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
+
+        if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
+        // Fire damage
+        for (let i = this.fireStacks.length - 1; i >= 0; i--) {
+            const stack = this.fireStacks[i];
+            stack.timer -= tsf;
+            if (stack.timer <= 0) {
+                this.fireStacks.splice(i, 1);
+            } else {
+                if (Math.floor(stack.timer) % 60 === 0) { // Every second
+                    this.health -= stack.damage;
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
+                    this.fireFlashTimer = 10;
+                }
+            }
+        }
+
+        let totalSlow = 0;
+        for (let i = this.slowEffects.length - 1; i >= 0; i--) {
+            const effect = this.slowEffects[i];
+            effect.timer -= tsf;
+            if (effect.timer <= 0) {
+                this.slowEffects.splice(i, 1);
+            } else {
+                totalSlow += effect.amount;
+            }
+        }
+        
+        if (this.auraSlowTimer > 0) {
+            totalSlow += 0.5;
+        }
+        
+        this.totalSlow = Math.min(0.9, totalSlow);
+        
+        const currentSpeed = this.speed * (1 - this.totalSlow);
+
+        if (this.hitTimer > 0) this.hitTimer -= tsf;
+        if (this.damageTextTimer > 0) this.damageTextTimer -= tsf;
+        if (this.criticalHitFlashTimer > 0) this.criticalHitFlashTimer -= tsf;
+        if (this.shakeDuration > 0) this.shakeDuration -= tsf;
+        if (this.healScale > 1) this.healScale -= 0.05 * tsf;
+        else this.healScale = 1;
+
+        this.kbVy *= 0.9;
+        this.y += (currentSpeed + this.kbVy) * tsf;
 
         if (this.y > this.game.height) {
             // Remove if off screen
@@ -143,8 +186,8 @@ export default class GummyCluster {
         this.y = -150;
         this.width = 200;
         this.height = 200;
-        this.speed = (0.4 + (this.game.currentRPM * 0.02)) * 0.5 / 6; // 1/6th speed of jelly bean
-        this.health = 101 + (this.game.currentRPM * 101);
+        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean
+        this.health = 150 + (this.game.currentRPM * 100);
         this.maxHealth = this.health;
         this.type = 'gummy_cluster_boss';
         this.hitTimer = 0;

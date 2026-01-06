@@ -10,7 +10,7 @@ export default class Missile {
         this.x = x; 
         this.y = y;
         this.baseSpeed = (type === 'piggy') ? 0.2 : 0.4;
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.02)) * 0.5;
+        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.001)) * 0.5;
         this.type = type;
 
         if (type === 'missile') {
@@ -25,13 +25,13 @@ export default class Missile {
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
             this.health = 15 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.06)) * 0.5);
-            this.baseSpeed = 1.2; 
+            this.baseSpeed = 1; 
         } else if (type === 'marshmallow_large') {
             this.width = 76.5;
             this.height = 76.5;
             this.color = '#F8F8FF';
             this.health = 50 + ((this.game.currentRPM + (this.game.enemiesKilled * 0.08)) * 1.4);
-            this.baseSpeed = 0.5;
+            this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
         } else if (type === 'marshmallow_medium') {
             this.width = 45;
@@ -55,9 +55,9 @@ export default class Missile {
             this.width = 30;
             this.height = 40;
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
-            this.baseSpeed = 0.8;
+            this.baseSpeed = 0.7;
         }
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.08)) * 0.5;
+        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.001)) * 0.5;
         this.maxHealth = this.health;
         this.kbVy = 0; 
         this.damageSpots = [];
