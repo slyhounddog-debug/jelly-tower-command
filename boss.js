@@ -14,7 +14,7 @@ export class GummyBear {
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 3; // Slightly faster than a jelly bean
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
-        this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+        this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
         this.vy = -5;
         this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
@@ -39,17 +39,7 @@ export class GummyBear {
         this.fireFlashTimer = 0;
         this.totalSlow = 0;
         this.slowParticleTimer = 0;
-
-        // Gummy bear shape
-        this.circles = [
-            { x: 0, y: -10, r: 10 }, // head
-            { x: -12, y: -18, r: 6 }, // left ear
-            { x: 12, y: -18, r: 6 }, // right ear
-            { x: 0, y: 5, r: 12 }, // body
-            { x: -10, y: 15, r: 7 }, // left leg
-            { x: 10, y: 15, r: 7 }, // right leg
-            { x: 0, y: -5, r: 5 } // snout
-        ];
+        this.groundProximity = false;
     }
 
     applyFire(damage, stacks) {
@@ -86,8 +76,8 @@ export class GummyBear {
         return this.health <= 0.5;
     }
 
-    kill(index) {
-        this.game.missiles.splice(index, 1);
+    kill() {
+        this.dead = true;
         this.game.enemiesKilled++;
         this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
     }
@@ -140,40 +130,33 @@ export class GummyBear {
         this.kbVy *= 0.9;
         this.y += (currentSpeed + this.kbVy) * tsf;
 
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
+        this.groundProximity = distToGround < this.game.groundProximityThreshold;
+
+        this.animationTimer += 0.05 * tsf;
+        this.angle = Math.sin(this.animationTimer) * 0.1;
+
         if (this.y > this.game.height) {
-            // Remove if off screen
-            this.game.missiles.splice(this.game.missiles.indexOf(this), 1);
+            this.dead = true;
         }
     }
 
     draw(ctx) {
         ctx.save();
+        if (this.groundProximity) {
+            const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
+            ctx.globalAlpha = 1 - alpha * 0.5;
+            if (alpha > 0.5) {
+                ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
         ctx.translate(this.x, this.y);
-
-        // Draw border
-        ctx.strokeStyle = darkenColor(this.color, 20);
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        this.circles.forEach(circle => {
-            ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-        });
-        ctx.stroke();
-
-
-        // Draw gummy bear
-        ctx.fillStyle = this.color;
-        this.circles.forEach(circle => {
-            ctx.beginPath();
-            ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        
-        // Shiny effect
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.beginPath();
-        ctx.arc(-5, -15, 3, 0, Math.PI * 2);
-        ctx.fill();
-
+        ctx.rotate(this.angle);
+        if (this.image && this.image.complete) {
+            ctx.drawImage(this.image, 0, 0, this.width, this.height);
+        }
         ctx.restore();
     }
 }
@@ -184,27 +167,15 @@ export default class GummyCluster {
         this.game = game;
         this.x = Math.random() * (this.game.width - 100) + 50;
         this.y = +20;
-        this.width = 200;
-        this.height = 200;
+        this.width = 300; // 50% bigger (200 * 1.5)
+        this.height = 300; // 50% bigger (200 * 1.5)
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean
         this.health = 150 + (this.game.currentRPM * 100);
         this.maxHealth = this.health;
         this.type = 'gummy_cluster_boss';
         this.hitTimer = 0;
-        this.gummyBears = [];
         this.healthThresholds = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, .05, .02, .01];
-        this.createGummyBears();
-    }
-
-    createGummyBears() {
-        for (let i = 0; i < 20; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * (this.width / 3);
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            const color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-            this.gummyBears.push({ x, y, r: 20, color });
-        }
+        this.groundProximity = false;
     }
 
     takeDamage(amount) {
@@ -260,9 +231,6 @@ export default class GummyCluster {
     }
 
     spawnGummyBear() {
-        if(this.gummyBears.length > 0) {
-            this.gummyBears.pop();
-        }
         const gummyBear = new GummyBear(this.game, this.x, this.y);
         this.game.missiles.push(gummyBear);
     }
@@ -274,6 +242,10 @@ export default class GummyCluster {
             this.hitTimer -= tsf;
         }
 
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
+        this.groundProximity = distToGround < this.game.groundProximityThreshold;
+
         if (this.y > this.game.height) {
             this.game.castleHealth -= 50;
             this.game.castleHealthBar.triggerHit();
@@ -283,6 +255,14 @@ export default class GummyCluster {
 
     draw(ctx) {
         ctx.save();
+        if (this.groundProximity) {
+            const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
+            ctx.globalAlpha = 1 - alpha * 0.5;
+            if (alpha > 0.5) {
+                ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
         ctx.translate(this.x, this.y);
 
         // Blinking effect
@@ -290,19 +270,18 @@ export default class GummyCluster {
             ctx.globalAlpha = 0.5;
         }
 
-        // Draw gummy bears
-        this.gummyBears.forEach(bear => {
-            ctx.fillStyle = bear.color;
-            ctx.beginPath();
-            ctx.arc(bear.x, bear.y, bear.r, 0, Math.PI * 2);
-            ctx.fill();
+        let image = this.game.gummyclusterImages[0];
+        const healthPercentage = this.health / this.maxHealth;
+        if (healthPercentage < 0.7) {
+            image = this.game.gummyclusterImages[1];
+        }
+        if (healthPercentage < 0.3) {
+            image = this.game.gummyclusterImages[2];
+        }
 
-            // Shiny effect
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.beginPath();
-            ctx.arc(bear.x - 5, bear.y - 5, 5, 0, Math.PI * 2);
-            ctx.fill();
-        });
+        if (image && image.complete) {
+            ctx.drawImage(image, 0, 0, this.width, this.height);
+        }
 
         // Health bar
         if (this.health < this.maxHealth) {

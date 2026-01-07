@@ -2,7 +2,7 @@ import Particle from './particle.js';
 import { calculateChainBounceDamage } from './utils.js';
 
 export default class Projectile {
-    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, freezeFrostingCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0) {
+    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, freezeFrostingCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0, isAutoTurret = false) {
         this.game = game;
         this.x = x; this.y = y; this.damage = damage; this.range = range; this.origin = origin;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
@@ -14,14 +14,23 @@ export default class Projectile {
         this.bouncesLeft = bubbleGumCount;
         this.fireDamageCount = fireDamageCount;
         this.chainBounceCount = chainBounceCount;
+        this.isAutoTurret = isAutoTurret;
         this.bounceDamageFalloff = calculateChainBounceDamage(this.chainBounceCount);
         this.hitEnemies = [];
     }
     update(tsf) {
         this.x += this.vx * tsf; this.y += this.vy * tsf;
         this.rotation += 0.2 * tsf;
-        // Use a mix of pink and white particles for the trail
-        if (Math.random() < 0.5) { // 20% less particles (on top of previous 33%)
+
+        let particleChance = 0.15;
+        if (this.game.player.getEquippedComponentCount('Split Shot') > 0 || this.game.player.getEquippedComponentCount('Bubble Gum Shots') > 0) {
+            particleChance = 0.05;
+        }
+        if (this.isAutoTurret) {
+            particleChance /= 2;
+        }
+
+        if (Math.random() < particleChance) {
             const trailColor = (Math.random() < 0.5) ? 'rgba(255, 105, 180, 0.7)' : 'rgba(255, 255, 255, 0.7)';
             this.game.particles.push(new Particle(this.game, this.x, this.y, trailColor, 'smoke'));
         }
@@ -147,23 +156,24 @@ export default class Projectile {
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < explosionRadius + m.width / 2) {
                 if (m.takeDamage(explosionDamage)) {
-                    const index = this.game.missiles.indexOf(m);
-                    if (index > -1) {
-                        m.kill(index);
-                    }
+                    m.kill();
                 }
             }
         });
 
+        // Visual effect: one large expanding circle
+        const explosionColors = ['rgba(255, 140, 0, 0.6)', 'rgba(255, 69, 0, 0.6)', 'rgba(255, 215, 0, 0.6)', 'rgba(139, 69, 19, 0.6)'];
+        const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
+        this.game.particles.push(new Particle(this.game, this.x, this.y, color, 'explosion', 0.5, 0, 0, 0, explosionRadius));
+
         // Visual effect: multiple small circles
-        const explosionColors = ['rgba(255, 140, 0, 0.9)', 'rgba(255, 69, 0, 0.9)', 'rgba(255, 215, 0, 0.9)', 'rgba(139, 69, 19, 0.9)'];
         for (let i = 0; i < 20 * this.popRockStacks; i++) {
             const angle = Math.random() * Math.PI * 2;
             const distance = Math.random() * explosionRadius;
             const particleX = this.x + Math.cos(angle) * distance;
             const particleY = this.y + Math.sin(angle) * distance;
-            const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
-            this.game.particles.push(new Particle(this.game, particleX, particleY, color, 'spark', 0.5));
+            const sparkColor = explosionColors[Math.floor(Math.random() * explosionColors.length)];
+            this.game.particles.push(new Particle(this.game, particleX, particleY, sparkColor, 'spark', 0.5));
         }
 
         this.game.screenShake.trigger(3 * this.popRockStacks, 10);

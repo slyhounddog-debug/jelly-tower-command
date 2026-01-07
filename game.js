@@ -6,6 +6,7 @@ import ThreatManager from './threatManager.js';
 import { ScreenShake, darkenColor, lightenColor } from './utils.js?v=25';
 import Drop from './drop.js?v=25';
 import Particle from './particle.js';
+import WaveAttack from './waveAttack.js';
 import FloatingText from './floatingText.js?v=25';
 import DamageSpot from './damageSpot.js';
 import CastleHealthBar from './castleHealthBar.js';
@@ -54,6 +55,18 @@ class Game {
             img.src = `assets/Images/jellybean${i}.png`;
             this.jellybeanImages.push(img);
         }
+        this.gummyclusterImages = [];
+        for (let i = 1; i <= 3; i++) {
+            const img = new Image();
+            img.src = `assets/Images/gummycluster${i}.png`;
+            this.gummyclusterImages.push(img);
+        }
+        this.gummybearImages = [];
+        for (let i = 1; i <= 4; i++) {
+            const img = new Image();
+            img.src = `assets/Images/gummybear${i}.png`;
+            this.gummybearImages.push(img);
+        }
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
@@ -62,7 +75,7 @@ class Game {
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
         this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [
-            { bonus: 0.8, mult: 2 },
+            { bonus: 0.08, mult: 2 },
             { bonus: 0.10, mult: 3 },
             { bonus: 0.12, mult: 3 },
             { bonus: 0.14, mult: 4 },
@@ -105,13 +118,14 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 16;
+        this.gummyWormSpawnThreshold = 12;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 40;
+        this.marshmallowSpawnThreshold = 22;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
+        this.groundProximityThreshold = 400;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -237,7 +251,7 @@ class Game {
                 y: this.height - 50,
                 radius: 37.5, // 25% bigger
                 hovered: false,
-                getCost: () => { const costs = [1000, 3000, 5000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+                getCost: () => { const costs = [2500, 10000, 25000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
                 errorShake: 0,
             },
             {
@@ -264,6 +278,7 @@ class Game {
         this.shields = [];
         this.floatingTexts = [];
         this.damageSpots = [];
+        this.waveAttacks = [];
         this.currentRPM = 5.5;
 
         this.player = new Player(this);
@@ -337,6 +352,8 @@ class Game {
             new Promise(r => this.armImage.onload = r),
             new Promise(r => this.autoTurretImage.onload = r),
             ...this.jellybeanImages.map(img => new Promise(r => img.onload = r)),
+            ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
+            ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
         ]).then(() => {
             startButton.disabled = false;
             startButton.textContent = 'Start Game';
@@ -719,7 +736,7 @@ class Game {
         this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = [];
+        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
         this.player.reset();
         this.levelingManager.initializePlayer(this.player);
         this.lastTime = 0;

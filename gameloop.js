@@ -62,14 +62,14 @@ export default class GameLoop {
             for (let i = this.game.missiles.length - 1; i >= 0; i--) {
                 const m = this.game.missiles[i];
                 m.update(tsf);
-                if (m.health <= 0) { m.kill(i); continue; }
+                if (m.health <= 0) { m.kill(); continue; }
                 let blocked = false;
                 for (let sIdx = this.game.shields.length - 1; sIdx >= 0; sIdx--) {
                     const s = this.game.shields[sIdx];
                     if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
                         for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#3498db', 'spark'));
                         if (s.takeDamage(10)) { this.game.shields.splice(sIdx, 1); this.game.screenShake.trigger(3, 5); } else this.game.screenShake.trigger(1, 3);
-                        m.kill(i);
+                        m.kill();
                         blocked = true;
                         break;
                     }
@@ -82,7 +82,7 @@ export default class GameLoop {
                         this.game.castleHealth -= 10;
                     }
                     this.game.castleHealthBar.triggerHit();
-                    this.game.missiles.splice(i, 1);
+                    m.dead = true;
                     this.game.screenShake.trigger(5, 10);
                     for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
                     
@@ -95,6 +95,7 @@ export default class GameLoop {
                     }
                 }
             }
+            this.game.missiles = this.game.missiles.filter(m => !m.dead);
 
             this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
             document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
@@ -171,6 +172,7 @@ export default class GameLoop {
             for (let i = this.game.particles.length - 1; i >= 0; i--) { this.game.particles[i].update(tsf); if (this.game.particles[i].life <= 0) this.game.particles.splice(i, 1); }
             for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
             for (let i = this.game.damageSpots.length - 1; i >= 0; i--) { this.game.damageSpots[i].update(tsf); if (this.game.damageSpots[i].opacity <= 0) this.game.damageSpots.splice(i, 1); }
+            for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
 
             this.game.lootPopupManager.update(deltaTime);
 
@@ -256,6 +258,7 @@ export default class GameLoop {
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
+        this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
         this.game.drawing.drawActionButtons(this.game.ctx);
 
@@ -287,6 +290,12 @@ export default class GameLoop {
             // Rainbow color effect
             const hue = (this.game.gameTime * 0.5) % 360;
             bossHealthFill.style.background = `linear-gradient(to right, hsl(${hue}, 100%, 50%), hsl(${(hue + 60) % 360}, 100%, 50%))`;
+
+            // Glass tube background (assuming bossHealthContainer is the outer container)
+            bossHealthContainer.style.background = 'rgba(255, 255, 255, 0.3)'; // Semi-transparent white
+            bossHealthContainer.style.border = '2px solid rgba(255, 255, 255, 0.7)'; // Shiny border
+            bossHealthContainer.style.boxShadow = 'inset 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px rgba(255, 255, 255, 0.3)'; // Inner and outer glow
+
 
             // Pulse effect
             const pulse = (Math.sin(this.game.gameTime * 0.05) + 1) / 2;

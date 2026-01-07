@@ -90,7 +90,7 @@ export default class Tower extends BaseStructure {
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
             const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount);
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, freezeFrostingCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, this.isAuto);
             this.game.projectiles.push(projectile);
         }
 

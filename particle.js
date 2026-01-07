@@ -82,7 +82,11 @@ export default class Particle {
     draw(ctx) {
         ctx.globalAlpha = Math.max(0, this.life);
         ctx.fillStyle = this.color;
-        if (this.type === 'spark') ctx.fillRect(this.x, this.y, this.size, this.size);
+        if (this.type === 'spark') {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
         else if (this.type === 'explosion') {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);

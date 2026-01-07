@@ -1,4 +1,5 @@
 import Particle from './particle.js';
+import WaveAttack from './waveAttack.js';
 
 export default class Player {
     constructor(game) {
@@ -114,6 +115,9 @@ export default class Player {
                         m.kbVy = -this.game.stats.lickKnockback * .3;
                     }
                 });
+
+                const angle = Math.atan2(this.vy, this.vx);
+                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle));
             }
 
             // Add dash particle effect

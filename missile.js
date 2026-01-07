@@ -9,9 +9,11 @@ export default class Missile {
         this.game = game;
         this.x = x; 
         this.y = y;
-        this.baseSpeed = (type === 'piggy') ? 0.3 : .6;
+        this.baseSpeed = (type === 'piggy') ? 0.4 : .8;
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.type = type;
+        this.groundProximity = false;
+        this.dead = false;
 
         if (type === 'missile') {
             this.width = 50; // 45 * 1.1
@@ -187,9 +189,10 @@ export default class Missile {
         if (this.healScale > 1) this.healScale -= 0.05 * tsf;
         else this.healScale = 1;
 
-        // Ground Squish Logic - tightened distance from 15 to 5
         const ground = this.game.platforms.find(p => p.type === 'ground');
         const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
+        this.groundProximity = distToGround < this.game.groundProximityThreshold;
+
         if (distToGround < 5 && distToGround > -10) {
             this.squash = 1.35;
             this.stretch = 0.65;
@@ -232,6 +235,16 @@ export default class Missile {
     }
 
     draw(ctx) {
+        ctx.save();
+        if (this.groundProximity) {
+            const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
+            ctx.globalAlpha = 1 - alpha * 0.5;
+            if (alpha > 0.5) {
+                ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+        
         const ground = this.game.platforms.find(p => p.type === 'ground');
         if (ground) {
             const distance = ground.y - (this.y + this.height);
@@ -247,7 +260,6 @@ export default class Missile {
                 ctx.fill();
             }
         }
-        ctx.save();
 
         // Draw blue overlay if slowed
         if (this.totalSlow > 0) {
@@ -464,7 +476,8 @@ export default class Missile {
         for (const spot of this.damageSpots) spot.draw(ctx);
     }
     
-       kill(index) {
+       kill() {
+        this.dead = true;
         let xpGained = 0;
         let maxHealthForXp = this.maxHealth;
 
@@ -493,7 +506,6 @@ export default class Missile {
         });
 
         if (this.type === 'marshmallow_large') {
-            this.game.missiles.splice(index, 1);
             for (let i = 0; i < 2; i++) {
                 this.game.missiles.push(new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', this.y));
             }
@@ -502,7 +514,6 @@ export default class Missile {
         }
 
         if (this.type === 'marshmallow_medium') {
-            this.game.missiles.splice(index, 1);
             for (let i = 0; i < 2; i++) {
                 this.game.missiles.push(new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', this.y));
             }
@@ -510,7 +521,6 @@ export default class Missile {
             return;
         }
 
-        this.game.missiles.splice(index, 1);
         const pStats = this.game.stats.piggyStats;
         const count = (this.type === 'piggy') ? pStats.mult : 1;
         
