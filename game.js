@@ -1,5 +1,4 @@
 import Player from './player.js?v=2';
-import Shield from './shield.js';
 import Tower from './tower.js';
 import Missile from './missile.js?v=25';
 import ThreatManager from './threatManager.js';
@@ -13,6 +12,7 @@ import CastleHealthBar from './castleHealthBar.js';
 import initLevel from './initLevel.js';
 import Thermometer from './thermometer.js';
 import Drawing from './drawing.js';
+
 import Emporium from './emporium.js';
 import GameLoop from './gameloop.js';
 import AudioManager from './audioManager.js';
@@ -73,9 +73,8 @@ class Game {
         this.LICK_DAMAGE_TIERS = [13, 17, 22, 28, 35, 43, 52, 62, 72, 83, 95, 110, 125];
         this.LICK_KNOCKBACK_TIERS = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100];
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
-        this.SHIELD_COSTS = [25, 35, 45, 55, 75];
         this.PIGGY_TIERS = [
-            { bonus: 0.08, mult: 2 },
+            { bonus: 0.8, mult: 2 },
             { bonus: 0.10, mult: 3 },
             { bonus: 0.12, mult: 3 },
             { bonus: 0.14, mult: 4 },
@@ -103,8 +102,9 @@ class Game {
         this.placementMode = null;
         this.sellMode = null;
         this.placementItemCost = 0;
-        this.shopOpenedFirstTime = false;
-        this.shopReminderShown = false;
+        this.lastShopOpenTime = 0;
+        this.shopReminderTimer = 0;
+
         this.firstComponentCollected = false;
         this.lastMoveDirection = 1;
 
@@ -125,7 +125,7 @@ class Game {
 
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
-        this.groundProximityThreshold = 400;
+        this.groundProximityThreshold = 300;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -137,14 +137,12 @@ class Game {
             damageLvl: 0,
             fireRateLvl: 0,
             rangeLvl: 0,
-            shieldLvl: 0,
             luckLvl: 0,
             lickLvl: 0,
             piggyLvl: 0,
             baseDamage: 10,
             baseFireRate: 45,
             baseRange: 375,
-            baseShieldHp: 15,
             turretsBought: 0,
             maxTurrets: 3,
             critLvl: 0,
@@ -156,8 +154,6 @@ class Game {
             get projectileSpeed() { return 4 + .5 * this.fireRateLvl; },
             getNextProjectileSpeed() { return 4 + .5 * (this.fireRateLvl + 1); },
             get range() { return this.baseRange + (this.rangeLvl * 80); },
-            get shieldMaxHp() { return this.baseShieldHp + (this.shieldLvl * 5); },
-            getNextShieldHp() { return this.shieldMaxHp + 5; },
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
             get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
@@ -167,50 +163,43 @@ class Game {
         };
 
         this.shopItems = [
-            { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade',
-              getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl],
-              getValue: () => this.stats.damage,
+            { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade', 
+              getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
+              getValue: () => this.stats.damage, 
               getNext: () => this.stats.getNextDamage(),
               getLevel: () => `${this.stats.damageLvl}/${this.DAMAGE_TIERS.length}`,
               action: () => { if (this.stats.damageLvl < this.DAMAGE_TIERS.length - 1) this.stats.damageLvl++; }
             },
-            { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade',
+            { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
-              getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`,
+              getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
               getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/15`,
-              action: () => this.stats.fireRateLvl++
+              action: () => this.stats.fireRateLvl++ 
             },
-            { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade',
-              getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX',
-              getValue: () => this.stats.range + 'px',
+            { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade', 
+              getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX', 
+              getValue: () => this.stats.range + 'px', 
               getNext: () => (this.stats.range + 50) + 'px',
-              getLevel: () => `${this.stats.rangeLvl}/15`,
-              action: () => this.stats.rangeLvl++
+              getLevel: () => `${this.stats.rangeLvl}/15`, 
+              action: () => this.stats.rangeLvl++ 
             },
-            { id: 'shield_tech', name: 'Barrier HP', icon: '🛡️', desc: 'Increases Shield HP. Regen 1% HP/s.', type: 'upgrade',
-              getCost: () => this.UPGRADE_COSTS[this.stats.shieldLvl] || 'MAX',
-              getValue: () => this.stats.shieldMaxHp + ' HP',
-              getNext: () => (this.stats.getNextShieldHp()) + ' HP',
-              getLevel: () => `${this.stats.shieldLvl}/15`,
-              action: () => this.stats.shieldLvl++
-            },
-            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade',
-              getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX',
-              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`,
-              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`,
+            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade', 
+              getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX', 
+              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`, 
+              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`, 
               getLevel: () => `${this.stats.luckLvl}/15`,
-              action: () => this.stats.luckLvl++
+              action: () => this.stats.luckLvl++ 
             },
-            { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅',
-              desc: `Increases tongue damage and knockback.`, type: 'upgrade',
-              getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl],
-              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`,
+            { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
+              desc: `Increases tongue damage and knockback.`, type: 'upgrade', 
+              getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
+              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`, 
               getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
               getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length}`,
-              action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; }
+              action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
             },
-            { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷',
+            { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷', 
               desc: 'Increases instant cash bonus % and kill count multiplier.', type: 'upgrade',
               getCost: () => (this.stats.piggyLvl >= this.PIGGY_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.piggyLvl],
               getValue: () => `${(this.stats.piggyStats.bonus*100).toFixed(0)}% | ${this.stats.piggyStats.mult}x`,
@@ -222,49 +211,23 @@ class Game {
               getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
-            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯',
+            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
               desc: 'Increases the chance for tower projectiles to deal double damage.', type: 'upgrade',
               getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
               getValue: () => `${this.stats.criticalHitChance}%`,
               getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
               getLevel: () => `${this.stats.critLvl}/${this.CRITICAL_CHANCE_TIERS.length}`,
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
+            },
+            { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
+              getCost: () => { const costs = [1000, 3000, 5000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+              getValue: () => `${this.stats.turretsBought}/3`,
+              getNext: () => `Place on a cloud.`,
+              getLevel: () => `${this.stats.turretsBought}/3`,
+              action: () => {}
             }
         ];
         this.selectedShopItem = this.shopItems[0];
-
-        this.actionButtons = [
-            {
-                id: 'buy_shield',
-                icon: '🧱',
-                x: this.width / 2 - 80, // Increased spacing
-                y: this.height - 50,
-                radius: 37.5, // 25% bigger
-                hovered: false,
-                getCost: () => this.shields.length < 5 ? this.SHIELD_COSTS[Math.min(this.shields.length, 4)] : 'MAX',
-                errorShake: 0,
-            },
-            {
-                id: 'buy_turret',
-                icon: '🤖',
-                x: this.width / 2,
-                y: this.height - 50,
-                radius: 37.5, // 25% bigger
-                hovered: false,
-                getCost: () => { const costs = [2500, 10000, 25000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
-                errorShake: 0,
-            },
-            {
-                id: 'sell_item',
-                icon: '🗑️',
-                x: this.width / 2 + 80, // Increased spacing
-                y: this.height - 50,
-                radius: 37.5, // 25% bigger
-                hovered: false,
-                getCost: () => (this.stats.turretsBought > 0 || this.shields.length > 0) ? 'SELL' : 'N/A',
-                errorShake: 0,
-            }
-        ];
 
         this.keys = {};
         this.mouse = { x: 0, y: 0, isDown: false };
@@ -275,7 +238,6 @@ class Game {
         this.projectiles = [];
         this.particles = [];
         this.drops = [];
-        this.shields = [];
         this.floatingTexts = [];
         this.damageSpots = [];
         this.waveAttacks = [];
@@ -339,8 +301,6 @@ class Game {
         window.addEventListener('resize', () => this.resizeModals());
 
         const startButton = document.getElementById('start-game-btn');
-        startButton.disabled = true;
-        startButton.textContent = 'Loading...';
 
         Promise.all([
             this.audioManager.loadingPromise,
@@ -355,11 +315,10 @@ class Game {
             ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
             ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
         ]).then(() => {
-            startButton.disabled = false;
-            startButton.textContent = 'Start Game';
+            startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
+            startButton.style.pointerEvents = 'all'; // Enable click
         }).catch(error => {
             console.error("Failed to load assets:", error);
-            startButton.textContent = 'Error Loading Assets';
         });
 
         document.addEventListener('keydown', (e) => {
@@ -416,58 +375,16 @@ class Game {
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
             this.mouse.y = (e.clientY - rect.top) * scaleY;
-
-            this.actionButtons.forEach(button => {
-                const dist = Math.hypot(this.mouse.x - button.x, this.mouse.y - button.y);
-                button.hovered = dist < button.radius;
-            });
         });
         this.canvas.addEventListener('mousedown', () => {
             this.mouse.isDown = true;
-            let buttonClicked = false;
-        
-            // Allow clicking buttons if game is running, or to place an item if paused
             if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
-                
-                // Handle button clicks only if not in placement/sell mode already
-                if (!this.placementMode && !this.sellMode) {
-                    this.actionButtons.forEach(button => {
-                        if (button.hovered) {
-                            buttonClicked = true;
-                            const cost = button.getCost();
-        
-                            if (typeof cost === 'number' && this.money >= cost) {
-                                if (button.id === 'buy_turret' || button.id === 'buy_shield') {
-                                    this.placementMode = (button.id === 'buy_turret' ? 'turret' : 'shield');
-                                    this.placementItemCost = cost;
-                                    this.isPaused = true;
-                                    document.getElementById('notification').innerText = `Click to Place ${this.placementMode.toUpperCase()} | ESC to Cancel`;
-                                    document.getElementById('notification').style.opacity = 1;
-                                    setTimeout(() => { if (this.placementMode) document.getElementById('notification').style.opacity = 0; }, 2000);
-                                }
-                            } else if (button.id === 'sell_item' && cost !== 'N/A') {
-                                this.sellMode = true;
-                                this.isPaused = true; // Also pause for sell mode
-                                document.getElementById('notification').innerText = `Click an item to Sell | ESC to Cancel`;
-                                document.getElementById('notification').style.opacity = 1;
-                                setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
-                            } else if (cost !== 'MAX' && cost !== 'SELL' && cost !== 'N/A') { // Not enough money
-                                button.errorShake = 15;
-                            }
-                        }
-                    });
-                }
-        
-                // This part handles placing item OR licking.
-                // If a button was clicked to enter a mode, this part should be skipped.
-                if (!buttonClicked) {
-                    if (this.placementMode) {
-                        this.tryPlaceItem();
-                    } else if (this.sellMode) {
-                        // The logic for selling is handled within the gameLoop's sellMode block
-                    } else if (!this.isShopOpen && !this.player.isControlling) {
-                        this.player.tryLick();
-                    }
+                if (this.placementMode) {
+                    this.tryPlaceItem();
+                } else if (this.sellMode) {
+                    // The logic for selling is handled within the gameLoop's sellMode block
+                } else if (!this.isShopOpen && !this.player.isControlling) {
+                    this.player.tryLick();
                 }
             }
         });
@@ -507,6 +424,35 @@ class Game {
         
                 document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
                 document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
+                document.getElementById('shop-btn').addEventListener('click', () => this.toggleShop());
+
+                document.getElementById('shop-btn').addEventListener('mousedown', () => {
+                    document.getElementById('shop-btn').src = 'assets/Images/shopbuttondown.png';
+                });
+
+                document.getElementById('shop-btn').addEventListener('mouseup', () => {
+                    document.getElementById('shop-btn').src = 'assets/Images/shopbuttonup.png';
+                });
+
+                // Add event listeners for modal-confirm-buttons
+                document.querySelectorAll('.modal-confirm-button').forEach(button => {
+                    button.addEventListener('mousedown', () => {
+                        button.src = 'assets/Images/modalconfirmdown.png';
+                    });
+                    button.addEventListener('mouseup', () => {
+                        button.src = 'assets/Images/modalconfirmup.png';
+                    });
+                });
+
+                // Add event listeners for shop-upgrade-buttons
+                document.querySelectorAll('.shop-upgrade-button').forEach(button => {
+                    button.addEventListener('mousedown', () => {
+                        button.src = 'assets/Images/shopupgradedown.png';
+                    });
+                    button.addEventListener('mouseup', () => {
+                        button.src = 'assets/Images/shopupgradeup.png';
+                    });
+                });
 
                 document.getElementById('sound-effects-slider').addEventListener('input', (e) => {
                     const value = e.target.value;
@@ -522,9 +468,8 @@ class Game {
                     this.saveSettings();
                 });
 
-                        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-                    }
-                
+        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    }                
                         renderComponentQuarters() {
                             const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
                             const maxPoints = this.player.maxComponentPoints;
@@ -647,7 +592,7 @@ class Game {
     isAnyModalOpen(exclude = null) {
         const modals = [
             '#component-modal', '#piggy-modal', '#gummy-worm-modal',
-            '#marshmallow-modal', '#shop-reminder', '#boss-modal',
+            '#marshmallow-modal', '#boss-modal',
             '#component-quarters-overlay', '#settings-modal', '#shop-overlay',
             '#guide-modal', '#stats-modal'
         ];
@@ -684,10 +629,7 @@ class Game {
         this.requestUnpause();
     }
 
-    closeShopReminder() {
-        document.getElementById('shop-reminder').style.display = 'none';
-        this.requestUnpause();
-    }
+
 
     closeBossModal() {
         document.getElementById('boss-modal').style.display = 'none';
@@ -733,10 +675,11 @@ class Game {
         this.killsForNextBoss = 50;
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
-        this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
+        this.stats.luckLvl = 0;
+        this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.shields = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
+        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
         this.player.reset();
         this.levelingManager.initializePlayer(this.player);
         this.lastTime = 0;
@@ -757,6 +700,7 @@ class Game {
 
             if (this.isShopOpen) {
                 this.isPaused = true;
+                this.lastShopOpenTime = this.gameTime;
             } else {
                 this.requestUnpause('#shop-overlay');
             }
@@ -793,7 +737,7 @@ class Game {
             const cost = item.getCost();
             div.innerHTML = `
                 <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-name">${item.name}</div>
+                <div class.shop-item-name">${item.name}</div>
                 <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `$${cost}`}</div>
                 ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
             `;
@@ -810,15 +754,34 @@ class Game {
         document.getElementById('detail-desc').innerText = item.desc;
         const cost = item.getCost();
 
-        // --- Button Logic ---
-        if (item.type === 'sell') {
-            document.getElementById('buy-btn').disabled = (cost === 'N/A');
-            document.getElementById('buy-btn').innerText = 'SELL';
-        } else {
-            document.getElementById('buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `BUY ($${cost})`;
-            document.getElementById('buy-btn').disabled = !((typeof cost === 'number' && this.money >= cost));
-        }
-        document.getElementById('buy-btn').onclick = () => this.buyItem(item);
+        const buyBtn = document.getElementById('buy-btn');
+        const sellBtn = document.getElementById('sell-btn');
+        const canAfford = typeof cost === 'number' && this.money >= cost;
+        const isMaxLevel = cost === 'MAX';
+
+        if (item.id === 'buy_turret' && this.stats.turretsBought > 0) {
+            sellBtn.style.display = 'block';
+            sellBtn.onclick = () => this.sellItem();
+        } else {
+            sellBtn.style.display = 'none';
+        }
+
+        if (isMaxLevel) {
+            buyBtn.src = 'assets/Images/disabledbutton.png';
+            buyBtn.style.pointerEvents = 'none';
+        } else if (canAfford) {
+            buyBtn.src = 'assets/Images/shopupgradeup.png';
+            buyBtn.style.pointerEvents = 'all';
+        } else {
+            buyBtn.src = 'assets/Images/disabledbutton.png';
+            buyBtn.style.pointerEvents = 'none';
+        }
+
+        buyBtn.onclick = () => {
+            if (canAfford && !isMaxLevel) {
+                this.buyItem(item);
+            }
+        };
 
         // --- Stat Comparison Logic ---
         let nextValue = item.getNext();
@@ -861,6 +824,16 @@ class Game {
         document.getElementById('shop-money-display').innerText = '$' + this.money;
     }
 
+    sellItem() {
+        this.sellMode = true;
+        this.isPaused = true; 
+        this.isShopOpen = false; 
+        document.getElementById('shop-overlay').style.display = 'none';
+        document.getElementById('notification').innerText = `Click an item to Sell | ESC to Cancel`;
+        document.getElementById('notification').style.opacity = 1;
+        setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
+    }
+
 
 
 
@@ -874,11 +847,7 @@ class Game {
         document.getElementById('stat-lick-knockback').innerText = this.stats.lickKnockback;
         document.getElementById('stat-enemy-health').innerText = (30 + this.currentRPM + (this.enemiesKilled * 0.1)).toFixed(0);
         document.getElementById('stat-castle-max-health').innerText = this.emporium.getCastleMaxHealth();
-        document.getElementById('stat-shield-regen').innerText = `${this.emporium.getShieldRegen()}%`;
-        document.getElementById('stat-shield-health').innerText = this.stats.shieldMaxHp;
         document.getElementById('stat-big-coin-chance').innerText = `${this.stats.luckCoin}%`;
-        document.getElementById('stat-big-coin-cash').innerText = `$${this.emporium.getBigCoinValue()}`;
-        document.getElementById('stat-heart-chance').innerText = `${this.stats.luckHeart}%`;
         document.getElementById('stat-heart-heal').innerText = this.emporium.getHeartHeal();
         document.getElementById('stat-piggy-bonus').innerText = `${(this.stats.piggyStats.bonus*100).toFixed(0)}%`;
         document.getElementById('stat-piggy-multiplier').innerText = `${this.stats.piggyStats.mult}x`;
@@ -894,7 +863,6 @@ class Game {
     tryPlaceItem() {
         if (this.money < this.placementItemCost) return;
         if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
-        else if (this.placementMode === 'shield') { this.shields.push(new Shield(this, this.mouse.x - 64, this.mouse.y - 33)); }
         this.money -= this.placementItemCost; this.placementMode = null; this.requestUnpause();
         document.getElementById('notification').innerText = "DEPLOYED";
         document.getElementById('notification').style.opacity = 1;
@@ -907,7 +875,7 @@ class Game {
         window.closePiggyModal = this.closePiggyModal.bind(this);
         window.closeGummyWormModal = this.closeGummyWormModal.bind(this);
         window.closeMarshmallowModal = this.closeMarshmallowModal.bind(this);
-        window.closeShopReminder = this.closeShopReminder.bind(this);
+
         window.closeComponentModal = this.closeComponentModal.bind(this);
         window.closeComponentQuarters = this.toggleComponentQuarters.bind(this);
         window.closeBossModal = this.closeBossModal.bind(this);

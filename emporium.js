@@ -62,15 +62,6 @@ export default class Emporium {
                 action: () => { this.game.emporiumUpgrades.ice_cream_chance.level++; }
             },
             { 
-                id: 'shield_regen', name: 'Shield Regen', icon: '🛡️', 
-                desc: 'Increases the regeneration rate of shields.',
-                getCost: () => (this.game.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.game.emporiumUpgrades.shield_regen.level],
-                getValue: () => `${this.game.emporiumUpgrades.shield_regen.values[this.game.emporiumUpgrades.shield_regen.level]}%`,
-                getNext: () => (this.game.emporiumUpgrades.shield_regen.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.game.emporiumUpgrades.shield_regen.values[this.game.emporiumUpgrades.shield_regen.level + 1]}%`,
-                getLevel: () => `${this.game.emporiumUpgrades.shield_regen.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
-                action: () => { this.game.emporiumUpgrades.shield_regen.level++; }
-            },
-            { 
                 id: 'enemy_xp', name: 'XP Boost', icon: '✨',
                 desc: 'Increases XP gained from enemies.',
                 getCost: () => (this.game.emporiumUpgrades.enemy_xp.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.game.emporiumUpgrades.enemy_xp.level],
@@ -106,7 +97,6 @@ export default class Emporium {
             heart_heal: { level: 0, values: [10, 12, 14, 16, 18, 20, 22, 24, 26, 30] },
             big_coin_value: { level: 0, values: [100, 120, 140, 160, 180, 200, 220, 240, 260, 300] },
             ice_cream_chance: { level: 0, values: [[1.5, 10], [2.5, 15], [3.5, 20], [4.5, 25], [5.5, 30], [6.5, 35], [7.5, 40], [8.5, 50]] },
-            shield_regen: { level: 0, values: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2] },
             enemy_xp: { level: 0, values: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] },
         };
     }
@@ -129,10 +119,6 @@ export default class Emporium {
 
     getCastleMaxHealth() {
         return this.game.emporiumUpgrades.castle_health.values[this.game.emporiumUpgrades.castle_health.level];
-    }
-
-    getShieldRegen() {
-        return this.game.emporiumUpgrades.shield_regen.values[this.game.emporiumUpgrades.shield_regen.level];
     }
 
     getBigCoinValue() {
@@ -191,7 +177,7 @@ export default class Emporium {
             const cost = item.getCost();
             div.innerHTML = `
                 <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-name">${item.name}</div>
+                <div class.shop-item-name">${item.name}</div>
                 <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
                 ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
             `;

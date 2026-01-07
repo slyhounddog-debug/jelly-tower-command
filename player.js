@@ -38,7 +38,7 @@ export default class Player {
         this.reset();
     }
     reset() {
-        this.x = this.game.width / 2; this.y = this.game.height - 120; this.vx = 0; this.vy = 0;
+        this.x = this.game.width / 2; this.y = this.game.height - 150; this.vx = 0; this.vy = 0;
         this.isOnGround = false; this.isControlling = null;
         this.jumpsLeft = 2; this.jumpLock = false;
         this.isPassingThrough = false;
@@ -64,9 +64,7 @@ export default class Player {
             'More Gelatin': 0,
             'Tinkerer': 0,
             'Greed': 0,
-            'Dashier': 0,
             'Long Tongue': 0,
-            'Slower Aura Range': 0,
             'Wide Collector': 0,
             // Rares
             'Winged Boots': 0,
@@ -74,7 +72,7 @@ export default class Player {
             'Ice Tongue': 0,
             
             'Marshmallow Landing': 0,
-            'Slow Aura': 0,
+            'Sugar Rush': 0,
             // Legendaries
             'Reflective Coating': 0,
             'Scoop Doubler': 0,
@@ -93,12 +91,12 @@ export default class Player {
         this.whirlwindTimer = 0;
         this.whirlwindAngle = 0;
         this.auraParticleTimer = 0;
+        this.sugarRushTimer = 0;
     }
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
             this.vx += this.dashSpeed * direction;
-            const dashierMultiplier = 1 - (this.upgrades['Dashier'] * 0.1);
-            this.dashCooldown = this.baseDashCooldown * dashierMultiplier;
+            this.dashCooldown = this.baseDashCooldown;
             this.game.audioManager.playSound('dash');
             this.lastDashTime = Date.now();
 
@@ -162,7 +160,9 @@ export default class Player {
             }
 
             if (hit) {
-                m.takeDamage(this.game.stats.lickDamage);
+                if(m.takeDamage(this.game.stats.lickDamage)) {
+                    m.kill('tongue');
+                }
                 if (this.upgrades['Ice Tongue'] > 0) {
                     m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
                 }
@@ -178,6 +178,7 @@ export default class Player {
     update(tsf) {
         if (this.jumpSquash > 0) this.jumpSquash -= tsf;
         if (this.dashCooldown > 0) this.dashCooldown -= tsf;
+        if (this.sugarRushTimer > 0) this.sugarRushTimer -= tsf;
 
         if (this.isWhirlwinding) {
             this.whirlwindTimer -= tsf;
@@ -190,43 +191,14 @@ export default class Player {
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
-                    m.takeDamage(this.game.stats.lickDamage * 0.1); // Deal 10% of lick damage per tick
+                    if(m.takeDamage(this.game.stats.lickDamage * 0.1)) {
+                        m.kill('tongue');
+                    }
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
                     }
                 }
             });
-        }
-
-        if (this.upgrades['Slow Aura'] > 0) {
-            this.game.missiles.forEach(m => {
-                const dist = Math.hypot(this.x + this.width / 2 - m.x - m.width / 2, this.y + this.height / 2 - m.y - m.height / 2);
-                if (dist < this.slowAuraRange) {
-                    m.auraSlowTimer = 2;
-                }
-            });
-
-            this.auraParticleTimer += tsf;
-            if (this.auraParticleTimer >= 2) { // Emit particles every 2 frames
-                this.auraParticleTimer = 0;
-                const particleCount = 2; // Number of particles per emission
-                const playerCenterX = this.x + this.width / 2;
-                const playerCenterY = this.y + this.height / 2;
-
-                for (let i = 0; i < particleCount; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = this.slowAuraRange * (0.8 + Math.random() * 0.2);
-                    const px = playerCenterX + Math.cos(angle) * radius;
-                    const py = playerCenterY + Math.sin(angle) * radius;
-
-                    const emitAngle = Math.atan2(py - playerCenterY, px - playerCenterX);
-                    const speed = 2 + Math.random() * 2; // Increased speed
-                    const vx = Math.cos(emitAngle) * speed;
-                    const vy = Math.sin(emitAngle) * speed;
-
-                    this.game.particles.push(new Particle(this.game, px, py, 'rgba(100, 150, 255, 0.6)', 'spark', 1.5, vx, vy)); // Corrected lifespan
-                }
-            }
         }
 
         if (this.transitionState === 'entering') {

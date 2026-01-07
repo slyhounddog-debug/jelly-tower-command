@@ -77,11 +77,17 @@ export default class Tower extends BaseStructure {
             const tx = cx + Math.cos(angle) * 30 * this.scale;
             const ty = cy + Math.sin(angle) * 30 * this.scale;
             let damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
+            if (this.game.player.sugarRushTimer > 0) {
+                damage *= 1.2;
+            }
             const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
             if (sniperCount > 0) {
                 damage *= (1 + sniperCount * 0.25); // +25% damage per stack
             }
-            const projectileSpeed = this.game.stats.projectileSpeed;
+            let projectileSpeed = this.game.stats.projectileSpeed;
+            if (this.game.player.sugarRushTimer > 0) {
+                projectileSpeed *= 1.2;
+            }
             const radius = (this.isAuto ? 7 : 16) + (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2) + (this.game.stats.critLvl * 0.15);
             
             const freezeFrostingCount = this.game.player.getEquippedComponentCount('Freeze Frosting');

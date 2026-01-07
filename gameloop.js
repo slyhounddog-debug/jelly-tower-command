@@ -54,7 +54,6 @@ export default class GameLoop {
 
             this.game.player.update(tsf);
             this.game.towers.forEach(t => t.update(tsf));
-            this.game.shields.forEach(s => s.update(tsf));
             this.game.castleHealthBar.update(tsf);
             this.game.thermometer.update(tsf);
             if (this.game.boss) this.game.boss.update(tsf);
@@ -64,18 +63,6 @@ export default class GameLoop {
                 m.update(tsf);
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
-                let blocked = false;
-                for (let sIdx = this.game.shields.length - 1; sIdx >= 0; sIdx--) {
-                    const s = this.game.shields[sIdx];
-                    if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
-                        for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#3498db', 'spark'));
-                        if (s.takeDamage(10)) { this.game.shields.splice(sIdx, 1); this.game.screenShake.trigger(3, 5); } else this.game.screenShake.trigger(1, 3);
-                        m.kill();
-                        blocked = true;
-                        break;
-                    }
-                }
-                if (blocked) continue;
                 if (m.y > this.game.height - 80) {
                     if (m.type === 'gummy_bear') {
                         this.game.castleHealth -= 10;
@@ -250,7 +237,6 @@ export default class GameLoop {
 
         this.game.damageSpots.forEach(s => s.draw(this.game.ctx));
         this.game.towers.forEach(t => t.draw(this.game.ctx));
-        this.game.shields.forEach(s => s.draw(this.game.ctx));
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
         this.game.projectiles.forEach(p => p.draw(this.game.ctx));
@@ -261,7 +247,6 @@ export default class GameLoop {
         this.game.player.draw(this.game.ctx);
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
-        this.game.drawing.drawActionButtons(this.game.ctx);
 
         this.game.lootPopupManager.draw(this.game.ctx);
 

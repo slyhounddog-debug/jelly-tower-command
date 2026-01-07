@@ -476,7 +476,8 @@ export default class Missile {
         for (const spot of this.damageSpots) spot.draw(ctx);
     }
     
-       kill() {
+       kill(killedBy = 'unknown') {
+        if (this.dead) return;
         this.dead = true;
         let xpGained = 0;
         let maxHealthForXp = this.maxHealth;
@@ -525,6 +526,10 @@ export default class Missile {
         const count = (this.type === 'piggy') ? pStats.mult : 1;
         
         this.game.enemiesKilled++;
+
+        if (killedBy === 'tongue' && this.game.player.upgrades['Sugar Rush'] > 0) {
+            this.game.player.sugarRushTimer = 600; // 10 seconds
+        }
 
         // Spawn homing 'soul' particle
         const thermometerPos = this.game.thermometer.getPosition();

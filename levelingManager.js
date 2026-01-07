@@ -52,18 +52,11 @@ export default class LevelingManager {
 
         
 
-                        { name: "Dashier", description: "10% reduced cooldown for dash.", icon: "💨", rarity: "normal" },
-
-
                         { name: "Wide Collector", description: "20% increase in loot pickup range.", icon: "👐", rarity: "normal" },
 
         
 
                         { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
-
-        
-
-                        { name: "Slower Aura Range", description: "Slow aura range increased by 20%.", requires: "Slow Aura", icon: " 범위", rarity: "normal" },
 
         
 
@@ -95,7 +88,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Slow Aura", description: "Creates a slow aura around the character.", icon: "⏳", rarity: "rare" }
+                        { name: "Sugar Rush", description: "20% tower damage and fire rate boost for 10 seconds on tongue kill.", icon: "🍬", rarity: "rare" }
 
         
 
@@ -647,18 +640,6 @@ export default class LevelingManager {
 
         
 
-                        case 'Dashier':
-
-        
-
-                            // The logic is in tryDash, this just increments the upgrade count
-
-        
-
-                            break;
-
-        
-
                         case 'Long Tongue':
 
         
@@ -731,23 +712,11 @@ export default class LevelingManager {
 
         
 
-                        case 'Slow Aura':
+                        case 'Sugar Rush':
 
         
 
                             // Logic is in player.js update method
-
-        
-
-                            break;
-
-        
-
-                        case 'Slower Aura Range':
-
-        
-
-                            player.slowAuraRange = player.baseSlowAuraRange * (1 + player.upgrades['Slower Aura Range'] * 0.2);
 
         
 
