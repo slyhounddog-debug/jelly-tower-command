@@ -152,10 +152,8 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         // --- End Draw Bubble ---
 
         // Loot movement inside the bubble
-        // Added a random component to the movement for a more natural float
-        const lootX = (Math.cos(this.glowTimer * 0.5 + this.rot) * 5) + (Math.random() - 0.5) * 2;
-        const lootY = (Math.sin(this.glowTimer * 0.5 + this.rot) * 5) + (Math.random() - 0.5) * 2;
-        ctx.translate(lootX, lootY);
+        const lootY = Math.sin(this.glowTimer * 2) * 5;
+        ctx.translate(0, lootY);
 
         // Determine base color and a lighter variant for glowing
         let baseColor;

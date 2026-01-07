@@ -153,6 +153,7 @@ export default class Projectile {
         const explosionDamage = this.damage * 0.5;
 
         this.game.missiles.forEach(m => {
+            if (m.dead) return;
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < explosionRadius + m.width / 2) {
                 if (m.takeDamage(explosionDamage)) {

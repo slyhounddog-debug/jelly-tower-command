@@ -62,6 +62,7 @@ export default class GameLoop {
             for (let i = this.game.missiles.length - 1; i >= 0; i--) {
                 const m = this.game.missiles[i];
                 m.update(tsf);
+                if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
                 let blocked = false;
                 for (let sIdx = this.game.shields.length - 1; sIdx >= 0; sIdx--) {
