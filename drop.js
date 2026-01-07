@@ -93,7 +93,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
                 }
             }
             this.life = 0;
-            for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x, this.y, '#fff'));
+            for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff'));
         }
     }
     draw(ctx) {

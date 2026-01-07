@@ -42,6 +42,18 @@ class Game {
         this.groundImage.src = 'assets/Images/ground.png';
         this.castleImage = new Image();
         this.castleImage.src = 'assets/Images/castle.png';
+        this.towerImage = new Image();
+        this.towerImage.src = 'assets/Images/tower.png';
+        this.armImage = new Image();
+        this.armImage.src = 'assets/Images/arm.png';
+        this.autoTurretImage = new Image();
+        this.autoTurretImage.src = 'assets/Images/auto-turret.png';
+        this.jellybeanImages = [];
+        for (let i = 1; i <= 5; i++) {
+            const img = new Image();
+            img.src = `assets/Images/jellybean${i}.png`;
+            this.jellybeanImages.push(img);
+        }
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
@@ -103,6 +115,9 @@ class Game {
         this.gummyWormSeen = false;
         this.marshmallowSpawnThreshold = 22;
         this.marshmallowSeen = false;
+
+        this.killsSinceLastBoss = 0;
+        this.killsForNextBoss = 100;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -296,6 +311,10 @@ class Game {
             new Promise(r => this.platformImage.onload = r),
             new Promise(r => this.groundImage.onload = r),
             new Promise(r => this.castleImage.onload = r),
+            new Promise(r => this.towerImage.onload = r),
+            new Promise(r => this.armImage.onload = r),
+            new Promise(r => this.autoTurretImage.onload = r),
+            ...this.jellybeanImages.map(img => new Promise(r => img.onload = r)),
         ]).then(() => {
             startButton.disabled = false;
             startButton.textContent = 'Start Game';
@@ -663,13 +682,16 @@ class Game {
 
         this.castleHealth = this.emporium.getStartingHealth();
         const maxHealth = this.castleHealth;
-        document.getElementById('health-text').innerText = `${this.castleHealth}/${maxHealth}`;
+        
         
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
         this.gameTime = 0; this.isGameOver = false; this.isPaused = false; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;
+
+        this.killsSinceLastBoss = 0;
+        this.killsForNextBoss = 100;
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
         this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;

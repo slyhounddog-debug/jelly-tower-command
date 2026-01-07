@@ -118,7 +118,7 @@ export default class Player {
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
-                this.game.particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark'));
+                this.game.particles.push(new Particle(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark'));
             }
         }
     }
@@ -165,8 +165,8 @@ export default class Player {
                 m.kbVy = -this.game.stats.lickKnockback * .3;
                 this.game.screenShake.trigger(4, 10);
                 for (let i = 0; i < 15; i++) {
-                    this.game.particles.push(new Particle(m.x, m.y, this.color, 'spark'));
-                    if (i < 5) this.game.particles.push(new Particle(m.x, m.y, '#fff', 'smoke'));
+                    this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
+                    if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
                 }
             }
         });
@@ -211,17 +211,16 @@ export default class Player {
 
                 for (let i = 0; i < particleCount; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    const radius = this.slowAuraRange * (0.8 + Math.random() * 0.2); // Particles within 80-100% of range
+                    const radius = this.slowAuraRange * (0.8 + Math.random() * 0.2);
                     const px = playerCenterX + Math.cos(angle) * radius;
                     const py = playerCenterY + Math.sin(angle) * radius;
 
-                    // Emit particles outwards from the player's center
                     const emitAngle = Math.atan2(py - playerCenterY, px - playerCenterX);
-                    const speed = 0.5 + Math.random();
+                    const speed = 2 + Math.random() * 2; // Increased speed
                     const vx = Math.cos(emitAngle) * speed;
                     const vy = Math.sin(emitAngle) * speed;
 
-                    this.game.particles.push(new Particle(px, py, 'rgba(100, 150, 255, 0.6)', 'spark', 30, vx, vy)); // Bluish particles, longer life
+                    this.game.particles.push(new Particle(this.game, px, py, 'rgba(100, 150, 255, 0.6)', 'spark', 1.5, vx, vy)); // Corrected lifespan
                 }
             }
         }
@@ -307,7 +306,7 @@ export default class Player {
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
                 this.jumpSquash = 15;
-                for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.x + this.width / 2, this.y + this.height, '#fff'));
+                for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x + this.width / 2, this.y + this.height, '#fff'));
                 this.game.audioManager.playSound('midAirJump');
             }
         }
@@ -355,7 +354,7 @@ export default class Player {
                             const speed = 5;
                             const vx = Math.cos(angle) * speed;
                             const vy = Math.sin(angle) * speed;
-                            this.game.particles.push(new Particle(this.x + this.width/2, this.y + this.height, 'white', 'spark', 20, vx, vy));
+                            this.game.particles.push(new Particle(this.game, this.x + this.width/2, this.y + this.height, 'white', 'spark', 1.5, vx, vy));
                         }
                     }
                 }

@@ -66,7 +66,7 @@ export default class GameLoop {
                 for (let sIdx = this.game.shields.length - 1; sIdx >= 0; sIdx--) {
                     const s = this.game.shields[sIdx];
                     if (m.x < s.x + s.width && m.x + m.width > s.x && m.y < s.y + s.height && m.y + m.height > s.y) {
-                        for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(m.x, m.y, '#3498db', 'spark'));
+                        for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#3498db', 'spark'));
                         if (s.takeDamage(10)) { this.game.shields.splice(sIdx, 1); this.game.screenShake.trigger(3, 5); } else this.game.screenShake.trigger(1, 3);
                         m.kill(i);
                         blocked = true;
@@ -83,7 +83,7 @@ export default class GameLoop {
                     this.game.castleHealthBar.triggerHit();
                     this.game.missiles.splice(i, 1);
                     this.game.screenShake.trigger(5, 10);
-                    for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(m.x, m.y, '#e74c3c', 'smoke'));
+                    for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
                     
                     const castlePlats = this.game.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
                     for (let j = 0; j < 5; j++) {
@@ -116,7 +116,7 @@ export default class GameLoop {
                     const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                     let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
                     this.game.boss.takeDamage(dmg);
-                    this.game.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                    this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                     if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                     if (p.popRockStacks > 0) {
                         p.createExplosion();
@@ -138,7 +138,7 @@ export default class GameLoop {
                         }
                         if (m.takeDamage(dmg, isCrit)) m.kill(j);
                         m.kbVy = -2;
-                        this.game.particles.push(new Particle(p.x, p.y, '#fff', 'spark'));
+                        this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                         if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                         if (p.popRockStacks > 0) {
                             p.createExplosion();
@@ -270,10 +270,7 @@ export default class GameLoop {
         this.game.ctx.restore();
 
         document.getElementById('money-display').innerText = this.game.money;
-        const cHealthLvl = this.game.emporiumUpgrades.castle_health.level;
-        const mHealth = this.game.emporiumUpgrades.castle_health.values[cHealthLvl];
-        document.getElementById('health-bar-fill').style.width = Math.max(0, (this.game.castleHealth / mHealth) * 100) + '%';
-        document.getElementById('health-text').innerText = `${Math.max(0, this.game.castleHealth)}/${mHealth}`;
+        this.game.castleHealthBar.draw(this.game.ctx);
 
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');

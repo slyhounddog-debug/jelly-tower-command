@@ -9,7 +9,6 @@ export default class ThreatManager {
     reset() {
         this.spawnTimer = (3600 / this.game.currentRPM) - 60;
         this.diffTimer = 0;
-        this.bossSpawnTimer = 0;
         this.bossWarningTimer = 0;
         this.bossWarningActive = false;
     }
@@ -20,13 +19,16 @@ export default class ThreatManager {
             this.diffTimer = 0;
         }
 
-        this.bossSpawnTimer += tsf;
-        if (this.bossSpawnTimer >= 10800) { // 3 minutes
-            this.bossSpawnTimer = 0;
+        this.threatRPM = Math.min(240, 5.5 + this.game.gameTime / 240);
+
+        // Check if it's time to spawn the boss
+        if (!this.game.boss && !this.bossWarningActive && this.game.killsSinceLastBoss >= this.game.killsForNextBoss) {
             this.bossWarningActive = true;
             this.bossWarningTimer = 180; // 3 seconds warning
+            this.game.audioManager.playSound('bossSpawn'); 
         }
-
+        
+        // Handle the boss spawn warning
         if (this.bossWarningActive) {
             this.bossWarningTimer -= tsf;
             this.game.thermometer.pulse = true;

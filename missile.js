@@ -18,6 +18,8 @@ export default class Missile {
             this.height = 66;  // 60 * 1.1
             this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
+            const rand_int = Math.floor(Math.random() * 5);
+            this.image = this.game.jellybeanImages[rand_int];
         } else if (type === 'gummy_worm') {
             this.width = 25;
             this.height = 80;
@@ -51,7 +53,7 @@ export default class Missile {
             this.height = 44;
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1)) * 2;
             this.baseSpeed = 0.5;
-        } else { 
+         } else { 
             this.width = 30;
             this.height = 40;
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
@@ -171,7 +173,7 @@ export default class Missile {
                 for (let i = 0; i < particleCount; i++) {
                     const px = this.x + (Math.random() * this.width);
                     const py = this.y + (Math.random() * this.height);
-                    this.game.particles.push(new Particle(px, py, 'rgba(100, 150, 255, 0.7)', 'spark')); // Bluish particles
+                    this.game.particles.push(new Particle(this.game, px, py, 'rgba(100, 150, 255, 0.7)', 'spark')); // Bluish particles
                 }
             }
         }
@@ -217,9 +219,9 @@ export default class Missile {
 
         if (this.game.gameTime % 8 < 1 * tsf) {
             const color = (this.type === 'piggy') ? 'rgba(255, 105, 180, 0.6)' : this.color;
-            this.game.particles.push(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
+            this.game.particles.push(new Particle(this.game, this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
             if (Math.random() < 0.3) {
-                this.game.particles.push(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
+                this.game.particles.push(new Particle(this.game, this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
             }
         }
 
@@ -378,35 +380,14 @@ export default class Missile {
        else {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
-            // Increased bean base dimensions by 10%
-            const beanWidth = 49.5; 
-            const beanHeight = 33;
-
-            ctx.save();
-            ctx.translate(cx, cy + shadowOffset);
-            ctx.rotate(this.angle);
-            ctx.scale(this.scale * this.squash * 1.15, this.scale * this.stretch * 1.15);
-            ctx.fillStyle = shadowColor;
-            ctx.beginPath();
-            ctx.moveTo(0, -beanHeight / 2);
-            ctx.bezierCurveTo(beanWidth / 2, -beanHeight / 1.5, beanWidth / 2, beanHeight / 1.5, 0, beanHeight / 2);
-            ctx.bezierCurveTo(-beanWidth / 3, beanHeight / 1.5, -beanWidth / 3, -beanHeight / 1.5, 0, -beanHeight / 2);
-            ctx.fill();
-            ctx.restore();
 
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(this.angle);
             ctx.scale(this.scale * this.squash, this.scale * this.stretch);
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(0, -beanHeight / 2);
-            ctx.bezierCurveTo(beanWidth / 2, -beanHeight / 1.5, beanWidth / 2, beanHeight / 1.5, 0, beanHeight / 2);
-            ctx.bezierCurveTo(-beanWidth / 3, beanHeight / 1.5, -beanWidth / 3, -beanHeight / 1.5, 0, -beanHeight / 2);
-            ctx.fill();
-            ctx.strokeStyle = this.color; ctx.lineWidth = 3; ctx.stroke();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.beginPath(); ctx.ellipse(7.5, -6, 4.5, 9, -0.3, 0, Math.PI * 2); ctx.fill();
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+            }
             ctx.restore();
         }
 
@@ -516,7 +497,7 @@ export default class Missile {
             for (let i = 0; i < 2; i++) {
                 this.game.missiles.push(new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', this.y));
             }
-            for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, this.color, 'smoke'));
+            for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'smoke'));
             return;
         }
 
@@ -525,7 +506,7 @@ export default class Missile {
             for (let i = 0; i < 2; i++) {
                 this.game.missiles.push(new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', this.y));
             }
-            for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.x, this.y, this.color, 'smoke'));
+            for (let k = 0; k < 10; k++) this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'smoke'));
             return;
         }
 
@@ -534,6 +515,16 @@ export default class Missile {
         const count = (this.type === 'piggy') ? pStats.mult : 1;
         
         this.game.enemiesKilled++;
+        this.game.killsSinceLastBoss++;
+
+        // Spawn homing 'soul' particle
+        const thermometerPos = this.game.thermometer.getPosition();
+        const p = new Particle(this.game, this.x + this.width / 2, this.y + this.height / 2, 'white', 'soul', 3.0);
+        p.targetX = thermometerPos.x;
+        p.targetY = thermometerPos.y;
+        p.homingStrength = 4;
+        p.recoils = true;
+        this.game.particles.push(p);
 
         const dropsToCreate = [];
         dropsToCreate.push({ type: 'coin', value: 25 });
@@ -561,7 +552,7 @@ export default class Missile {
             setTimeout(() => {
                 this.game.drops.push(new Drop(this.game, this.x, this.y, dropData.type, dropData.value));
                 for (let j = 0; j < 5; j++) {
-                    this.game.particles.push(new Particle(this.x, this.y, '#fff', 'spark'));
+                    this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff', 'spark'));
                 }
             }, delay);
         });
@@ -578,6 +569,6 @@ export default class Missile {
             setTimeout(() => document.getElementById('notification').style.opacity = 0, 2000);
         }
         
-        for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));
+        for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.game, this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));
     }
 }

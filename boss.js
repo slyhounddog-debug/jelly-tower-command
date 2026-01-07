@@ -11,7 +11,7 @@ export class GummyBear {
         this.y = y;
         this.width = 30;
         this.height = 40;
-        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 2; // Slightly faster than a jelly bean
+        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 3; // Slightly faster than a jelly bean
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
         this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
@@ -183,7 +183,7 @@ export default class GummyCluster {
     constructor(game) {
         this.game = game;
         this.x = Math.random() * (this.game.width - 100) + 50;
-        this.y = -150;
+        this.y = -650;
         this.width = 200;
         this.height = 200;
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean
@@ -252,6 +252,9 @@ export default class GummyCluster {
             this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
         }
         
+        
+        this.game.killsSinceLastBoss = 0;
+        this.game.killsForNextBoss = Math.floor(50 + this.game.threatManager.threatRPM * 2.5);
         this.game.bossesKilled++;
         this.game.boss = null;
     }

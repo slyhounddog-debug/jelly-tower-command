@@ -18,7 +18,7 @@ export default class Shield extends BaseStructure {
                 const angle = Math.random() * Math.PI;
                 const px = this.x + this.width / 2 + Math.cos(angle) * 30;
                 const py = this.y + this.height + Math.sin(-angle) * 30;
-                this.game.particles.push(new Particle(px, py, '#2ecc71', 'heal'));
+                this.game.particles.push(new Particle(this.game, px, py, '#2ecc71', 'heal'));
             }
         }
     }

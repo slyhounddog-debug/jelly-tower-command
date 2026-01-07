@@ -23,7 +23,7 @@ export default class Projectile {
         // Use a mix of pink and white particles for the trail
         if (Math.random() < 0.5) { // 20% less particles (on top of previous 33%)
             const trailColor = (Math.random() < 0.5) ? 'rgba(255, 105, 180, 0.7)' : 'rgba(255, 255, 255, 0.7)';
-            this.game.particles.push(new Particle(this.x, this.y, trailColor, 'smoke'));
+            this.game.particles.push(new Particle(this.game, this.x, this.y, trailColor, 'smoke'));
         }
 
         // Collision detection with missiles
@@ -84,8 +84,8 @@ export default class Projectile {
                         this.vx = Math.cos(angle) * speed;
                         this.vy = Math.sin(angle) * speed;
                         for (let j = 0; j < 10; j++) {
-                            this.game.particles.push(new Particle(this.x, this.y, 'lightblue', 'spark'));
-                            this.game.particles.push(new Particle(this.x, this.y, 'darkblue', 'spark'));
+                            this.game.particles.push(new Particle(this.game, this.x, this.y, 'lightblue', 'spark'));
+                            this.game.particles.push(new Particle(this.game, this.x, this.y, 'darkblue', 'spark'));
                         }
                     } else {
                         this.dead = true;
@@ -107,7 +107,7 @@ export default class Projectile {
                 
                 // Add particles for bounce
                 for(let i = 0; i < 5; i++) {
-                    this.game.particles.push(new Particle(this.x, this.y, 'rgba(255, 255, 255, 0.8)', 'spark'));
+                    this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255, 255, 255, 0.8)', 'spark'));
                 }
                 this.game.audioManager.playSound('pop'); // Bounce sound
 
@@ -155,7 +155,7 @@ export default class Projectile {
 
         // Visual effect
         for (let i = 0; i < this.popRockStacks * 10; i++) {
-            this.game.particles.push(new Particle(this.x, this.y, 'rgba(255, 105, 180, 0.9)', 'spark'));
+            this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255, 105, 180, 0.9)', 'spark'));
         }
 
         // Add explosion flash particles
@@ -165,7 +165,7 @@ export default class Projectile {
             const startRadius = explosionRadius * 0.5;
             const endRadius = explosionRadius * 1.5;
             const lifespan = 30; // Shorter lifespan for flashes
-            this.game.particles.push(new Particle(this.x, this.y, color, 'explosion', lifespan, 0, 0, startRadius, endRadius));
+            this.game.particles.push(new Particle(this.game, this.x, this.y, color, 'explosion', lifespan, 0, 0, startRadius, endRadius));
         }
 
         this.game.screenShake.trigger(3 * this.popRockStacks, 10);
