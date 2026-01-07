@@ -84,12 +84,6 @@ class Game {
         this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
         this.isPaused = true;
 
-        this.soundEffectsOn = localStorage.getItem('soundEffectsOn') ? JSON.parse(localStorage.getItem('soundEffectsOn')) : true;
-        this.musicOn = localStorage.getItem('musicOn') ? JSON.parse(localStorage.getItem('musicOn')) : true;
-        
-        document.getElementById('sound-effects-toggle').checked = this.soundEffectsOn;
-        document.getElementById('music-toggle').checked = this.musicOn;
-
         this.isShopOpen = false;
         this.isGameOver = false;
         this.gameTime = 0;
@@ -111,13 +105,13 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 12;
+        this.gummyWormSpawnThreshold = 16;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 22;
+        this.marshmallowSpawnThreshold = 40;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;
-        this.killsForNextBoss = 100;
+        this.killsForNextBoss = 50;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -159,50 +153,50 @@ class Game {
         };
 
         this.shopItems = [
-            { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade', 
-              getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
-              getValue: () => this.stats.damage, 
+            { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade',
+              getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl],
+              getValue: () => this.stats.damage,
               getNext: () => this.stats.getNextDamage(),
               getLevel: () => `${this.stats.damageLvl}/${this.DAMAGE_TIERS.length}`,
               action: () => { if (this.stats.damageLvl < this.DAMAGE_TIERS.length - 1) this.stats.damageLvl++; }
             },
-            { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
+            { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade',
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
-              getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
+              getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`,
               getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/15`,
-              action: () => this.stats.fireRateLvl++ 
+              action: () => this.stats.fireRateLvl++
             },
-            { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade', 
-              getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX', 
-              getValue: () => this.stats.range + 'px', 
+            { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade',
+              getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX',
+              getValue: () => this.stats.range + 'px',
               getNext: () => (this.stats.range + 50) + 'px',
-              getLevel: () => `${this.stats.rangeLvl}/15`, 
-              action: () => this.stats.rangeLvl++ 
+              getLevel: () => `${this.stats.rangeLvl}/15`,
+              action: () => this.stats.rangeLvl++
             },
-            { id: 'shield_tech', name: 'Barrier HP', icon: '🛡️', desc: 'Increases Shield HP. Regen 1% HP/s.', type: 'upgrade', 
-              getCost: () => this.UPGRADE_COSTS[this.stats.shieldLvl] || 'MAX', 
-              getValue: () => this.stats.shieldMaxHp + ' HP', 
-              getNext: () => (this.stats.getNextShieldHp()) + ' HP', 
+            { id: 'shield_tech', name: 'Barrier HP', icon: '🛡️', desc: 'Increases Shield HP. Regen 1% HP/s.', type: 'upgrade',
+              getCost: () => this.UPGRADE_COSTS[this.stats.shieldLvl] || 'MAX',
+              getValue: () => this.stats.shieldMaxHp + ' HP',
+              getNext: () => (this.stats.getNextShieldHp()) + ' HP',
               getLevel: () => `${this.stats.shieldLvl}/15`,
-              action: () => this.stats.shieldLvl++ 
+              action: () => this.stats.shieldLvl++
             },
-            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade', 
-              getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX', 
-              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`, 
-              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`, 
+            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade',
+              getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX',
+              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`,
+              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`,
               getLevel: () => `${this.stats.luckLvl}/15`,
-              action: () => this.stats.luckLvl++ 
+              action: () => this.stats.luckLvl++
             },
-            { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
-              desc: `Increases tongue damage and knockback.`, type: 'upgrade', 
-              getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
-              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`, 
+            { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅',
+              desc: `Increases tongue damage and knockback.`, type: 'upgrade',
+              getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl],
+              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`,
               getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
               getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length}`,
-              action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
+              action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; }
             },
-            { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷', 
+            { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷',
               desc: 'Increases instant cash bonus % and kill count multiplier.', type: 'upgrade',
               getCost: () => (this.stats.piggyLvl >= this.PIGGY_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.piggyLvl],
               getValue: () => `${(this.stats.piggyStats.bonus*100).toFixed(0)}% | ${this.stats.piggyStats.mult}x`,
@@ -214,7 +208,7 @@ class Game {
               getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
-            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
+            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯',
               desc: 'Increases the chance for tower projectiles to deal double damage.', type: 'upgrade',
               getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
               getValue: () => `${this.stats.criticalHitChance}%`,
@@ -280,11 +274,39 @@ class Game {
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
-        
+
         this.initListeners();
+        this.loadSettings();
         this.resetGame();
     }
 
+    loadSettings() {
+        const soundVolume = localStorage.getItem('soundEffectsVolume');
+        const musicVolume = localStorage.getItem('musicVolume');
+
+        if (soundVolume !== null) {
+            const soundSlider = document.getElementById('sound-effects-slider');
+            const soundValue = document.getElementById('sound-effects-value');
+            soundSlider.value = soundVolume;
+            soundValue.textContent = `${soundVolume}%`;
+            this.audioManager.setSoundVolume(soundVolume / 100);
+        }
+
+        if (musicVolume !== null) {
+            const musicSlider = document.getElementById('music-slider');
+            const musicValue = document.getElementById('music-value');
+            musicSlider.value = musicVolume;
+            musicValue.textContent = `${musicVolume}%`;
+            this.audioManager.setMusicVolume(musicVolume / 100);
+        }
+    }
+
+    saveSettings() {
+        const soundVolume = document.getElementById('sound-effects-slider').value;
+        const musicVolume = document.getElementById('music-slider').value;
+        localStorage.setItem('soundEffectsVolume', soundVolume);
+        localStorage.setItem('musicVolume', musicVolume);
+    }
 
 
     resizeModals() {
@@ -306,7 +328,7 @@ class Game {
         startButton.textContent = 'Loading...';
 
         Promise.all([
-            this.audioManager.loadingPromise, 
+            this.audioManager.loadingPromise,
             this.background.load(),
             new Promise(r => this.platformImage.onload = r),
             new Promise(r => this.groundImage.onload = r),
@@ -468,19 +490,19 @@ class Game {
         
                 document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
                 document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
-                document.getElementById('sound-effects-toggle').addEventListener('change', (e) => {
-                    this.soundEffectsOn = e.target.checked;
-                    localStorage.setItem('soundEffectsOn', this.soundEffectsOn);
+
+                document.getElementById('sound-effects-slider').addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    document.getElementById('sound-effects-value').textContent = `${value}%`;
+                    this.audioManager.setSoundVolume(value / 100);
+                    this.saveSettings();
                 });
-                document.getElementById('music-toggle').addEventListener('change', (e) => {
-                    this.musicOn = e.target.checked;
-                    localStorage.setItem('musicOn', this.musicOn);
-                    if (this.musicOn) {
-                        this.audioManager.playMusic('music');
-                    } else {
-                        this.audioManager.stopMusic('music');
-                        this.audioManager.stopMusic('gameOverMusic');
-                    }
+        
+                document.getElementById('music-slider').addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    document.getElementById('music-value').textContent = `${value}%`;
+                    this.audioManager.setMusicVolume(value / 100);
+                    this.saveSettings();
                 });
 
                         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
@@ -691,7 +713,7 @@ class Game {
         this.shopReminderShown = false;
 
         this.killsSinceLastBoss = 0;
-        this.killsForNextBoss = 100;
+        this.killsForNextBoss = 50;
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
         this.stats.shieldLvl = 0; this.stats.luckLvl = 0; this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;

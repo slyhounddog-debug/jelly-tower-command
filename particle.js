@@ -49,8 +49,9 @@ export default class Particle {
             const dist = Math.hypot(this.targetX - this.x, this.targetY - this.y);
             if (this.gracePeriod <= 0 && dist < 20) {
                 this.life = 0; // "die"
-                if (this.recoils) {
+                if (this.type === 'soul') {
                     this.game.thermometer.triggerRecoil();
+                    this.game.killsSinceLastBoss++;
                 }
             }
         }

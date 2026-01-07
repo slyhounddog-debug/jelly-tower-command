@@ -183,7 +183,7 @@ export default class GummyCluster {
     constructor(game) {
         this.game = game;
         this.x = Math.random() * (this.game.width - 100) + 50;
-        this.y = -650;
+        this.y = +20;
         this.width = 200;
         this.height = 200;
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean

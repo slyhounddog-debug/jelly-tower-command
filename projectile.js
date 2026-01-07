@@ -135,16 +135,18 @@ export default class Projectile {
     createExplosion() {
         if (this.popRockStacks <= 0) return;
 
-        let explosionRadius = 20; // Base radius for 28px diameter
-        explosionRadius *= (1 + this.popRockStacks * 0.5); // 50% area increase per stack
-        
+        let multiplier = 3;
+        if (this.popRockStacks > 1) {
+            multiplier = 3 * Math.pow(1.5, this.popRockStacks - 1);
+        }
+
+        const explosionRadius = this.radius * multiplier;
         const explosionDamage = this.damage * 0.5;
 
         this.game.missiles.forEach(m => {
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < explosionRadius + m.width / 2) {
                 if (m.takeDamage(explosionDamage)) {
-                    // a bit of a hack to get the index.
                     const index = this.game.missiles.indexOf(m);
                     if (index > -1) {
                         m.kill(index);
@@ -153,19 +155,15 @@ export default class Projectile {
             }
         });
 
-        // Visual effect
-        for (let i = 0; i < this.popRockStacks * 10; i++) {
-            this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255, 105, 180, 0.9)', 'spark'));
-        }
-
-        // Add explosion flash particles
-        const explosionColors = ['rgba(255, 140, 0, 0.6)', 'rgba(255, 69, 0, 0.6)', 'rgba(255, 215, 0, 0.6)', 'rgba(139, 69, 19, 0.6)'];
-        for (let i = 0; i < 5; i++) { // 5 large, fading circles
+        // Visual effect: multiple small circles
+        const explosionColors = ['rgba(255, 140, 0, 0.9)', 'rgba(255, 69, 0, 0.9)', 'rgba(255, 215, 0, 0.9)', 'rgba(139, 69, 19, 0.9)'];
+        for (let i = 0; i < 20 * this.popRockStacks; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * explosionRadius;
+            const particleX = this.x + Math.cos(angle) * distance;
+            const particleY = this.y + Math.sin(angle) * distance;
             const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
-            const startRadius = explosionRadius * 0.5;
-            const endRadius = explosionRadius * 1.5;
-            const lifespan = 30; // Shorter lifespan for flashes
-            this.game.particles.push(new Particle(this.game, this.x, this.y, color, 'explosion', lifespan, 0, 0, startRadius, endRadius));
+            this.game.particles.push(new Particle(this.game, particleX, particleY, color, 'spark', 0.5));
         }
 
         this.game.screenShake.trigger(3 * this.popRockStacks, 10);

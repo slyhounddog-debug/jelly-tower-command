@@ -1052,17 +1052,17 @@
             <div class="modal-content-area">
                 <div class="setting-row">
                     <span>Sound Effects</span>
-                    <label class="switch">
-                        <input type="checkbox" id="sound-effects-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="sound-effects-slider" min="0" max="100" value="100">
+                        <span id="sound-effects-value">100%</span>
+                    </div>
                 </div>
                 <div class="setting-row">
                     <span>Music</span>
-                    <label class="switch">
-                        <input type="checkbox" id="music-toggle" checked>
-                        <span classs="slider round"></span>
-                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="music-slider" min="0" max="100" value="100">
+                        <span id="music-value">100%</span>
+                    </div>
                 </div>
             </div>
             <button class="modal-close" id="settings-close-btn">Close</button>

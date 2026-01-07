@@ -2,29 +2,30 @@ class AudioManager {
     constructor(game) {
         this.game = game;
         this.context = new (window.AudioContext || window.webkitAudioContext)();
-        this.sounds = {}; 
-        this.musicSources = {}; 
+        this.sounds = {};
+        this.musicSources = {};
 
         // --- Persistent Music Routing ---
-        // 1. Create a Lowpass Filter for the muffle effect
         this.muffleFilter = this.context.createBiquadFilter();
         this.muffleFilter.type = 'lowpass';
-        this.muffleFilter.frequency.value = 22000; // Start clear
+        this.muffleFilter.frequency.value = 22000;
 
-        // 2. Create a Biquad Filter for the boss high-pass effect
         this.biquadFilter = this.context.createBiquadFilter();
         this.biquadFilter.type = 'highpass';
-        this.biquadFilter.frequency.value = 0; // Start with no effect
+        this.biquadFilter.frequency.value = 0;
 
-        // 3. Create a Gain Node to lower the music volume globally
         this.musicGain = this.context.createGain();
-        this.musicGain.gain.value = .8; // Lowered volume to 80%
+        this.musicGain.gain.value = 0.8;
 
-        // Connect the chain: Music Source -> Muffle Filter -> Biquad Filter -> Gain -> Output
         this.muffleFilter.connect(this.biquadFilter);
         this.biquadFilter.connect(this.musicGain);
         this.musicGain.connect(this.context.destination);
-        
+
+        // --- Sound Effects Routing ---
+        this.soundGain = this.context.createGain();
+        this.soundGain.gain.value = 1.0;
+        this.soundGain.connect(this.context.destination);
+
         this.soundSources = {
             // Player
             mlem: './assets/sfx/mlem.mp3',
@@ -78,43 +79,34 @@ class AudioManager {
     }
 
     playSound(key) {
-        if (!this.game.soundEffectsOn) return;
         if (this.context.state === 'suspended') this.context.resume();
 
         if (this.sounds[key]) {
             const source = this.context.createBufferSource();
             source.buffer = this.sounds[key];
-            // SFX connect directly to destination (unmuffled)
-            source.connect(this.context.destination);
+            source.connect(this.soundGain);
             source.start(0);
         }
     }
 
     playMusic(key, loop = true) {
-        if (!this.game.musicOn) return;
         if (this.context.state === 'suspended') this.context.resume();
 
         if (this.sounds[key] && !this.musicSources[key]) {
             const source = this.context.createBufferSource();
             source.buffer = this.sounds[key];
             source.loop = loop;
-            
-            // Connect to our specialized music filter chain
+
             source.connect(this.muffleFilter);
-            
+
             source.start(0);
             this.musicSources[key] = source;
         }
     }
 
-    // Toggle this when pausing/opening shop/leveling up
     setMuffled(isMuffled) {
         if (this.context.state === 'suspended') this.context.resume();
-
-        // Target 600Hz for muffle, 22000Hz for clear
         const targetFreq = isMuffled ? 600 : 22000;
-        
-        // Smooth transition over 0.2 seconds
         this.muffleFilter.frequency.setTargetAtTime(targetFreq, this.context.currentTime, 0.1);
     }
 
@@ -139,6 +131,14 @@ class AudioManager {
             this.musicSources[key].stop();
             delete this.musicSources[key];
         }
+    }
+
+    setSoundVolume(volume) {
+        this.soundGain.gain.setValueAtTime(volume, this.context.currentTime);
+    }
+
+    setMusicVolume(volume) {
+        this.musicGain.gain.setValueAtTime(volume, this.context.currentTime);
     }
 }
 

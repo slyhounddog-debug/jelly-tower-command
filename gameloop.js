@@ -56,6 +56,7 @@ export default class GameLoop {
             this.game.towers.forEach(t => t.update(tsf));
             this.game.shields.forEach(s => s.update(tsf));
             this.game.castleHealthBar.update(tsf);
+            this.game.thermometer.update(tsf);
             if (this.game.boss) this.game.boss.update(tsf);
 
             for (let i = this.game.missiles.length - 1; i >= 0; i--) {

@@ -515,15 +515,14 @@ export default class Missile {
         const count = (this.type === 'piggy') ? pStats.mult : 1;
         
         this.game.enemiesKilled++;
-        this.game.killsSinceLastBoss++;
 
         // Spawn homing 'soul' particle
         const thermometerPos = this.game.thermometer.getPosition();
         const p = new Particle(this.game, this.x + this.width / 2, this.y + this.height / 2, 'white', 'soul', 3.0);
         p.targetX = thermometerPos.x;
         p.targetY = thermometerPos.y;
+        // Adjust this value to change the speed of the homing soul
         p.homingStrength = 4;
-        p.recoils = true;
         this.game.particles.push(p);
 
         const dropsToCreate = [];

@@ -16,7 +16,7 @@ export default class Thermometer {
     }
 
     triggerRecoil() {
-        this.recoil = 25; // 5 * 400% more = 20 + original 5 = 25
+        this.recoil = 18;
     }
 
     getPosition() {
