@@ -34,7 +34,7 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
-        if (this.y > this.game.height - 80 - this.width / 2) { this.y = this.game.height - 80 - this.width / 2; this.vy *= -0.3; }
+        if (this.y > this.game.height - 90 - this.width / 2) { this.y = this.game.height - 90 - this.width / 2; this.vy *= -0.3; }
 
         if (Math.abs(this.game.player.x - this.x) < this.game.player.pickupRange && Math.abs(this.game.player.y - this.y) < this.game.player.pickupRange) {
             if (this.type === 'coin') {

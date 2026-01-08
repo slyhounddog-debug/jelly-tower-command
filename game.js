@@ -374,7 +374,7 @@ class Game {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = (e.clientY - rect.top) * scaleY;
+            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
         });
         this.canvas.addEventListener('mousedown', () => {
             this.mouse.isDown = true;

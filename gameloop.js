@@ -63,7 +63,7 @@ export default class GameLoop {
                 m.update(tsf);
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
-                if (m.y > this.game.height - 80) {
+                if (m.y > this.game.height - 180) {
                     if (m.type === 'gummy_bear') {
                         this.game.castleHealth -= 10;
                     } else {
@@ -192,7 +192,7 @@ export default class GameLoop {
 
         const offset = this.game.screenShake.getOffset();
         this.game.ctx.save(); 
-        this.game.ctx.translate(offset.x, offset.y);
+        this.game.ctx.translate(offset.x, offset.y - 100);
 
         this.game.platforms.forEach(p => {
             this.game.ctx.save();
