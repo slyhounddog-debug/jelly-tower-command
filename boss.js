@@ -9,8 +9,8 @@ export class GummyBear {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.width = 30;
-        this.height = 40;
+        this.width = 60;
+        this.height = 80;
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 3; // Slightly faster than a jelly bean
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
@@ -165,10 +165,10 @@ export class GummyBear {
 export default class GummyCluster {
     constructor(game) {
         this.game = game;
-        this.x = Math.random() * (this.game.width - 100) + 50;
+        this.x = (this.game.width / 2) + (Math.random() * 200 - 100);
         this.y = +20;
-        this.width = 300; // 50% bigger (200 * 1.5)
-        this.height = 300; // 50% bigger (200 * 1.5)
+        this.width = 450; // 50% bigger (200 * 1.5)
+        this.height = 450; // 50% bigger (200 * 1.5)
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean
         this.health = 150 + (this.game.currentRPM * 100);
         this.maxHealth = this.health;
@@ -197,8 +197,8 @@ export default class GummyCluster {
             if (healthPercentage <= this.healthThresholds[i]) {
                 this.healthThresholds.splice(i, 1);
                 this.spawnGummyBear();
-                this.width *= 0.95;
-                this.height *= 0.95;
+                this.width *= 0.995;
+                this.height *= 0.995;
                 break; // only spawn one per frame
             }
         }

@@ -562,7 +562,7 @@ export default class Missile {
         }
 
         dropsToCreate.forEach((dropData, i) => {
-            const delay = dropData.type === 'coin' ? 0 : (i + 1) * 200;
+            const delay = dropData.type === 'coin' ? 0 : (i + 1) * 100;
             setTimeout(() => {
                 this.game.drops.push(new Drop(this.game, this.x, this.y, dropData.type, dropData.value));
                 for (let j = 0; j < 5; j++) {

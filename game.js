@@ -220,7 +220,7 @@ class Game {
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
-              getCost: () => { const costs = [1000, 3000, 5000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+              getCost: () => { const costs = [2500, 10000, 50000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
               getValue: () => `${this.stats.turretsBought}/3`,
               getNext: () => `Place on a cloud.`,
               getLevel: () => `${this.stats.turretsBought}/3`,
