@@ -86,6 +86,7 @@ export default class GameLoop {
             this.game.missiles = this.game.missiles.filter(m => !m.dead);
 
             this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
+            document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
 
             for (let i = this.game.projectiles.length - 1; i >= 0; i--) {
                 const p = this.game.projectiles[i];
@@ -238,6 +239,7 @@ export default class GameLoop {
         this.game.drops.forEach(d => d.draw(this.game.ctx));
         this.game.particles.forEach(p => p.draw(this.game.ctx));
         this.game.thermometer.draw(this.game.ctx);
+        this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
@@ -253,69 +255,36 @@ export default class GameLoop {
 
         this.game.ctx.restore();
 
-        const ctx = this.game.ctx;
         const ui = this.game.ui;
-        const game = this.game;
+        const ctx = this.game.ctx;
 
-        // 1. Draw UI Bar
-        ctx.fillStyle = '#eb9cbeff';
-        ctx.fillRect(0, game.height - ui.barHeight, game.width, ui.barHeight);
-        
-        // 2. Draw ground with shadow
-        const ground = game.platforms.find(p => p.type === 'ground');
-        if (ground) {
-            ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 5;
-            
-            const shake = game.screenShake.getOffset();
-            const yOffset = -170;
-            ctx.translate(shake.x, shake.y - 100); // Apply manual translation
-            ctx.drawImage(game.groundImage, ground.x, ground.y + yOffset, ground.width, ground.height);
-            ctx.restore();
-        }
+        // Draw the UI bar
+        ctx.fillStyle = '#eb9cbeff'; // Pastel medium soft pink
+        ctx.fillRect(0, this.game.height - ui.barHeight, this.game.width, ui.barHeight);
 
-        // 3. Draw UI Elements
-        const barCenterY = game.height - ui.barHeight / 2;
-        const healthBarWidth = 525;
-        const xpBarWidth = 200;
-        const gap = 70; // Increased gap for more padding around health bar
+        // Draw UI bar elements
+        this.game.castleHealthBar.draw(ctx, ui.healthBar.x, ui.healthBar.y);
+        this.game.xpBar.draw(ctx, ui.xpBar.x, ui.xpBar.y);
 
-        // Castle Health Bar (Center)
-        const healthBarX = (game.width - healthBarWidth) / 2;
-        game.castleHealthBar.draw(ctx, healthBarX, barCenterY - 21);
-        
-        // XP Bar (Left of Health Bar)
-        const xpBarX = healthBarX - xpBarWidth - gap;
-        game.xpBar.draw(ctx, xpBarX, barCenterY - 14);
-        
-        // Money (Right of Health Bar)
-        const moneyX = healthBarX + healthBarWidth + gap;
-        ctx.font = 'bold 32px "Lucky Guy"';
-        ctx.textAlign = 'left';
+        // Draw Score
+        ctx.font = 'bold 30px "Lucky Guy"';
+        ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 4;
-        ctx.fillText(`$${game.money}`, moneyX, barCenterY);
-
-        // Shop Button (Right-most)
-        const btn = ui.shopButton;
-        const moneyTextWidth = ctx.measureText(`$${game.money}`).width; 
+        ctx.fillText(`SCORE: ${this.game.currentScore.toFixed(0)}`, ui.score.x, ui.score.y);
         
-        // Position shop button relative to the right edge of the canvas,
-        // but ensure it's not too close to the money text.
-        const rightEdgeX = game.width - btn.width - gap; // Position from right edge
-        const afterMoneyTextX = moneyX + moneyTextWidth + 10; // 10 pixels padding from money text
-
-        btn.x = Math.max(rightEdgeX, afterMoneyTextX);
-        btn.y = barCenterY - btn.height / 2;
-        if (btn.img.complete) {
-            ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
-        }
+        // Draw Money
+        ctx.textAlign = 'left';
+        ctx.fillText(`${this.game.money}`, ui.money.x, ui.money.y);
         ctx.shadowBlur = 0;
 
+        // Draw the shop button
+        const btn = ui.shopButton;
+        if (btn.img.complete) { // Ensure image is loaded
+            ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
+        }
 
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');

@@ -43,11 +43,11 @@ export default class CastleHealthBar {
         this.healAnimTimer = 20;
     }
 
-    draw(ctx) {
+    draw(ctx, x, y) {
         const barWidth = 525; // 350 * 1.5
         const barHeight = 42; // 28 * 1.5
-        const barX = 20;
-        const barY = 25;
+        const barX = x;
+        const barY = y;
 
         const maxHealth = this.game.emporium.getCastleMaxHealth();
         const pct = Math.max(0, this.game.castleHealth / maxHealth);

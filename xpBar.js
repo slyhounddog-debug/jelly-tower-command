@@ -6,15 +6,15 @@ export default class XPBar {
         this.game = game;
     }
 
-    draw(ctx) {
+    draw(ctx, x, y) {
         const player = this.game.player;
         if (!player) return;
 
         const barWidth = 200;
         const barHeight = 28; // Slightly taller
         // Position in the top center, but offset to the right of the health bar
-        const barX = this.game.width / 2 + 390;
-        const barY = 25;
+        const barX = x;
+        const barY = y;
 
         const pct = Math.max(0, player.xp / player.xpForNextLevel);
 
