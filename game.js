@@ -252,6 +252,16 @@ class Game {
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
 
+        this.shopButtonImage = new Image();
+        this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';
+        this.ui = {
+            barHeight: 100,
+            shopButton: {
+                img: this.shopButtonImage,
+                x: 0, y: 0, width: 0, height: 80
+            }
+        };
+
         this.initListeners();
         this.loadSettings();
         this.resetGame();
@@ -314,9 +324,14 @@ class Game {
             ...this.jellybeanImages.map(img => new Promise(r => img.onload = r)),
             ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
             ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
+            new Promise(r => this.shopButtonImage.onload = r),
         ]).then(() => {
             startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
             startButton.style.pointerEvents = 'all'; // Enable click
+            const btn = this.ui.shopButton;
+            btn.width = (btn.img.width / btn.img.height) * btn.height;
+            btn.x = (this.width - btn.width) / 2;
+            btn.y = this.height - this.ui.barHeight + (this.ui.barHeight - btn.height) / 2;
         }).catch(error => {
             console.error("Failed to load assets:", error);
         });
@@ -374,10 +389,18 @@ class Game {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
+            this.mouse.y = (e.clientY - rect.top) * scaleY;
         });
         this.canvas.addEventListener('mousedown', () => {
             this.mouse.isDown = true;
+
+            const btn = this.ui.shopButton;
+            if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
+                this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
+                this.toggleShop();
+                return; // Return to prevent other click actions
+            }
+
             if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
                 if (this.placementMode) {
                     this.tryPlaceItem();
@@ -424,15 +447,6 @@ class Game {
         
                 document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
                 document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
-                document.getElementById('shop-btn').addEventListener('click', () => this.toggleShop());
-
-                document.getElementById('shop-btn').addEventListener('mousedown', () => {
-                    document.getElementById('shop-btn').src = 'assets/Images/shopbuttondown.png';
-                });
-
-                document.getElementById('shop-btn').addEventListener('mouseup', () => {
-                    document.getElementById('shop-btn').src = 'assets/Images/shopbuttonup.png';
-                });
 
                 // Add event listeners for modal-confirm-buttons
                 document.querySelectorAll('.modal-confirm-button').forEach(button => {

@@ -743,24 +743,6 @@
                     transform: translateX(26px);
                 }
         
-                #shop-btn {
-                    position: absolute;
-                    bottom: 80px; /* Increased to make it fully visible */
-                    left: 50%;
-                    transform: translateX(-50%);
-                    z-index: 11;
-                    pointer-events: all;
-                }
-                #shop-btn:hover {
-                    background: #a569bd;
-                    transform: translateX(-50%) translateY(-2px);
-                    box-shadow: 0 6px 0 #8e44ad;
-                }
-                #shop-btn:active {
-                    transform: translateX(-50%) translateY(2px);
-                    box-shadow: 0 2px 0 #8e44ad;
-                }
-
         .shop-upgrade-button {
             cursor: pointer;
             transition: all 0.2s;
@@ -1078,8 +1060,7 @@
             </div>
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
         </div>
-        <img id="shop-btn" src="assets/Images/shopbuttonup.png" class="shop-button">
-    </div>
+       
 
     <script type="module" src="emporium.js"></script>
     <script type="module" src="levelUpScreen.js"></script>

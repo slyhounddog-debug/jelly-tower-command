@@ -262,6 +262,18 @@ export default class GameLoop {
         document.getElementById('money-display').innerText = this.game.money;
         this.game.castleHealthBar.draw(this.game.ctx);
 
+        // Draw the UI bar
+        const ctx = this.game.ctx;
+        const ui = this.game.ui;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, this.game.height - ui.barHeight, this.game.width, ui.barHeight);
+
+        // Draw the shop button
+        const btn = ui.shopButton;
+        if (btn.img.complete) { // Ensure image is loaded
+            ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
+        }
+
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');
         if (this.game.boss) {
