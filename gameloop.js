@@ -195,14 +195,10 @@ export default class GameLoop {
         this.game.ctx.translate(offset.x, offset.y - 100);
 
         this.game.platforms.forEach(p => {
+            if (p.type === 'ground') return; // Will be drawn later
             this.game.ctx.save();
             if (p.type === 'cloud') {
                 this.game.ctx.drawImage(this.game.platformImage, p.x, p.y, p.width, p.height);
-           } else if (p.type === 'ground') {
-    // If you are floating, subtract pixels (e.g., p.y - 10)
-    // If you are sinking, add pixels (e.g., p.y + 10)
-    const yOffset = -170; // Change this number until it looks perfect
-    this.game.ctx.drawImage(this.game.groundImage, p.x, p.y + yOffset, p.width, p.height);
            } else if (p.type === 'castle') {
     const img = this.game.castleImage;
 
@@ -262,15 +258,31 @@ export default class GameLoop {
         document.getElementById('money-display').innerText = this.game.money;
         this.game.castleHealthBar.draw(this.game.ctx);
 
-        // Draw the UI bar
         const ctx = this.game.ctx;
         const ui = this.game.ui;
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, this.game.height - ui.barHeight, this.game.width, ui.barHeight);
 
-        // Draw the shop button
+        // 1. Draw UI Bar
+        ctx.fillStyle = '#eb9cbeff';
+        ctx.fillRect(0, this.game.height - ui.barHeight, this.game.width, ui.barHeight);
+        
+        // 2. Draw ground with shadow
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        if (ground) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+            
+            const shake = this.game.screenShake.getOffset();
+            const yOffset = -170;
+            ctx.translate(shake.x, shake.y - 100); // Apply manual translation
+            ctx.drawImage(this.game.groundImage, ground.x, ground.y + yOffset, ground.width, ground.height);
+            ctx.restore();
+        }
+
+        // 3. Draw shop button
         const btn = ui.shopButton;
-        if (btn.img.complete) { // Ensure image is loaded
+        if (btn.img.complete) {
             ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
         }
 
