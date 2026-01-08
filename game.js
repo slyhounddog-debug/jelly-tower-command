@@ -259,6 +259,9 @@ class Game {
             shopButton: {
                 img: this.shopButtonImage,
                 x: 0, y: 0, width: 0, height: 80
+            },
+            settingsButton: {
+                x: 0, y: 0, radius: 25
             }
         };
 
@@ -389,17 +392,28 @@ class Game {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = (e.clientY - rect.top) * scaleY;
+            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
         });
         this.canvas.addEventListener('mousedown', () => {
-            this.mouse.isDown = true;
+          this.mouse.isDown = true;
 
-            const btn = this.ui.shopButton;
-            if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
-                this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
-                this.toggleShop();
-                return; // Return to prevent other click actions
-            }
+    // We subtract 100 here to cancel out the mouse offset 
+    // and match the actual visual position of the buttons
+    const adjustedY = this.mouse.y - 100; 
+
+    const shopBtn = this.ui.shopButton;
+    if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
+        adjustedY > shopBtn.y && adjustedY < shopBtn.y + shopBtn.height) {
+        this.toggleShop();
+        return; 
+    }
+
+    const settingsBtn = this.ui.settingsButton;
+    const dist = Math.hypot(this.mouse.x - settingsBtn.x, adjustedY - settingsBtn.y);
+    if (dist < settingsBtn.radius) {
+        this.toggleSettings();
+        return;
+    }
 
             if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
                 if (this.placementMode) {

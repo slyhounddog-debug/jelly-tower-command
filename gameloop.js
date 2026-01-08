@@ -286,7 +286,7 @@ export default class GameLoop {
         const healthBarX = (game.width - healthBarWidth) / 2;
         game.castleHealthBar.draw(ctx, healthBarX, barCenterY - 21);
         
-        // XP Bar (Left of Health Bar)
+        // XP Bar (Left-most)
         const xpBarX = healthBarX - xpBarWidth - gap;
         game.xpBar.draw(ctx, xpBarX, barCenterY - 14);
         
@@ -300,20 +300,21 @@ export default class GameLoop {
         ctx.shadowBlur = 4;
         ctx.fillText(`$${game.money}`, moneyX, barCenterY);
 
-        // Shop Button (Right-most)
+        // Shop Button
         const btn = ui.shopButton;
         const moneyTextWidth = ctx.measureText(`$${game.money}`).width; 
-        
-        // Position shop button relative to the right edge of the canvas,
-        // but ensure it's not too close to the money text.
-        const rightEdgeX = game.width - btn.width - gap; // Position from right edge
-        const afterMoneyTextX = moneyX + moneyTextWidth + 10; // 10 pixels padding from money text
-
-        btn.x = Math.max(rightEdgeX, afterMoneyTextX);
+        btn.x = moneyX + moneyTextWidth + 10;
         btn.y = barCenterY - btn.height / 2;
         if (btn.img.complete) {
             ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
         }
+
+        // Settings Button (Right-most)
+        const settingsBtn = ui.settingsButton;
+        settingsBtn.x = btn.x + btn.width + 35; // 10px padding from shop button
+        settingsBtn.y = barCenterY;
+        game.drawing.drawGear(ctx, settingsBtn.x, settingsBtn.y, settingsBtn.radius, 8, 10);
+        
         ctx.shadowBlur = 0;
 
 

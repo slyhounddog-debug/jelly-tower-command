@@ -39,4 +39,29 @@ export default class Drawing {
         ctx.fillStyle = '#808080';
         ctx.fillRect(x - radius * 0.4, y - radius * 0.2, radius * 0.8, radius * 0.4);
     }
+
+    drawGear(ctx, x, y, radius, teeth, innerRadius) {
+        let rot = Math.PI / 2 * 3;
+        let step = Math.PI / teeth;
+
+        ctx.beginPath();
+        for (let i = 0; i < teeth; i++) {
+            let angle = rot + i * 2 * step;
+            ctx.lineTo(x + radius * Math.cos(angle), y + radius * Math.sin(angle));
+            ctx.lineTo(x + radius * Math.cos(angle + step), y + radius * Math.sin(angle + step));
+        }
+        ctx.closePath();
+        
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'white';
+        ctx.stroke();
+        
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(x, y, innerRadius, 0, Math.PI * 2, true);
+        ctx.fillStyle = '#eb9cbeff'; // Match UI bar color to 'cut out' the center
+        ctx.fill();
+    }
 }
