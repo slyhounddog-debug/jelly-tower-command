@@ -12,7 +12,7 @@ import CastleHealthBar from './castleHealthBar.js';
 import initLevel from './initLevel.js';
 import Thermometer from './thermometer.js';
 import Drawing from './drawing.js';
-
+import SpriteAnimation from './SpriteAnimation.js';
 import Emporium from './emporium.js';
 import GameLoop from './gameloop.js';
 import AudioManager from './audioManager.js';
@@ -125,7 +125,7 @@ class Game {
 
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
-        this.groundProximityThreshold = 300;
+        this.groundProximityThreshold = 400;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -392,7 +392,7 @@ class Game {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
+            this.mouse.y = ((e.clientY - rect.top) * scaleY);
         });
         this.canvas.addEventListener('mousedown', () => {
           this.mouse.isDown = true;
@@ -402,18 +402,19 @@ class Game {
     const adjustedY = this.mouse.y - 100; 
 
     const shopBtn = this.ui.shopButton;
-    if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-        adjustedY > shopBtn.y && adjustedY < shopBtn.y + shopBtn.height) {
-        this.toggleShop();
-        return; 
-    }
+// We check the mouse directly because the UI bar is not affected by game world shifts
+if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
+    this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+    this.toggleShop();
+    return; 
+}
 
-    const settingsBtn = this.ui.settingsButton;
-    const dist = Math.hypot(this.mouse.x - settingsBtn.x, adjustedY - settingsBtn.y);
-    if (dist < settingsBtn.radius) {
-        this.toggleSettings();
-        return;
-    }
+const settingsBtn = this.ui.settingsButton;
+const dist = Math.hypot(this.mouse.x - settingsBtn.x, this.mouse.y - settingsBtn.y);
+if (dist < settingsBtn.radius) {
+    this.toggleSettings();
+    return;
+}
 
             if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
                 if (this.placementMode) {

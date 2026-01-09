@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tower Command: Jelly Defense</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Lucky+Guy&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito&family=Titan+One&family=VT323&display=swap');
         /*
          * CORE CSS STYLES
          * Defines the look and feel of the game container and UI elements.
@@ -18,7 +18,7 @@
             height: 100vh;
             margin: 0;
             background-color: #0d0d15; /* Fallback */
-            font-family: 'Lucky Guy', cursive;
+            font-family: 'Nunito', sans-serif;
             color: #ecf0f1;
             overflow: hidden;
             user-select: none;
@@ -32,8 +32,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            transition: all 0.2s;
-            font-family: 'Lucky Guy', cursive;
+            font-family: 'Fredoka One', sans-serif;
         }
 
         .modal-internal-button:hover {
@@ -137,6 +136,7 @@
             display: flex;
             align-items: center;
             gap: 5px; /* Reduced gap */
+            font-family: 'VT323', monospace;
         }
 
         /* Health Bar Container */
@@ -167,6 +167,7 @@
             color: #333;
             font-weight: bold;
             text-shadow: 0px 0px 2px white;
+            font-family: 'VT323', monospace;
         }
 
         /* --- SHOP STYLES --- */
@@ -180,7 +181,7 @@
             padding: 0; /* Remove padding here, handled by internal elements */
             box-sizing: border-box;
             color: #ecf0f1;
-            font-family: 'Lucky Guy', cursive;
+            font-family: 'Nunito', sans-serif;
             border-radius: 15px; /* Match modal border radius */
             overflow: hidden; /* Ensure content stays within rounded corners */
         }
@@ -205,6 +206,7 @@
             color: #0f0; /* Bright green */
             text-shadow: 0 0 8px #0f0; /* Glowing effect */
             font-weight: bold;
+            font-family: 'VT323', monospace;
         }
 
         #shop-content {
@@ -231,8 +233,8 @@
             border: 3px solid #4a2c4a; /* Dark magenta border, matching health bar theme */
         }
 
-        #shop-details h2 { color: #f1c40f; } /* Gold-like for selected item title */
-        #shop-details p { color: #ccc; font-style: normal; } /* Lighter text for description */
+        #shop-details h2 { color: #f1c40f; font-family: 'Fredoka One', sans-serif; } /* Gold-like for selected item title */
+        #shop-details p { color: #ccc; font-style: normal; font-family: 'Nunito', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); } /* Lighter text for description */
 
         .detail-info {
             display: flex;
@@ -252,6 +254,7 @@
             border-radius: 5px;
             width: fit-content;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: 'VT323', monospace;
         }        
         .stat-old { color: #e74c3c; text-align: right; } /* Red for old stat */
         .stat-new { color: #00ff00; font-weight: bold; text-align: left; text-shadow: 0 0 5px #0f0; } /* Bright green for new stat with glow */
@@ -298,8 +301,8 @@
             transform: scale(1.02); /* Slight scale for selected */
         }
         .shop-item-icon { font-size: 48px; margin-bottom: 10px; } /* Larger icon */
-        .shop-item-name { font-size: 16px; font-weight: bold; color: #ecf0f1; margin-bottom: 5px;}
-        .shop-item-cost { font-size: 16px; color: #f39c12; font-weight: bold;} /* Orange for cost */
+        .shop-item-name { font-size: 16px; font-weight: bold; color: #ecf0f1; margin-bottom: 5px; font-family: 'Fredoka One', sans-serif;}
+        .shop-item-cost { font-size: 16px; color: #f39c12; font-weight: bold; font-family: 'VT323', monospace;} /* Orange for cost */
         .shop-item-count { 
             position: absolute; 
             top: 5px; right: 8px; 
@@ -320,6 +323,7 @@
             text-align: center; font-size: 24px; font-weight: bold;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             z-index: 101;
+            font-family: 'Fredoka One', sans-serif;
         }
         
         #restart-btn {
@@ -327,6 +331,7 @@
             padding: 15px 40px; font-size: 24px; background-color: #e74c3c; color: white;
             border: none; border-radius: 8px; cursor: pointer; z-index: 200;
             box-shadow: 0 4px 0 #c0392b;
+            font-family: 'Titan One', cursive;
         }
         #restart-btn:hover { background-color: #ff6b6b; transform: translate(-50%, -52%); }
 
@@ -346,7 +351,7 @@
             max-width: 80vw;
             max-height: 80vh;
             flex-direction: column;
-            font-family: 'Lucky Guy', cursive; /* Apply Lucky Guy font */
+            font-family: 'Nunito', sans-serif; /* Apply Nunito font */
         }
         .modal h2 { 
             color: #ffd700; /* Gold-like color for headings */
@@ -360,17 +365,24 @@
             margin: -20px -20px 20px -20px; /* Adjust margin to act as header plate */
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
+            font-family: 'Titan One', cursive;
         }
         .modal h3 { 
             color: #f39c12; /* Orange-yellow for subheadings */
             margin-top: 20px; 
-            margin-bottom: 5px; 
+            margin-bottom: 5px;
+            font-family: 'Fredoka One', sans-serif;
         }
         .modal p { 
             line-height: 1.6; 
             margin: 5px 0; 
             font-size: 16px; 
             color: #e0e0e0; /* Slightly lighter text for content */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .modal p strong {
+            font-family: 'Fredoka One', sans-serif;
+            color: #f39c12;
         }
         .modal-content-area { /* New class for inset content */
             background-color: rgba(0, 0, 0, 0.3);
@@ -386,6 +398,7 @@
             font-weight: bold;
             border-bottom: 5px solid darkgreen; /* Thick bottom border */
             transition: all 0.1s ease;
+            font-family: 'Fredoka One', sans-serif;
         }
         .modal-close:hover { background: #2ecc71; }
         .modal-close:active { transform: translateY(2px); border-bottom: 3px solid darkgreen; }
@@ -402,7 +415,7 @@
         }
         #game-over-stats h1 { 
             color: #ffd700; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; 
-            font-family: 'Lucky Guy', cursive; letter-spacing: 2px;
+            font-family: 'Titan One', cursive; letter-spacing: 2px;
             background: linear-gradient(to right, #e74c3c, #c0392b); /* Red-dark red gradient */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -413,7 +426,7 @@
         }
         #shop-reminder h1 { 
             color: #ffd700; margin: 0 0 20px 0; font-size: 36px; text-transform: uppercase; 
-            font-family: 'Lucky Guy', cursive; letter-spacing: 2px;
+            font-family: 'Titan One', cursive; letter-spacing: 2px;
             background: linear-gradient(to right, #f39c12, #e67e22); /* Orange-dark orange gradient */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -422,18 +435,19 @@
             border-top-right-radius: 20px;
             margin: -30px -30px 20px -30px; /* Adjust margin to act as header plate */
         }
-        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; font-family: 'VT323', monospace; }
         .stat-points-value {
             font-size: 14px; /* Smaller font for points */
             color: #7f8c8d; /* Muted color */
             margin-left: 10px; /* Separates the raw stat from the points */
-        .final-score { font-size: 28px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; }
+        .final-score { font-size: 28px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; font-family: 'VT323', monospace; }
 
         #open-emporium-btn {
             background: #9b59b6; color: white; border: none; padding: 10px 20px;
             font-size: 18px; border-radius: 4px; cursor: pointer; font-weight: bold;
             margin-top: 20px;
             box-shadow: 0 4px 0 #8e44ad;
+            font-family: 'Fredoka One', sans-serif;
         }
         #open-emporium-btn:hover {
             background: #a569bd;
@@ -456,11 +470,13 @@
             border-radius: 4px;
             border: 1px solid #9b59b6; /* Border color matches text */
             align-self: flex-end; 
+            font-family: 'VT323', monospace;
         }
         #emporium-header {
             text-align: center; font-size: 32px; color: #8e44ad; margin-bottom: 20px;
             text-transform: uppercase; letter-spacing: 2px;
             border-bottom: 2px solid #8e44ad; padding-bottom: 10px;
+            font-family: 'Titan One', cursive;
         }
         #emporium-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
         #emporium-details {
@@ -477,6 +493,7 @@
             background: #9b59b6; color: white; border: none; padding: 15px 40px;
             font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
             box-shadow: 0 4px 0 #8e44ad;
+            font-family: 'Fredoka One', sans-serif;
         }
         #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
         #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
@@ -603,6 +620,7 @@
             font-weight: bold;
             text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             pointer-events: none;
+            font-family: 'VT323', monospace;
         }
         .xp-bar-container.large .xp-text {
             font-size: 20px;
@@ -618,6 +636,7 @@
             letter-spacing: 2px;
             border-bottom: 2px solid #a0c4ff; /* Light blue border */
             padding-bottom: 10px;
+            font-family: 'Titan One', cursive;
         }
 
         #component-grid {
@@ -658,6 +677,7 @@
             font-size: 1.1em;
             color: #ecf0f1;
             margin-bottom: 5px;
+            font-family: 'Fredoka One', sans-serif;
         }
         .component-cost {
             position: absolute;
@@ -671,6 +691,7 @@
             line-height: 25px;
             font-size: 14px;
             font-weight: bold;
+            font-family: 'VT323', monospace;
         }
 
         /* Override xp-bar for component points */
@@ -773,6 +794,10 @@
         .modal-confirm-button {
             cursor: pointer;
             transition: all 0.2s;
+            width: 120px;
+            height: 40px;
+            object-fit: contain;
+            align-self: center;
         }
 
         .modal-confirm-button:hover {
@@ -853,11 +878,11 @@
         <img src="assets/Images/modalconfirmup.png" id="restart-btn" class="modal-confirm-button">
         </div>
         </div>
-        <div id="shop-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; flex-direction: column; box-sizing: border-box; color: #ecf0f1; font-family: 'Lucky Guy', cursive;">
+        <div id="shop-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; flex-direction: column; box-sizing: border-box; color: #ecf0f1;">
             <!-- Header Bar -->
             <div id="shop-header-bar" style="background-color: #2d1b2d; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4a2c4a;">
                 <button id="stats-btn" class="modal-internal-button">Stats</button>
-                <span style="font-size: 36px; font-weight: bold; background: linear-gradient(to right, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upgrade Shop</span>
+                <span style="font-family: 'Titan One'; font-size: 46px; font-weight: bold; background: linear-gradient(to right, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upgrade Shop</span>
                 <button id="components-btn" class="modal-internal-button">Components</button>
                 <button id="help-btn" class="modal-internal-button">?</button>
             </div>

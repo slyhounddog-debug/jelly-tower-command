@@ -133,7 +133,7 @@ export default class Thermometer {
             const isGlowing = fillPercent >= notchPct;
 
             if (i % 2 === 0) { // Only draw text for every second notch
-                ctx.font = '14px "Lucky Guy"';
+                ctx.font = '14px "VT323"';
                 ctx.fillStyle = isGlowing ? 'white' : 'rgba(255,255,255,0.4)';
                 ctx.textAlign = 'left';
                 ctx.fillText(Math.floor(bossThreshold * notchPct), x + w / 2 + 10, notchY + 5);

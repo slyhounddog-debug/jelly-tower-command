@@ -3,6 +3,7 @@ import Drop from './drop.js';
 import { darkenColor } from './utils.js?v=25';
 import DamageSpot from './damageSpot.js';
 import FloatingText from './floatingText.js';
+import SpriteAnimation from './SpriteAnimation.js';
 
 export default class Missile {
     constructor(game, x, type = 'missile', y = -60) {
@@ -15,13 +16,24 @@ export default class Missile {
         this.groundProximity = false;
         this.dead = false;
 
-        if (type === 'missile') {
-            this.width = 50; // 45 * 1.1
-            this.height = 66;  // 60 * 1.1
-            this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+       if (type === 'missile') {
+            this.width = 64; 
+            this.height = 64;
             this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
-            const rand_int = Math.floor(Math.random() * 5);
-            this.image = this.game.jellybeanImages[rand_int];
+            
+            const variantIndex = Math.floor(Math.random() * 8);
+            
+            this.sprite = new SpriteAnimation({
+                src: 'assets/Images/jellybeans.png',
+                frameWidth: 64,
+                frameHeight: 64,
+                totalFrames: 8,
+                fps: 0,
+                row: 0
+            });
+            this.sprite.currentFrame = variantIndex;
+            this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
+        
         } else if (type === 'gummy_worm') {
             this.width = 25;
             this.height = 80;
@@ -117,7 +129,7 @@ export default class Missile {
         }
 
         this.damageText = `${this.health.toFixed(0)}/${this.maxHealth.toFixed(0)}`;
-        this.damageTextTimer = 30; 
+        this.damageTextTimer = 60; 
 
         const numSpots = Math.floor(roundedAmount / 5);
         for (let i = 0; i < numSpots; i++) {
@@ -213,7 +225,8 @@ export default class Missile {
         }
 
         this.kbVy *= 0.9;
-        this.y += (currentSpeed + this.kbVy) * tsf;
+        // We add 100 to the calculation to move the "physics" Y down to match the new UI bar
+this.y += ((currentSpeed + this.kbVy) * tsf);
 
         if (this.type === 'gummy_worm') {
             if (this.x < 0) this.x = 0;
@@ -288,7 +301,7 @@ export default class Missile {
             const piggyLevel = this.game.stats.piggyLvl;
             const sizeMultiplier = 1 + (piggyLevel * 0.15);
             const cx = this.x + this.width / 2;
-            const cy = this.y + this.height / 2;
+            const cy = this.y + 1 + this.height / 2;
 
             ctx.save();
             ctx.fillStyle = shadowColor;
@@ -329,32 +342,34 @@ export default class Missile {
             const segmentHeight = this.height / segments;
             const wiggleAmplitude = 4;
             const wiggleFrequency = 0.2;
+            const cx = this.x + this.width / 2;
+            const cy = this.y + 100 + this.height / 2;
 
+            // Shadow
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
+            ctx.translate(cx, cy + shadowOffset);
             ctx.scale(this.squash * 1.09, this.stretch * 1.09);
-            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
             const borderColor1 = darkenColor(this.color1, shadowDarkness);
             const borderColor2 = darkenColor(this.color2, shadowDarkness);
-            const borderGrad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+            const borderGrad = ctx.createLinearGradient(0, -this.height / 2, 0, this.height / 2);
             borderGrad.addColorStop(0, borderColor1);
             borderGrad.addColorStop(1, borderColor2);
             ctx.strokeStyle = borderGrad; ctx.lineWidth = this.width + 4; ctx.lineCap = 'round';
             ctx.beginPath();
             for (let i = 0; i <= segments; i++) {
-                const yPos = this.y + i * segmentHeight;
-                const xPos = this.x + this.width / 2 + Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
+                const yPos = -this.height/2 + i * segmentHeight;
+                const xPos = Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
                 if (i === 0) ctx.moveTo(xPos, yPos);
                 else ctx.lineTo(xPos, yPos);
             }
             ctx.stroke();
             ctx.restore();
 
+            // Body
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.translate(cx, cy);
             ctx.scale(this.squash, this.stretch);
-            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
-            const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+            const grad = ctx.createLinearGradient(0, -this.height / 2, 0, this.height / 2);
             if (this.hitTimer > 0) {
                 grad.addColorStop(0, 'white'); grad.addColorStop(1, 'white');
             } else {
@@ -363,8 +378,8 @@ export default class Missile {
             ctx.strokeStyle = grad; ctx.lineWidth = this.width; ctx.lineCap = 'round';
             ctx.beginPath();
             for (let i = 0; i <= segments; i++) {
-                const yPos = this.y + i * segmentHeight;
-                const xPos = this.x + this.width / 2 + Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
+                const yPos = -this.height/2 + i * segmentHeight;
+                const xPos = Math.sin(i * wiggleFrequency + this.animationTimer) * wiggleAmplitude;
                 if (i === 0) ctx.moveTo(xPos, yPos);
                 else ctx.lineTo(xPos, yPos);
             }
@@ -373,14 +388,14 @@ export default class Missile {
         } else if (this.type.includes('marshmallow')) {
             ctx.save();
             ctx.fillStyle = shadowColor;
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
+            ctx.translate(this.x + this.width / 2, this.y + 100 + this.height / 2 + shadowOffset);
             ctx.rotate(this.angle);
             ctx.scale(this.squash * 1.1, this.stretch * 1.1);
             ctx.beginPath(); ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10); ctx.fill();
             ctx.restore();
 
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.translate(this.x + this.width / 2, this.y + 100 + this.height / 2);
             ctx.rotate(this.angle);
             ctx.scale(this.squash, this.stretch);
             ctx.fillStyle = (this.hitTimer > 0) ? 'white' : this.color;
@@ -391,13 +406,22 @@ export default class Missile {
         }
        else {
             const cx = this.x + this.width / 2;
-            const cy = this.y + this.height / 2;
+            const cy = this.y + 40 + this.height / 2;
 
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(this.angle);
-            ctx.scale(this.scale * this.squash, this.scale * this.stretch);
-            if (this.image && this.image.complete) {
+            
+            if (this.sprite) {
+                this.sprite.draw(
+                    ctx, 
+                    0, 0, 
+                    this.width * this.scale, 
+                    this.height * this.scale, 
+                    this.stretch - 1, 
+                    this.squash - 1
+                );
+            } else if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
             }
             ctx.restore();
@@ -452,16 +476,16 @@ export default class Missile {
                 const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
                 ctx.save();
                 ctx.globalAlpha = alpha; 
-                ctx.font = 'bold 34px "Lucky Guy"';
+                ctx.font = 'bold 44px "VT323"';
                 ctx.textAlign = 'center';
                 
                 const tx = barX + barWidth / 2;
-                const ty = barY + 15;
+                const ty = barY + 5;
                 const val = Math.ceil(this.health);
 
                 // Add the gray border
-                ctx.strokeStyle = '#333333'; // Dark gray border
-                ctx.lineWidth = 4;           // Thickness of the border
+                ctx.strokeStyle = '#213625ff'; // Dark gray border
+                ctx.lineWidth = 3;           // Thickness of the border
                 ctx.strokeText(val, tx, ty);
 
                 // Fill the white text
@@ -554,7 +578,7 @@ export default class Missile {
             if (Math.random() * 100 < dropChance) {
                 dropsToCreate.push({ type: 'ice_cream_scoop' });
             }
-            if (this.game.player.upgrades['Scoop Doubler'] > 0) {
+            if (this.game.player.upgrades['Twin Scoop'] > 0) {
                 if (Math.random() < 0.33) {
                     dropsToCreate.push({ type: 'ice_cream_scoop' });
                 }

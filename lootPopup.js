@@ -69,7 +69,7 @@ class LootPopup {
             // Text for XP
             ctx.globalAlpha = alpha;
             ctx.fillStyle = '#00f2ea';
-            ctx.font = 'bold 34px "Lucky Guy"';
+            ctx.font = 'bold 34px "VT323"';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text} +${Math.floor(this.value)}`, displayX + 20, this.y + boxHeight / 2);
@@ -98,7 +98,7 @@ class LootPopup {
             // Text for component
             ctx.globalAlpha = alpha;
             ctx.fillStyle = '#ff00ff';
-            ctx.font = 'bold 24px "Lucky Guy"';
+            ctx.font = 'bold 24px "Fredoka One"';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text}`, displayX + 20, this.y + boxHeight / 2);
@@ -126,7 +126,7 @@ class LootPopup {
             // Text for upgrade
             ctx.globalAlpha = alpha;
             ctx.fillStyle = '#add8e6';
-            ctx.font = 'bold 24px "Lucky Guy"';
+            ctx.font = 'bold 24px "Fredoka One"';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text}`, displayX + 20, this.y + boxHeight / 2);
@@ -154,7 +154,7 @@ class LootPopup {
             // Draw the text
             ctx.globalAlpha = alpha;
             ctx.fillStyle = 'White';
-            ctx.font = 'bold 34px "Lucky Guy"';
+            ctx.font = 'bold 34px "VT323"';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(`${this.text} +${this.value}`, displayX + 20, this.y + boxHeight / 2);

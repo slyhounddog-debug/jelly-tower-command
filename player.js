@@ -61,22 +61,22 @@ export default class Player {
         this.upgrades = {
             // Normals
             'Quick Boi': 0,
-            'More Gelatin': 0,
+            '++Gelatin': 0,
             'Tinkerer': 0,
             'Greed': 0,
             'Long Tongue': 0,
-            'Wide Collector': 0,
+            'Sticky Paw': 0,
             // Rares
             'Winged Boots': 0,
             'Air Tricks': 0,
             'Ice Tongue': 0,
             
-            'Marshmallow Landing': 0,
+            'Squishy Butt': 0,
             'Sugar Rush': 0,
             // Legendaries
-            'Reflective Coating': 0,
-            'Scoop Doubler': 0,
-            'Tongue Whirlwind': 0,
+            'Dash Flash': 0,
+            'Twin Scoop': 0,
+            'Lick Mania': 0,
         };
 
         this.acceleration = this.baseAcceleration;
@@ -100,7 +100,7 @@ export default class Player {
             this.game.audioManager.playSound('dash');
             this.lastDashTime = Date.now();
 
-            if (this.upgrades['Reflective Coating'] > 0) {
+            if (this.upgrades['Dash Flash'] > 0) {
                 const hitboxX = this.x - this.width / 2;
                 const hitboxY = this.y - this.height / 2;
                 const hitboxWidth = this.width * 2;
@@ -127,7 +127,7 @@ export default class Player {
     tryLick() {
         if (this.lickCooldown > 0) return;
 
-        if (this.upgrades['Tongue Whirlwind'] > 0 && (Date.now() - this.lastDashTime < 200)) {
+        if (this.upgrades['Lick Mania'] > 0 && (Date.now() - this.lastDashTime < 200)) {
             this.isWhirlwinding = true;
             this.whirlwindTimer = 100; // 1.5 seconds
             this.lickCooldown = 101; // 1.5 second cooldown
@@ -316,7 +316,7 @@ export default class Player {
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
-                    if (this.upgrades['Marshmallow Landing'] > 0) {
+                    if (this.upgrades['Squishy Butt'] > 0) {
                         const shockwaveRange = 150;
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);

@@ -2,6 +2,7 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import DamageSpot from './damageSpot.js';
 import { darkenColor } from './utils.js';
+import SpriteAnimation from './SpriteAnimation.js';
 
 
 export default class GameLoop {
@@ -191,7 +192,7 @@ export default class GameLoop {
 
         const offset = this.game.screenShake.getOffset();
         this.game.ctx.save(); 
-        this.game.ctx.translate(offset.x, offset.y - 100);
+        this.game.ctx.translate(offset.x, offset.y);
 
         this.game.platforms.forEach(p => {
             if (p.type === 'ground') return; // Will be drawn later
@@ -292,7 +293,7 @@ export default class GameLoop {
         
         // Money (Right of Health Bar)
         const moneyX = healthBarX + healthBarWidth + gap;
-        ctx.font = 'bold 32px "Lucky Guy"';
+        ctx.font = 'bold 42px "VT323"';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';

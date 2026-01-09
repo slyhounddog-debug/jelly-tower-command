@@ -65,7 +65,7 @@ export default class LevelUpScreen {
         ctx.fillRect(0, 0, this.game.width, this.game.height);
 
         ctx.fillStyle = 'white';
-        ctx.font = '80px "Lucky Guy"';
+        ctx.font = '80px "Titan One"';
         ctx.textAlign = 'center';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 10;
@@ -115,20 +115,34 @@ export default class LevelUpScreen {
 
         // Draw card content
         ctx.fillStyle = color;
-        ctx.font = '36px "Lucky Guy"'; // Increased font size
+        ctx.font = '32px "Fredoka One"'; // Slightly smaller font
         ctx.textAlign = 'center';
-        ctx.fillText(card.choice.name, card.x + card.width / 2, card.y + 45);
+        
+        const title = card.choice.name.toUpperCase();
+        const maxWidth = card.width - 20; // 10px padding on each side
+        let textWidth = ctx.measureText(title).width;
 
-        ctx.font = '60px "Lucky Guy"'; // Increased font size
+        ctx.save();
+        if (textWidth > maxWidth) {
+            const scaleFactor = maxWidth / textWidth;
+            ctx.translate(card.x + card.width / 2, card.y + 45);
+            ctx.scale(scaleFactor, 1);
+            ctx.fillText(title, 0, 0);
+        } else {
+            ctx.fillText(title, card.x + card.width / 2, card.y + 45);
+        }
+        ctx.restore();
+
+        ctx.font = '60px "Fredoka One"';
         ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 120);
 
         ctx.fillStyle = 'white';
-        ctx.font = '21px sans-serif'; // Increased font size
+        ctx.font = '21px "Nunito"';
         this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 210, card.width - 30, 24);
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = color;
-        ctx.font = '24px "Lucky Guy"'; // Increased font size
+        ctx.font = '24px "Fredoka One"';
         ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - 30);
 
 
@@ -142,11 +156,18 @@ export default class LevelUpScreen {
         let metrics;
         let testWidth;
 
+        context.save();
+        context.strokeStyle = 'rgba(0,0,0,0.7)';
+        context.lineWidth = 3;
+        context.shadowColor = 'black';
+        context.shadowBlur = 2;
+
         for (let n = 0; n < words.length; n++) {
             testLine = line + words[n] + ' ';
             metrics = context.measureText(testLine);
             testWidth = metrics.width;
             if (testWidth > maxWidth && n > 0) {
+                context.strokeText(line, x, y);
                 context.fillText(line, x, y);
                 line = words[n] + ' ';
                 y += lineHeight;
@@ -154,6 +175,8 @@ export default class LevelUpScreen {
                 line = testLine;
             }
         }
+        context.strokeText(line, x, y);
         context.fillText(line, x, y);
+        context.restore();
     }
 }

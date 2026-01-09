@@ -40,7 +40,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "More Gelatin", description: "10% increase in jump height.", icon: "🔼", rarity: "normal" },
+                        { name: "++Gelatin", description: "10% increase in jump height.", icon: "🔼", rarity: "normal" },
 
         
 
@@ -52,7 +52,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Wide Collector", description: "20% increase in loot pickup range.", icon: "👐", rarity: "normal" },
+                        { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
 
         
 
@@ -84,7 +84,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Marshmallow Landing", description: "Landing creates a damaging shockwave.", icon: "💥", rarity: "rare" },
+                        { name: "Squishy Butt", description: "Landing creates a damaging shockwave.", icon: "💥", rarity: "rare" },
 
         
 
@@ -100,15 +100,15 @@ export default class LevelingManager {
 
         
 
-                        { name: "Reflective Coating", description: "Dashing through enemies deals damage.", icon: "🛡️", rarity: "legendary" },
+                        { name: "Dash Flash", description: "Dashing through enemies deals damage.", icon: "🛡️", rarity: "legendary" },
 
         
 
-                        { name: "Scoop Doubler", description: "33% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
+                        { name: "Twin Scoop", description: "33% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
 
         
 
-                        { name: "Tongue Whirlwind", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
+                        { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
 
         
 
@@ -592,15 +592,15 @@ export default class LevelingManager {
 
         
 
-                        case 'More Gelatin':
+                        case '++Gelatin':
 
         
 
-                            player.jumpForce = player.baseJumpForce * (1 + player.upgrades['More Gelatin'] * 0.1);
+                            player.jumpForce = player.baseJumpForce * (1 + player.upgrades['++Gelatin'] * 0.1);
 
         
 
-                            player.airJumpForce = player.baseAirJumpForce * (1 + player.upgrades['More Gelatin'] * 0.1);
+                            player.airJumpForce = player.baseAirJumpForce * (1 + player.upgrades['++Gelatin'] * 0.1);
 
         
 
@@ -688,11 +688,11 @@ export default class LevelingManager {
 
         
 
-                        case 'Wide Collector':
+                        case 'Sticky Paw':
 
         
 
-                            player.pickupRange = player.basePickupRange * (1 + player.upgrades['Wide Collector'] * 0.2);
+                            player.pickupRange = player.basePickupRange * (1 + player.upgrades['Sticky Paw'] * 0.25);
 
         
 
@@ -700,7 +700,7 @@ export default class LevelingManager {
 
         
 
-                        case 'Marshmallow Landing':
+                        case 'Squishy Butt':
 
         
 
@@ -724,7 +724,7 @@ export default class LevelingManager {
 
         
 
-                        case 'Reflective Coating':
+                        case 'Dash Flash':
 
         
 
@@ -736,7 +736,7 @@ export default class LevelingManager {
 
         
 
-                        case 'Scoop Doubler':
+                        case 'Twin Scoop':
 
         
 
@@ -748,7 +748,7 @@ export default class LevelingManager {
 
         
 
-                        case 'Tongue Whirlwind':
+                        case 'Lick Mania':
 
         
 

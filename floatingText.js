@@ -38,12 +38,12 @@ export default class FloatingText {
         ctx.translate(this.x, this.y);
         ctx.scale(this.scale, this.scale);
 
-        ctx.font = `bold ${24 + this.sizeIncrease}px 'Lucky Guy'`;
+        ctx.font = `bold ${28 + this.sizeIncrease}px 'VT323'`;
         ctx.textAlign = 'center';
 
         // 1. Draw thick outer stroke for readability (The "Gamey" look)
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#0c0202ff';
+        ctx.lineWidth = 1;
         ctx.lineJoin = 'round';
         ctx.strokeText(this.text, 0, 0);
 

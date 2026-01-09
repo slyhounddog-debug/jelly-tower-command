@@ -12,74 +12,56 @@ export default class initLevel {
             y: game.height - 70, 
             width: game.width, 
             height: 330, 
-            type: 'ground' 
+            hitboxOffsetY: -100, // Move hitbox 100px UP from visual Y
+            type: 'ground'
         };
 
-                           const castlePlatforms = [
-
-                        { 
-
-                            x: game.width - 1050, 
-
-                            y: game.height - 10,
-
-                            //NOTE: To move the hitbox without moving the image, adjust these offset values.
-
-                            //Positive X moves the hitbox right, Positive Y moves the hitbox down.
-
-                            hitboxOffsetX: 100,
-
-                            hitboxOffsetY: -200,
-
-                            width: 150,   // Collision Width
-
-                            height: 20,   // Collision Height (Thin for landing)
-
-                            vWidth: 350,  // Visual Width for drawing
-
-                            vHeight: 250, // Visual Height for drawing
-
-                            type: 'castle' 
-
-                        },
-
-                        { 
-
-                            x: game.width - 475, 
-
-                            y: game.height - 10, 
-
-                            //NOTE: To move the hitbox without moving the image, adjust these offset values.
-
-                            //Positive X moves the hitbox right, Positive Y moves the hitbox down.
-
-                            hitboxOffsetX: 100,
-
-                            hitboxOffsetY: -200,
-
-                            width: 150, 
-
-                            height: 20, 
-
-                            vWidth: 350, 
-
-                            vHeight: 250, 
-
-                            type: 'castle' 
-
-                        },
+                         const castlePlatforms = [
+            { 
+                x: game.width - 1100, 
+                y: game.height - 110,
+                hitboxOffsetX: 100,
+                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                width: 150,   
+                height: 20,   
+                vWidth: 350,  
+                vHeight: 250, 
+                type: 'castle' 
+            },
+            { 
+                x: game.width - 425, 
+                y: game.height - 110, 
+                hitboxOffsetX: 100,
+                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                width: 150, 
+                height: 20, 
+                vWidth: 350, 
+                vHeight: 250, 
+                type: 'castle' 
+            },
+            { 
+                x: game.width - 760, 
+                y: game.height - 70, 
+                hitboxOffsetX: 100,
+                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                width: 150, 
+                height: 20, 
+                vWidth: 350, 
+                vHeight: 250, 
+                type: 'castle' 
+            },
 
                     ];        // Push platforms directly to the game object
         game.platforms = [...castlePlatforms, groundPlatform];
 
         // Cloud Platforms logic
         const floatingConfigs = [
-            { x: 100, y: game.height - 300, width: 200, height: 60 }, 
-            { x: 900, y: game.height - 350, width: 200, height: 60 },
-            { x: 500, y: game.height - 600, width: 250, height: 65 }, 
-            { x: 100, y: game.height - 750, width: 180, height: 55 },
-            { x: 800, y: game.height - 850, width: 180, height: 55 }, 
-            { x: 450, y: game.height - 1100, width: 200, height: 60 }
+            { x: 100, y: game.height - 399, width: 200, height: 65 }, 
+            { x: 900, y: game.height - 430, width: 200, height: 65 },
+            { x: 500, y: game.height - 660, width: 250, height: 69 }, 
+            { x: 100, y: game.height - 800, width: 180, height: 60 },
+            { x: 800, y: game.height - 890, width: 180, height: 60 }, 
+            { x: 450, y: game.height - 1140, width: 200, height: 65 }
         ];
 
         floatingConfigs.forEach(cfg => {

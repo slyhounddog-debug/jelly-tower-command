@@ -149,10 +149,10 @@ export class GummyBear {
             ctx.globalAlpha = 1 - alpha * 0.5;
             if (alpha > 0.5) {
                 ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillRect(this.x, this.y + 100, this.width, this.height);
             }
         }
-        ctx.translate(this.x, this.y);
+        ctx.translate(this.x, this.y + 100);
         ctx.rotate(this.angle);
         if (this.image && this.image.complete) {
             ctx.drawImage(this.image, 0, 0, this.width, this.height);
@@ -260,10 +260,10 @@ export default class GummyCluster {
             ctx.globalAlpha = 1 - alpha * 0.5;
             if (alpha > 0.5) {
                 ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillRect(this.x, this.y + 100, this.width, this.height);
             }
         }
-        ctx.translate(this.x, this.y);
+        ctx.translate(this.x, this.y + 100);
 
         // Blinking effect
         if (this.hitTimer > 0 && Math.floor(this.hitTimer / 2) % 2 === 0) {

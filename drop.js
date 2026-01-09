@@ -217,18 +217,18 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             ctx.lineWidth = 2;
             ctx.stroke();
             ctx.fillStyle = '#000';
-            ctx.font = 'bold 18px "Lucky Guy"'; // Adjusted font size
+            ctx.font = 'bold 18px "Fredoka One"'; // Adjusted font size
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle'; // Center vertically
             ctx.fillText('$', 0, 0); // Centered
         } else if (this.type === 'xp_orb') {
             ctx.fillStyle = '#004d4a';
-            ctx.font = 'bold 12px "Lucky Guy"'; // Smaller font for "XP"
+            ctx.font = 'bold 12px "Fredoka One"'; // Smaller font for "XP"
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(iconText, 0, 0);
         } else if (this.type === 'ice_cream_scoop') {
-            ctx.font = '48px "Lucky Guy"'; // Increased size for better visibility
+            ctx.font = '48px "Fredoka One"'; // Increased size for better visibility
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle'; // Center vertically
             ctx.fillText(iconText, 0, 0); // Centered
