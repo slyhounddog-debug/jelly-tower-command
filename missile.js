@@ -565,10 +565,13 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         this.game.particles.push(p);
 
         const dropsToCreate = [];
-        dropsToCreate.push({ type: 'coin', value: 25 });
-        dropsToCreate.push({ type: 'xp_orb', value: xpGained });
         
         for (let c = 0; c < count; c++) {
+            dropsToCreate.push({ type: 'coin', value: 25 });
+            if (count > 0) {
+                dropsToCreate.push({ type: 'xp_orb', value: xpGained / count });
+            }
+            
             if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
             if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });
 

@@ -798,6 +798,10 @@
             height: 40px;
             object-fit: contain;
             align-self: center;
+            display: block; /* Ensure it behaves as a block element */
+            margin: 20px auto 0 auto; /* Center horizontally and add top margin */
+            flex-shrink: 0; /* Prevent shrinking */
+            flex-grow: 0; /* Prevent growing */
         }
 
         .modal-confirm-button:hover {

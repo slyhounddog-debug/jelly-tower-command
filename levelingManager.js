@@ -12,7 +12,7 @@ export default class LevelingManager {
 
         this.xpLevels = [
 
-            30, 40, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, ,600, 650, 700, 750, 800,
+            30, 40, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
 
             850, 900, 950, 1000, 1075, 1150, 1225, 1300, 1375, 1450, 1525, 1600, 1700, 1800, 1900,
 
@@ -640,15 +640,7 @@ export default class LevelingManager {
 
         
 
-                        case 'Long Tongue':
 
-        
-
-                            player.lickRange = player.baseLickRange * (1 + player.upgrades['Long Tongue'] * 0.2);
-
-        
-
-                            break;
 
         
 

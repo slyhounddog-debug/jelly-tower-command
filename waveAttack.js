@@ -1,13 +1,13 @@
 import Particle from './particle.js';
 
 export default class WaveAttack {
-    constructor(game, x, y, angle, damageMultiplier = 1) {
+    constructor(game, x, y, angle, damageMultiplier = 1, playerVx = 0) {
         this.game = game;
         this.x = x;
         this.y = y;
         this.angle = angle;
-        this.speed = 15;
-        this.lifespan = 45; // 0.5 seconds * 1.33 = ~0.665 seconds
+        this.speed = Math.abs(playerVx) * 1.1; // 10% faster than player's post-dash velocity
+        this.lifespan = 30 * 1.33; // 0.5 seconds * 1.33 = ~0.665 seconds
         this.arcs = [];
         this.hitEnemies = [];
         this.damageMultiplier = damageMultiplier;
@@ -15,8 +15,8 @@ export default class WaveAttack {
         // Create multiple arcs
         for (let i = 0; i < 5; i++) {
             this.arcs.push({
-                radius: 20 + i * 15,
-                width: 5 + Math.random() * 5,
+                radius: (20 + i * 15) * 1.5, // 50% bigger
+                width: (5 + Math.random() * 5) * 1.5, // 50% bigger
                 color: Math.random() > 0.5 ? 'white' : 'lightblue',
                 angleOffset: (Math.random() - 0.5) * 0.2
             });

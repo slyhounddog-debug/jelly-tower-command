@@ -117,7 +117,7 @@ export default class Player {
                 });
 
                 const angle = Math.atan2(this.vy, this.vx);
-                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2));
+                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2, this.vx));
             }
 
             // Add dash particle effect
@@ -138,37 +138,47 @@ export default class Player {
         }
 
         this.game.audioManager.playSound('mlem');
-        const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
-        this.lickAnim = 15; this.lickCooldown = 20;
+        this.lickAnim = 15;
+        this.lickCooldown = 20;
 
         const lickSegments = 10;
-        const lickLength = this.lickRange; 
+        const lickLength = this.lickRange;
+        let lickHasHit = false; // Ensure only one hit per lick
 
+        // --- Missile Collision ---
         this.game.missiles.forEach(m => {
+            if (lickHasHit) return;
+
             let hit = false;
             for (let i = 1; i <= lickSegments; i++) {
                 const progress = i / lickSegments;
-                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress);
-                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress);
+                const drag = 2.5;
+                const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
                 
                 const missileCx = m.x + m.width / 2;
                 const missileCy = m.y + m.height / 2;
                 
                 if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) { 
                     hit = true;
-                    break; 
+                    break;
                 }
             }
 
             if (hit) {
-                if(m.takeDamage(this.game.stats.lickDamage)) {
+                lickHasHit = true;
+                if (m.takeDamage(this.game.stats.lickDamage)) {
                     m.kill('tongue');
                 }
                 if (this.upgrades['Ice Tongue'] > 0) {
-                    m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
+                    m.applySlow(180, 0.5, 'tongue');
                 }
-                m.kbVy = -this.game.stats.lickKnockback * .3;
+                m.kbVy = -this.game.stats.lickKnockback * 0.3;
                 this.game.screenShake.trigger(4, 10);
                 for (let i = 0; i < 15; i++) {
                     this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
@@ -176,8 +186,40 @@ export default class Player {
                 }
             }
         });
+
+        // --- Boss Collision ---
+        if (this.game.boss && !lickHasHit) {
+            let hit = false;
+            const boss = this.game.boss;
+            for (let i = 1; i <= lickSegments; i++) {
+                const progress = i / lickSegments;
+                const drag = 2.5;
+                const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+
+                // Simple AABB check for boss
+                if (checkX > boss.x && checkX < boss.x + boss.width &&
+                    checkY > boss.y && checkY < boss.y + boss.height) {
+                    hit = true;
+                    break;
+                }
+            }
+
+            if (hit) {
+                lickHasHit = true;
+                boss.takeDamage(this.game.stats.lickDamage);
+                this.game.screenShake.trigger(4, 10);
+                for (let i = 0; i < 15; i++) {
+                    this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
+                    if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
+                }
+            }
+        }
     }
     update(tsf) {
+        this.lickRange = this.baseLickRange * (1 + this.upgrades['Long Tongue'] * 0.2);
         if (this.jumpSquash > 0) this.jumpSquash -= tsf;
         if (this.dashCooldown > 0) this.dashCooldown -= tsf;
         if (this.sugarRushTimer > 0) this.sugarRushTimer -= tsf;
@@ -539,7 +581,7 @@ export default class Player {
             const mouseAngle = Math.atan2(this.game.mouse.y - tongueOriginY, this.game.mouse.x - tongueOriginX);
             const animPhase = (15 - this.lickAnim) / 15; 
             const animCurve = Math.sin(animPhase * Math.PI);
-            const lickDistance = 140 * animCurve;
+            const lickDistance = this.lickRange * animCurve;
 
             ctx.save();
             const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
