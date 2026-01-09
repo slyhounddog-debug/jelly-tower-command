@@ -100,7 +100,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Dash Flash", description: "Dashing through enemies deals damage.", icon: "🛡️", rarity: "legendary" },
+                        { name: "Dash Flash", description: "Ouchie dash wave dealing 200% lick damage.", icon: "🛡️", rarity: "legendary" },
 
         
 

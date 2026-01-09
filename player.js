@@ -4,7 +4,7 @@ import WaveAttack from './waveAttack.js';
 export default class Player {
     constructor(game) {
         this.game = game;
-        this.width = 80; this.height = 90; this.color = '#ffc1cc';
+        this.width = 85; this.height = 100; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
         this.lickCooldown = 0; this.lickAnim = 0;
 
@@ -111,13 +111,13 @@ export default class Player {
                 this.game.missiles.forEach(m => {
                     if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
                         hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
-                        m.takeDamage(this.game.stats.lickDamage);
+                        m.takeDamage(this.game.stats.lickDamage * 2);
                         m.kbVy = -this.game.stats.lickKnockback * .3;
                     }
                 });
 
                 const angle = Math.atan2(this.vy, this.vx);
-                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle));
+                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2));
             }
 
             // Add dash particle effect
@@ -394,9 +394,36 @@ export default class Player {
       draw(ctx) {
         if (this.isControlling) return;
 
-        // Draw whirlwind (this is separate and has its own logic)
+        // Draw whirlwind
         if (this.isWhirlwinding) {
-            // ... (whirlwind drawing code remains unchanged, so it's omitted for brevity)
+            const whirlwindRange = this.lickRange * 0.8;
+            const tongueOriginX = this.x + this.width / 2;
+            const tongueOriginY = this.y + this.height / 2;
+            const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+            const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
+
+            ctx.save();
+            const segments = 15;
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const segmentX = tongueOriginX + Math.cos(this.whirlwindAngle) * (whirlwindRange * t);
+                const segmentY = tongueOriginY + Math.sin(this.whirlwindAngle) * (whirlwindRange * t);
+
+                let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
+                size *= 0.8;
+
+                ctx.fillStyle = mainColor;
+                ctx.beginPath();
+                ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (i === segments || i % 5 === 0) {
+                    ctx.strokeStyle = shadowCol;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
         }
 
         // --- 1. DYNAMIC SHADOW ON GROUND ---
@@ -437,7 +464,7 @@ export default class Player {
                 let shadowY = hitboxY;
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * 0.5 / 1.5) * shadowFactor, (this.width * 0.12 / 1.5) * shadowFactor, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * 0.5 / 1.7) * shadowFactor, (this.width * 0.12 / 1.7) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }

@@ -1,15 +1,16 @@
 import Particle from './particle.js';
 
 export default class WaveAttack {
-    constructor(game, x, y, angle) {
+    constructor(game, x, y, angle, damageMultiplier = 1) {
         this.game = game;
         this.x = x;
         this.y = y;
         this.angle = angle;
-        this.speed = 10;
-        this.lifespan = 30; // 0.5 seconds
+        this.speed = 15;
+        this.lifespan = 45; // 0.5 seconds * 1.33 = ~0.665 seconds
         this.arcs = [];
         this.hitEnemies = [];
+        this.damageMultiplier = damageMultiplier;
 
         // Create multiple arcs
         for (let i = 0; i < 5; i++) {
@@ -33,7 +34,7 @@ export default class WaveAttack {
 
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < this.arcs[this.arcs.length - 1].radius + m.width / 2) {
-                m.takeDamage(this.game.stats.lickDamage);
+                m.takeDamage(this.game.stats.lickDamage * this.damageMultiplier);
                 m.kbVy = -this.game.stats.lickKnockback * 0.15; // Half knockback
                 this.hitEnemies.push(m);
             }
