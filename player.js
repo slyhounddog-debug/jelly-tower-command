@@ -40,7 +40,7 @@ export default class Player {
         this.reset();
     }
     reset() {
-        this.x = this.game.width / 2; this.y = this.game.height - 250; this.vx = 0; this.vy = 0;
+        this.x = this.game.width / 2; this.y = this.game.height - 350; this.vx = 0; this.vy = 0;
         this.isOnGround = false; this.isControlling = null;
         this.jumpsLeft = 2; this.jumpLock = false;
         this.isPassingThrough = false;
@@ -427,7 +427,6 @@ export default class Player {
         }
 
         // --- 1. DYNAMIC SHADOW ON GROUND ---
-        // This logic is independent of player transformations, so it goes first.
         let closestPlatform = null;
         let minDistance = Infinity;
 
@@ -462,6 +461,11 @@ export default class Player {
                 }
                 const shadowFactor = 1 - (distance / maxShadowDistance);
                 let shadowY = hitboxY;
+                if (closestPlatform.type === 'ground') {
+                    shadowY += 100;
+                } else if (closestPlatform.type === 'castle') {
+                    shadowY += 200;
+                }
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
                 ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * 0.5 / 1.7) * shadowFactor, (this.width * 0.12 / 1.7) * shadowFactor, 0, 0, Math.PI * 2);
@@ -471,107 +475,111 @@ export default class Player {
         
         // --- 2. PREPARE PLAYER TRANSFORM ---
         const cx = this.x + this.width / 2;
-        const cy = this.y + this.height / 2; // Center Y for transformations
-        const eyeY = this.y + this.height * 0.36; // Relative eye Y position - Lowered
-        const mouthY = eyeY + this.height * 0.4; // Relative mouth Y position - Lowered
-        const mouthX = this.x + this.width / 2; // Absolute mouth X position for logic
+        const cy = this.y + this.height / 2;
+        const eyeY = this.y + this.height * 0.3;
+        const mouthY = eyeY + this.height * 0.4;
+        const mouthX = this.x + this.width / 2;
 
         // --- 3. APPLY TRANSFORMATIONS AND DRAW PLAYER ---
         ctx.save();
-        ctx.translate(cx, cy); // Move origin to player's center
-        ctx.scale(this.scaleX, this.scaleY); // Apply squish/stretch
+        ctx.translate(cx, cy);
+        ctx.scale(this.scaleX, this.scaleY);
 
         const isMirrored = this.vx > 0;
-        if (isMirrored) { // Moving right, flip horizontally
+        if (isMirrored) {
             ctx.scale(-1, 1);
         }
         
-        // Draw the image centered on the new origin
         ctx.drawImage(this.characterImage, -this.width / 2, -this.height / 2, this.width, this.height);
 
-        // --- 4. EYES (within the transform) ---
-        // Eye logic needs to work within the transformed space.
+        // --- 4. EYES AND MOUTH (within the transform) ---
         let mouseXForAngle = this.game.mouse.x;
         if (isMirrored) {
-            // Mirror the mouse's X position relative to the player's center (mouthX)
             mouseXForAngle = mouthX - (this.game.mouse.x - mouthX);
         }
         const ang = Math.atan2(this.game.mouse.y - eyeY, mouseXForAngle - mouthX);
         const pupilDist = 3.5;
         const eyeRadius = 7.5;
         const pupilRadius = 3.5;
-
-        // Since the canvas is flipped when moving right, we need to draw the eye on the opposite side.
-        const eyeXOffset = 0; // No offset, eye is centered horizontally.
+        const eyeXOffset = -(this.width * 0.05);
+        const relativeEyeY = -this.height/2 + this.height * 0.55;
 
         ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.arc(eyeXOffset, -this.height/2 + this.height * 0.55, eyeRadius, 0, Math.PI * 2);
+        ctx.arc(eyeXOffset, relativeEyeY, eyeRadius, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#4a101d';
         ctx.beginPath();
-        ctx.arc(eyeXOffset + Math.cos(ang) * pupilDist, -this.height/2 + this.height * 0.55 + Math.sin(ang) * pupilDist, pupilRadius, 0, Math.PI * 2);
+        ctx.arc(eyeXOffset + Math.cos(ang) * pupilDist, relativeEyeY + Math.sin(ang) * pupilDist, pupilRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        if (this.lickAnim <= 0) {
+            const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
+            const relativeMouthY = mouthY - cy;
+            
+            ctx.fillStyle = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+            ctx.beginPath();
+            ctx.roundRect(eyeXOffset - 6, relativeMouthY - 2, 12, 6 + idleBounce, 6);
+            ctx.fill();
+
+            ctx.fillStyle = '#3a0014';
+            ctx.beginPath();
+            const mouthSize = 4;
+            ctx.arc(eyeXOffset, relativeMouthY, mouthSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.restore(); // END PLAYER TRANSFORM
 
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
-        if (!this.isControlling) {
-            const tongueOriginX = mouthX; // Use untransformed mouthX
+        if (!this.isControlling && this.lickAnim > 0) {
+            const tongueOriginX = mouthX;
             const tongueOriginY = mouthY;
             const mouseAngle = Math.atan2(this.game.mouse.y - tongueOriginY, this.game.mouse.x - tongueOriginX);
+            const animPhase = (15 - this.lickAnim) / 15; 
+            const animCurve = Math.sin(animPhase * Math.PI);
+            const lickDistance = 140 * animCurve;
 
-            if (this.lickAnim > 0) {
-                 const animPhase = (15 - this.lickAnim) / 15; 
-                const animCurve = Math.sin(animPhase * Math.PI);
-                const lickDistance = 140 * animCurve;
+            ctx.save();
+            const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+            const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
+            const segments = 20; 
 
-                ctx.save();
-                const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
-                const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
-                const segments = 20; 
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const drag = 2.5;
+                const shiftX = Math.sin(t * Math.PI) * (this.vx * drag);
+                const shiftY = Math.sin(t * Math.PI) * (this.vy * drag);
+                const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - shiftX;
+                const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - shiftY;
 
-                for (let i = 0; i <= segments; i++) {
-                    const t = i / segments;
-                    const drag = 2.5;
-                    const shiftX = Math.sin(t * Math.PI) * (this.vx * drag);
-                    const shiftY = Math.sin(t * Math.PI) * (this.vy * drag);
-                    const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - shiftX;
-                    const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - shiftY;
+                let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
+                size *= animCurve;
 
-                    let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
-                    size *= animCurve;
-
-                    ctx.fillStyle = mainColor;
-                    ctx.beginPath();
-                    ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    if (i === segments || i % 5 === 0) {
-                        ctx.strokeStyle = shadowCol;
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                    }
-                    if (i > segments * 0.8) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                        ctx.beginPath();
-                        ctx.arc(segmentX, segmentY - (size * 0.3), size * 0.5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-                ctx.restore();
-            } else {
-                const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
-                ctx.fillStyle = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
+                ctx.fillStyle = mainColor;
                 ctx.beginPath();
-                ctx.roundRect(mouthX - 6, mouthY - 2, 12, 6 + idleBounce, 6);
+                ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
                 ctx.fill();
-            }
 
+                if (i === segments || i % 5 === 0) {
+                    ctx.strokeStyle = shadowCol;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                if (i > segments * 0.8) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(segmentX, segmentY - (size * 0.3), size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+
+            // Also draw the base of the tongue/mouth hole when licking
             ctx.fillStyle = '#3a0014';
             ctx.beginPath();
-            const mouthSize = this.lickAnim > 0 ? 8 : 4;
+            const mouthSize = 8;
             ctx.arc(mouthX, mouthY, mouthSize, 0, Math.PI * 2);
             ctx.fill();
         }
