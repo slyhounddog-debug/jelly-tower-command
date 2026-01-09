@@ -343,7 +343,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             const wiggleAmplitude = 4;
             const wiggleFrequency = 0.2;
             const cx = this.x + this.width / 2;
-            const cy = this.y + 100 + this.height / 2;
+            const cy = this.y + this.height / 2;
 
             // Shadow
             ctx.save();
