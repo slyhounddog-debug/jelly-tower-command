@@ -43,7 +43,7 @@ export default class XPBar {
 
         // Text
         const xpText = `${Math.floor(player.xp)} / ${player.xpForNextLevel}`;
-        ctx.font = 'bold 22px "VT323"'; // Increased font size
+        ctx.font = 'bold 32px "VT323"'; // Increased font size
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';

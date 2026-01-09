@@ -428,10 +428,11 @@ export default class Player {
         let minDistance = Infinity;
 
         this.game.platforms.forEach(p => {
+            const hitboxY = p.y + (p.hitboxOffsetY || 0);
             const isHorizontallyOverlapping = this.x + this.width > p.x && this.x < p.x + p.width;
-            const isBelow = this.y + this.height <= p.y;
+            const isBelow = this.y + this.height <= hitboxY;
             if (isHorizontallyOverlapping && isBelow) {
-                const distance = p.y - (this.y + this.height);
+                const distance = hitboxY - (this.y + this.height);
                 if (distance < minDistance) {
                     minDistance = distance;
                     closestPlatform = p;
@@ -440,6 +441,7 @@ export default class Player {
         });
 
         if (closestPlatform) {
+            const hitboxY = closestPlatform.y + (closestPlatform.hitboxOffsetY || 0);
             const maxShadowDistance = 400;
             const distance = minDistance;
             if (distance < maxShadowDistance) {
@@ -455,9 +457,15 @@ export default class Player {
                     };
                 }
                 const shadowFactor = 1 - (distance / maxShadowDistance);
+                let shadowY = hitboxY;
+                if (closestPlatform.type === 'ground') {
+                    shadowY += 100;
+                } else if (closestPlatform.type === 'castle') {
+                    shadowY += 200;
+                }
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, closestPlatform.y, (this.width * 0.5) * shadowFactor, (this.width * 0.12) * shadowFactor, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * 0.5) * shadowFactor, (this.width * 0.12) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }

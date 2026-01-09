@@ -96,7 +96,7 @@ export default class CastleHealthBar {
 
         // Text
         const healthText = `${Math.ceil(this.game.castleHealth)} / ${maxHealth}`;
-        ctx.font = 'bold 36px "VT323"'; // 16 * 1.5
+        ctx.font = 'bold 42px "VT323"'; // 16 * 1.5
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';

@@ -297,8 +297,8 @@ export default class GameLoop {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'rgba(255, 238, 0, 0.5)';
+        ctx.shadowBlur = 20;
         ctx.fillText(`$${game.money}`, moneyX, barCenterY);
 
         // Shop Button
@@ -306,6 +306,8 @@ export default class GameLoop {
         const moneyTextWidth = ctx.measureText(`$${game.money}`).width; 
         btn.x = moneyX + moneyTextWidth + 10;
         btn.y = barCenterY - btn.height / 2;
+        ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
+        ctx.shadowBlur = 10;
         if (btn.img.complete) {
             ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
         }
@@ -315,7 +317,6 @@ export default class GameLoop {
         settingsBtn.x = btn.x + btn.width + 35; // 10px padding from shop button
         settingsBtn.y = barCenterY;
         game.drawing.drawGear(ctx, settingsBtn.x, settingsBtn.y, settingsBtn.radius, 8, 10);
-        
         ctx.shadowBlur = 0;
 
 

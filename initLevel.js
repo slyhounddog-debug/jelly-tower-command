@@ -12,7 +12,7 @@ export default class initLevel {
             y: game.height - 70, 
             width: game.width, 
             height: 330, 
-            hitboxOffsetY: -100, // Move hitbox 100px UP from visual Y
+            hitboxOffsetY: -101, // Move hitbox 100px UP from visual Y
             type: 'ground'
         };
 
@@ -65,7 +65,7 @@ export default class initLevel {
         ];
 
         floatingConfigs.forEach(cfg => {
-            game.platforms.push({ ...cfg, type: 'cloud' });
+            game.platforms.push({ ...cfg, type: 'cloud', hitboxOffsetY: 15 });
         });
 
         game.towers = floatingConfigs.map(p => new Tower(game, p.x + (p.width / 2) - 23, p.y - 35.2));
