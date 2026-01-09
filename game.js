@@ -67,6 +67,8 @@ class Game {
             img.src = `assets/Images/gummybear${i}.png`;
             this.gummybearImages.push(img);
         }
+        this.lootImage = new Image();
+        this.lootImage.src = 'assets/Images/loot.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
@@ -328,6 +330,7 @@ class Game {
             ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
             ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
             new Promise(r => this.shopButtonImage.onload = r),
+            new Promise(r => this.lootImage.onload = r),
         ]).then(() => {
             startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
             startButton.style.pointerEvents = 'all'; // Enable click

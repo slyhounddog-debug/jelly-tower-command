@@ -13,11 +13,11 @@ export default class Drop {
         this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
         this.life = 1200; // Longer life
-       // Coins/Lucky coins are now 12-18px, Ice cream is 40px, others 15px
-this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'ice_cream_scoop' ? 40 : (type === 'xp_orb' ? 20 : (type === 'component' ? 25 : 30))));
+        this.width = 70; // Changed from 40 to 70 (75% bigger)
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
         this.xpValue = (type === 'xp_orb') ? value : 0;
-        this.rot = 0;
+        this.rotation = 0;
+        this.rotationSpeed = this.vx * 0.1;
         this.glow = 0;
         this.glowTimer = 0;
         this.hue = 0;
@@ -26,7 +26,13 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
         this.vy += this.gravity * tsf;
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
-        this.rot += 0.05 * tsf;
+        
+        // Always apply rotation
+        this.rotation += this.rotationSpeed * tsf;
+        
+        // Apply friction to slow down rotation over time
+        this.rotationSpeed *= 0.98;
+
         this.glowTimer = (this.glowTimer + 0.03 * tsf) % (Math.PI * 2); // Slower cycle
         this.glow = (Math.sin(this.glowTimer) + 1) / 2;
         this.vx *= 0.95;
@@ -106,9 +112,6 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             if (distance < maxShadowDistance && distance > -this.width) { // Also check if drop is not below ground
                 const shadowFactor = 1 - (distance / maxShadowDistance);
                 let shadowWidth = (this.width * 0.5) * shadowFactor;
-                if (this.type === 'ice_cream_scoop') {
-                    shadowWidth = (this.width * 0.18) * shadowFactor;
-                }
                 const shadowHeight = shadowWidth * 0.25; // Make it an ellipse
                 const shadowOpacity = 0.2 * shadowFactor;
 
@@ -120,120 +123,48 @@ this.width = (type === 'lucky_coin') ? 35 : (type === 'coin' ? 20 : (type === 'i
             }
         }
 
-        const radius = this.width / 2;
         ctx.save();
-        
-        // --- Initial Translate to center of the loot item (and thus the bubble) ---
-        ctx.translate(this.x + radius, this.y + radius);
+        ctx.translate(this.x + this.width / 2, this.y + this.width / 2);
+        ctx.rotate(this.rotation);
 
-        // --- Draw Bubble (Shiny, 3D effect) ---
-        const bubbleRadius = 30; // Fixed size for all loot, now 30px
-        const bubbleAlpha = 0.4 + (this.glow * 0.2); // Pulsating alpha
+        const lootSprite = this.game.lootImage;
+        const spriteWidth = 64;
+        const spriteHeight = 64;
+        let spriteX = 0;
 
-        ctx.beginPath();
-        ctx.arc(0, 0, bubbleRadius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(173, 216, 230, ${bubbleAlpha})`; // Light blue base for bubble
-        ctx.fill();
-
-        // Inner highlight for depth and shine
-        const innerGradient = ctx.createRadialGradient(0, 0, bubbleRadius * 0.3, 0, 0, bubbleRadius * 0.8);
-        innerGradient.addColorStop(0, `rgba(255, 255, 255, ${bubbleAlpha * 0.8})`); // White highlight
-        innerGradient.addColorStop(1, `rgba(255, 255, 255, ${bubbleAlpha * 0.0})`); // Transparent
-        ctx.fillStyle = innerGradient;
-        ctx.fill();
-
-        // Outer rim for depth
-        const outerGradient = ctx.createRadialGradient(0, 0, bubbleRadius * 0.8, 0, 0, bubbleRadius);
-        outerGradient.addColorStop(0, `rgba(173, 216, 230, ${bubbleAlpha * 0.0})`); // Transparent
-        outerGradient.addColorStop(1, `rgba(173, 216, 230, ${bubbleAlpha * 0.5})`); // Light blue
-        ctx.strokeStyle = outerGradient;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // --- End Draw Bubble ---
-
-        // Loot movement inside the bubble
-        const lootY = Math.sin(this.glowTimer * 2) * 5;
-        ctx.translate(0, lootY);
-
-        // Determine base color and a lighter variant for glowing
-        let baseColor;
-        let iconText = '';
-        if (this.type === 'coin') {
-            baseColor = '#f1c40f'; // Yellow coin
-        } else if (this.type === 'lucky_coin') {
-            baseColor = '#ffe082'; // Gold lucky coin
-        } else if (this.type === 'heart') {
-            baseColor = '#e74c3c'; // Red heart
-        } else if (this.type === 'ice_cream_scoop') {
-            baseColor = '#fdfdfd'; // White ice cream
-            iconText = '🍦';
-        } else if (this.type === 'xp_orb') {
-            baseColor = '#39FF14'; // Neon Green XP orb
-            iconText = 'XP';
-        } else if (this.type === 'component') {
-            baseColor = `hsl(${this.hue}, 100%, 70%)`;
-            iconText = 'C';
+        switch (this.type) {
+            case 'coin':
+                spriteX = 0;
+                break;
+            case 'lucky_coin':
+                spriteX = 64;
+                break;
+            case 'xp_orb':
+                spriteX = 128;
+                break;
+            case 'heart':
+                spriteX = 192;
+                break;
+            case 'ice_cream_scoop':
+                spriteX = 256;
+                break;
+            case 'component':
+                spriteX = 320;
+                break;
         }
 
-        ctx.fillStyle = baseColor;
+        ctx.drawImage(
+            lootSprite,
+            spriteX,
+            0,
+            spriteWidth,
+            spriteHeight,
+            -this.width / 2,
+            -this.width / 2,
+            this.width,
+            this.width
+        );
 
-        if (this.type === 'component') {
-            ctx.fillStyle = `hsl(${this.hue}, 100%, 50%)`;
-            ctx.beginPath();
-            ctx.roundRect(-radius, -radius, this.width, this.width, 5);
-            ctx.fill();
-
-            ctx.strokeStyle = `hsl(${this.hue + 180}, 100%, 80%)`;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -radius);
-            ctx.lineTo(0, radius);
-            ctx.moveTo(-radius, 0);
-            ctx.lineTo(radius, 0);
-            ctx.stroke();
-        } else if (this.type === 'heart') {
-            const x = 0;
-            const y = 0;
-            const w = this.width;
-            const h = this.width;
-            ctx.beginPath();
-            ctx.moveTo(x + w / 2, y + h);
-            ctx.bezierCurveTo(x + w / 2, y + h * 0.7, x, y + h * 0.5, x, y + h * 0.25);
-            ctx.bezierCurveTo(x, y, x + w / 2, y, x + w / 2, y + h * 0.25);
-            ctx.bezierCurveTo(x + w / 2, y, x + w, y, x + w, y + h * 0.25);
-            ctx.bezierCurveTo(x + w, y + h * 0.5, x + w / 2, y + h * 0.7, x + w / 2, y + h);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-
-        // Draw the icon/shape
-        if (this.type === 'coin' || this.type === 'lucky_coin') {
-            ctx.strokeStyle = darkenColor(baseColor, 20);
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.font = 'bold 18px "Fredoka One"'; // Adjusted font size
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle'; // Center vertically
-            ctx.fillText('$', 0, 0); // Centered
-        } else if (this.type === 'xp_orb') {
-            ctx.fillStyle = '#004d4a';
-            ctx.font = 'bold 12px "Fredoka One"'; // Smaller font for "XP"
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(iconText, 0, 0);
-        } else if (this.type === 'ice_cream_scoop') {
-            ctx.font = '48px "Fredoka One"'; // Increased size for better visibility
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle'; // Center vertically
-            ctx.fillText(iconText, 0, 0); // Centered
-        }
-    
         ctx.restore();
     }
 }
