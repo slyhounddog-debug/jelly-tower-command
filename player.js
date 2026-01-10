@@ -574,6 +574,24 @@ export default class Player {
 
         ctx.restore(); // END PLAYER TRANSFORM
 
+        if (this.sugarRushTimer > 0) {
+            ctx.save();
+            ctx.globalAlpha = 0.5 + Math.sin(this.game.gameTime * 0.5) * 0.2;
+            const waveCount = 3;
+            for (let i = 0; i < waveCount; i++) {
+                const progress = (this.game.gameTime * 0.2 + i * (1 / waveCount)) % 1;
+                const yOffset = this.y + this.height * progress;
+                const alpha = 1 - progress;
+                
+                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+                ctx.lineWidth = 3 + (1 - progress) * 4;
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, yOffset, this.width * 0.6 * progress, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
         if (!this.isControlling && this.lickAnim > 0) {
             const tongueOriginX = mouthX;

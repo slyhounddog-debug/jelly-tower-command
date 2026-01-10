@@ -97,7 +97,7 @@ export default class LevelUpScreen {
 
         if (card.hovered) {
             ctx.shadowColor = glow;
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = 50;
         }
 
         const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
@@ -157,10 +157,10 @@ export default class LevelUpScreen {
         let testWidth;
 
         context.save();
-        context.strokeStyle = 'rgba(0,0,0,0.7)';
-        context.lineWidth = 3;
+        context.strokeStyle = 'rgba(255, 188, 241, 0.7)';
+        context.lineWidth = 1;
         context.shadowColor = 'black';
-        context.shadowBlur = 2;
+        context.shadowBlur = 0;
 
         for (let n = 0; n < words.length; n++) {
             testLine = line + words[n] + ' ';

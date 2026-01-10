@@ -6,7 +6,7 @@ export default class WaveAttack {
         this.x = x;
         this.y = y;
         this.angle = angle;
-        this.speed = Math.abs(playerVx) * 1.1; // 10% faster than player's post-dash velocity
+        this.speed = Math.abs(playerVx) * .8; // 10% faster than player's post-dash velocity
         this.lifespan = 30 * 1.33; // 0.5 seconds * 1.33 = ~0.665 seconds
         this.arcs = [];
         this.hitEnemies = [];

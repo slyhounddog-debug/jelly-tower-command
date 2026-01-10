@@ -120,9 +120,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 12;
+        this.gummyWormSpawnThreshold = 9;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 22;
+        this.marshmallowSpawnThreshold = 10;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;
@@ -698,7 +698,7 @@ if (dist < settingsBtn.radius) {
         
         
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.gameTime = 0; this.isGameOver = false; this.isPaused = false; this.currentRPM = 5.5;
+        this.gameTime = 0; this.isGameOver = false; this.isPaused = true; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
         this.shopOpenedFirstTime = false;
         this.shopReminderShown = false;

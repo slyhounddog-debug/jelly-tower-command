@@ -328,12 +328,9 @@
         
         #restart-btn {
             display: none; position: absolute; top: 75%; left: 50%; transform: translate(-50%, -50%);
-            padding: 15px 40px; font-size: 24px; background-color: #e74c3c; color: white;
-            border: none; border-radius: 8px; cursor: pointer; z-index: 200;
-            box-shadow: 0 4px 0 #c0392b;
-            font-family: 'Titan One', cursive;
+            cursor: pointer; z-index: 200;
         }
-        #restart-btn:hover { background-color: #ff6b6b; transform: translate(-50%, -52%); }
+        #restart-btn:hover { transform: translate(-50%, -52%); }
 
         /* Guide Modal Styles */
         .modal {
@@ -791,25 +788,30 @@
             z-index: 100;
         }
 
-        .modal-confirm-button {
-            cursor: pointer;
-            transition: all 0.2s;
+        .modal-confirm-button-wrapper { /* New wrapper for the image buttons */
             width: 120px;
             height: 40px;
-            object-fit: contain;
-            align-self: center;
-            display: block; /* Ensure it behaves as a block element */
+            cursor: pointer;
+            transition: all 0.2s;
+            align-self: center; /* Center the wrapper in flex container */
+            display: flex; /* Make wrapper a flex container for its image */
+            justify-content: center; /* Center image inside wrapper */
+            align-items: center; /* Center image inside wrapper */
             margin: 20px auto 0 auto; /* Center horizontally and add top margin */
             flex-shrink: 0; /* Prevent shrinking */
             flex-grow: 0; /* Prevent growing */
         }
-
-        .modal-confirm-button:hover {
+        .modal-confirm-button-wrapper:hover {
             filter: drop-shadow(0 0 10px #00aaff); /* Light blue glow */
         }
-
-        .modal-confirm-button:active {
+        .modal-confirm-button-wrapper:active img { /* Target the image inside when wrapper is active */
             content: url('assets/Images/modalconfirmdown.png');
+        }
+
+        .modal-confirm-button { /* The image inside the wrapper */
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .shop-button {
@@ -819,6 +821,14 @@
 
         .shop-button:hover {
             filter: drop-shadow(0 0 10px #00aaff); /* Light blue glow */
+        }
+        .game-over-buttons {
+            text-align: center; /* Center the buttons */
+            margin-top: 20px; /* Add some space above */
+        }
+        .game-over-buttons .modal-confirm-button {
+            display: inline-block; /* Place them side-by-side */
+            margin: 0 10px; /* Add horizontal spacing between them */
         }
     </style>
 </head>
@@ -877,9 +887,9 @@
             <span>High Score:</span>
             <span id="go-high-score">0</span>
         </div>
-        <div style="text-align: center;">
-        <img src="assets/Images/modalconfirmup.png" id="open-emporium-btn" class="modal-confirm-button">
-        <img src="assets/Images/modalconfirmup.png" id="restart-btn" class="modal-confirm-button">
+        <div class="game-over-buttons">
+        <img src="assets/Images/emporiumbutton.png" id="open-emporium-btn" class="modal-confirm-button">
+        <img src="assets/Images/restartbutton.png" id="restart-btn" class="modal-confirm-button">
         </div>
         </div>
         <div id="shop-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; flex-direction: column; box-sizing: border-box; color: #ecf0f1;">
@@ -934,7 +944,9 @@
                 </div>
                 <div id="component-grid"></div>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentQuarters()">
+            </div>
         </div>
 
         <div id="emporium-overlay" class="modal" style="display: none;">
@@ -975,7 +987,9 @@
                 <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
                 <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('guide-modal').style.display='none'">
+            </div>
         </div>
         <div id="stats-modal" class="modal" style="display: none;">
             <h2>Current Stats</h2>
@@ -998,7 +1012,9 @@
                 <p><strong>Critical Hit Chance:</strong> <span id="stat-critical-hit-chance"></span></p>
                 <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('stats-modal').style.display='none'">
+            </div>
         </div>
         <div id="start-game-modal" class="modal" style="display: block;">
             <h2>Welcome to Jelly Tower Command!</h2>
@@ -1018,7 +1034,9 @@
                 <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
                 <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/disabledbutton.png" class="modal-confirm-button" id="start-game-btn" style="pointer-events: none;">
+            </div>
         </div>
         <div id="piggy-modal" class="modal">
             <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
@@ -1027,7 +1045,9 @@
                 <p id="piggy-cooldown-text">It appears once every minute.</p>
                 <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closePiggyModal()">
+            </div>
         </div>
         <div id="gummy-worm-modal" class="modal" style="display: none;">
             <h2>🐍 Gummy Worm Spotted in the Wild! 🐍</h2>
@@ -1035,7 +1055,9 @@
                 <p>These slippery foes slither as they fall!</p>
                 <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeGummyWormModal()">
+            </div>
         </div>
         <div id="marshmallow-modal" class="modal" style="display: none;">
             <h2>⚪ Marshmallow Menace! ⚪</h2>
@@ -1043,7 +1065,9 @@
                 <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
                 <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeMarshmallowModal()">
+            </div>
         </div>
         <div id="component-modal" class="modal" style="display: none;">
             <h2>🔧 New Component! 🔧</h2>
@@ -1052,7 +1076,9 @@
                 <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
                 <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
+            </div>
         </div>
         <div id="boss-modal" class="modal" style="display: none;">
             <h2>🚨 BOSS INCOMING! 🚨</h2>
@@ -1062,7 +1088,9 @@
                 <p>As you damage the Gummy Cluster, it will shed smaller Gummy Bears that will attack your castle.</p>
                 <p><strong>Rewards:</strong> Defeating the boss will grant a huge loot bonus and make the game more challenging!</p>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeBossModal()">
+            </div>
         </div>
         <div id="settings-modal" class="modal" style="display: none;">
             <h2>Settings</h2>
@@ -1082,7 +1110,9 @@
                     </div>
                 </div>
             </div>
+            <div class="modal-confirm-button-wrapper">
             <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
+            </div>
         </div>
        
 

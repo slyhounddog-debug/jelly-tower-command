@@ -231,7 +231,11 @@ export default class GummyCluster {
     }
 
     spawnGummyBear() {
-        const gummyBear = new GummyBear(this.game, this.x, this.y);
+        const spawnX = this.x + Math.random() * this.width;
+        const spawnY = this.y + Math.random() * this.height;
+        const gummyBear = new GummyBear(this.game, spawnX, spawnY);
+        gummyBear.vx = (Math.random() - 0.5) * 12; // Increased horizontal velocity spread
+        gummyBear.vy = -Math.random() * 10; // Initial upward velocity
         this.game.missiles.push(gummyBear);
     }
 
@@ -283,28 +287,7 @@ export default class GummyCluster {
             ctx.drawImage(image, 0, 0, this.width, this.height);
         }
 
-        // Health bar
-        if (this.health < this.maxHealth) {
-            const pct = Math.max(0, this.health / this.maxHealth);
-            const barWidth = this.width * 1.2;
-            const barHeight = 18;
-            const barX = -barWidth / 2;
-            const barY = -this.height / 2 - 30;
 
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.roundRect(barX, barY, barWidth, barHeight, 8);
-            ctx.fill();
-
-            let healthFillColor = '#2ecc71'; // Green
-            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
-            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
-            
-            ctx.fillStyle = healthFillColor;
-            ctx.beginPath();
-            ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8);
-            ctx.fill();
-        }
 
         ctx.restore();
     }

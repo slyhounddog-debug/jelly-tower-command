@@ -388,14 +388,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         } else if (this.type.includes('marshmallow')) {
             ctx.save();
             ctx.fillStyle = shadowColor;
-            ctx.translate(this.x + this.width / 2, this.y + 100 + this.height / 2 + shadowOffset);
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
             ctx.rotate(this.angle);
             ctx.scale(this.squash * 1.1, this.stretch * 1.1);
             ctx.beginPath(); ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10); ctx.fill();
             ctx.restore();
 
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + 100 + this.height / 2);
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             ctx.rotate(this.angle);
             ctx.scale(this.squash, this.stretch);
             ctx.fillStyle = (this.hitTimer > 0) ? 'white' : this.color;
@@ -568,9 +568,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         
         for (let c = 0; c < count; c++) {
             dropsToCreate.push({ type: 'coin', value: 25 });
-            if (count > 0) {
-                dropsToCreate.push({ type: 'xp_orb', value: xpGained / count });
+            
+            let xpValue;
+            if (this.type === 'piggy') {
+                xpValue = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
+            } else {
+                xpValue = xpGained;
             }
+            dropsToCreate.push({ type: 'xp_orb', value: xpValue });
             
             if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
             if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });

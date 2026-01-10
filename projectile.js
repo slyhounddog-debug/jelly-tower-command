@@ -49,26 +49,12 @@ export default class Projectile {
                     damage *= this.bounceDamageFalloff[this.hitEnemies.length];
                 }
 
-                // Apply Pop-Rock Projectiles effect on impact
-                if (this.popRockStacks > 0) {
-                    this.createExplosion();
-                }
-
-                // Apply Fire Damage effect
-                if (this.fireDamageCount > 0) {
-                    m.applyFire(damage, this.fireDamageCount);
-                }
-
-                // Apply Freeze Frosting effect
-                if (this.freezeStacks > 0) {
-                    m.applySlow(5 * 60, 0.1 * this.freezeStacks, 'freeze');
-                }
+                if (this.popRockStacks > 0) this.createExplosion();
+                if (this.fireDamageCount > 0) m.applyFire(damage, this.fireDamageCount);
+                if (this.freezeStacks > 0) m.applySlow(5 * 60, 0.1 * this.freezeStacks, 'freeze');
                 
-                // Only apply direct damage if no explosion occurred
                 if (this.popRockStacks <= 0) {
-                    if (m.takeDamage(damage)) {
-                        // Missile is dead, main loop will remove it
-                    }
+                    if (m.takeDamage(damage)) {}
                 }
                 this.hitEnemies.push(m);
                 this.hasHit = true;
@@ -100,44 +86,46 @@ export default class Projectile {
                         this.dead = true;
                     }
                 } else {
-                    this.hp -= m.maxHealth; // Reduce projectile HP by missile health
-                    if (this.hp <= 0) { // Projectile runs out of damage or pierces
-                        this.dead = true;
-                    }
+                    this.hp -= m.maxHealth;
+                    if (this.hp <= 0) this.dead = true;
                 }
                 if(this.dead) break;
             }
         }
 
-        // Check if out of range
-        if (!hitSomething && Math.hypot(this.x - this.origin.x, this.y - this.origin.y) > this.range) {
-            if (this.bouncesLeft > 0 && !this.dead && this.chainBounceCount === 0) { // Only bounce if not already dead from damage and no chain bounce
-                this.bouncesLeft--;
-                
-                // Add particles for bounce
-                for(let i = 0; i < 5; i++) {
-                    this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255, 255, 255, 0.8)', 'spark'));
-                }
-                this.game.audioManager.playSound('pop'); // Bounce sound
-
-                // Invert velocity
+        // Wall and Ground Collision for Bubblegum Shots
+        if (this.bouncesLeft > 0) {
+            let bounced = false;
+            // Wall bounce
+            if ((this.vx < 0 && this.x < this.radius) || (this.vx > 0 && this.x > this.game.width - this.radius)) {
                 this.vx *= -1;
-                this.vy *= -1;
-
-                // Add random angle change to make bounces less predictable
-                const currentAngle = Math.atan2(this.vy, this.vx);
-                const randomAngle = (Math.random() - 0.5) * (Math.PI / 4); // +/- 22.5 degrees
-                const speed = Math.hypot(this.vx, this.vy);
-                this.vx = Math.cos(currentAngle + randomAngle) * speed;
-                this.vy = Math.sin(currentAngle + randomAngle) * speed;
-                
-                // Reset origin to current position for next bounce's range check
-                this.origin.x = this.x;
-                this.origin.y = this.y;
-
-            } else {
-                this.dead = true;
+                bounced = true;
             }
+
+            // Ground bounce
+            this.game.platforms.forEach(p => {
+                if (p.type === 'ground' && this.vy > 0 && this.y + this.radius > p.y) {
+                    this.vy *= -1;
+                    this.y = p.y - this.radius;
+                    bounced = true;
+                }
+            });
+
+            if (bounced) {
+                this.bouncesLeft--;
+                this.game.audioManager.playSound('pop');
+                for(let i = 0; i < 5; i++) {
+                    this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255, 192, 203, 0.8)', 'spark'));
+                }
+            }
+        }
+
+        // Check if out of range OR off screen
+        const outOfRange = Math.hypot(this.x - this.origin.x, this.y - this.origin.y) > this.range;
+        const offScreen = this.y > this.game.height;
+
+        if ((outOfRange && this.bouncesLeft <= 0) || offScreen) {
+            this.dead = true;
         }
     }
 
