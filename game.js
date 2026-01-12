@@ -71,7 +71,7 @@ class Game {
         this.lootImage.src = 'assets/Images/loot.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
-        this.UPGRADE_COSTS = [75, 150, 250, 400, 700, 1000, 1250, 1500, 1800, 2150, 2500, 3000, 4000, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 40000, 50000, 60000, 75000, 90000, 100000];
+        this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
         this.LICK_DAMAGE_TIERS = [13, 17, 22, 28, 35, 43, 52, 62, 72, 83, 95, 110, 125];
         this.LICK_KNOCKBACK_TIERS = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100];
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
@@ -105,7 +105,7 @@ class Game {
         this.sellMode = null;
         this.placementItemCost = 0;
         this.lastShopOpenTime = 0;
-        this.shopReminderTimer = 0;
+        
 
         this.firstComponentCollected = false;
         this.lastMoveDirection = 1;
@@ -120,9 +120,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 9;
+        this.gummyWormSpawnThreshold = 16;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 10;
+        this.marshmallowSpawnThreshold = 36;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;
@@ -152,10 +152,10 @@ class Game {
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
             getNextDamage() { return (this.damageLvl >= this.game.DAMAGE_TIERS.length - 1) ? "MAX" : this.game.DAMAGE_TIERS[this.damageLvl + 1]; },
-            get fireRate() { return Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.fireRateLvl))); },
+            get fireRate() { return Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.9, this.fireRateLvl))); },
             get projectileSpeed() { return 4 + .5 * this.fireRateLvl; },
             getNextProjectileSpeed() { return 4 + .5 * (this.fireRateLvl + 1); },
-            get range() { return this.baseRange + (this.rangeLvl * 80); },
+            get range() { return this.baseRange + (this.rangeLvl * 50); },
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
             get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
@@ -175,7 +175,7 @@ class Game {
             { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
               getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
-              getNext: () => `${(60/Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.82, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
+              getNext: () => `${(60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.9, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/15`,
               action: () => this.stats.fireRateLvl++ 
             },
@@ -222,7 +222,7 @@ class Game {
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
-              getCost: () => { const costs = [2500, 10000, 50000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+              getCost: () => { const costs = [5000, 50000, 500000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
               getValue: () => `${this.stats.turretsBought}/3`,
               getNext: () => `Place on a cloud.`,
               getLevel: () => `${this.stats.turretsBought}/3`,
@@ -432,7 +432,10 @@ if (dist < settingsBtn.radius) {
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
         document.getElementById('start-game-btn').addEventListener('click', () => {
     document.getElementById('start-game-modal').style.display = 'none';
-    this.isPaused = false;
+    setTimeout(() => {
+        this.isPaused = false;
+        this.lastTime = 0;
+    }, 0);
 
     // Start the persistent music when the user clicks Start
     if (this.audioManager) {
@@ -467,7 +470,7 @@ if (dist < settingsBtn.radius) {
                 document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
 
                 // Add event listeners for modal-confirm-buttons
-                document.querySelectorAll('.modal-confirm-button').forEach(button => {
+                document.querySelectorAll('.modal .modal-confirm-button').forEach(button => {
                     button.addEventListener('mousedown', () => {
                         button.src = 'assets/Images/modalconfirmdown.png';
                     });
@@ -605,7 +608,8 @@ if (dist < settingsBtn.radius) {
                                                 modal.style.display = isVisible ? 'none' : 'block';
                                                 if (isVisible) {
                                                     this.requestUnpause();
-                                                } else {
+                                                }
+                                                else {
                                                     this.isPaused = true;
                                                     this.renderComponentQuarters();
                                                 }
@@ -616,14 +620,15 @@ if (dist < settingsBtn.radius) {
         modal.style.display = isVisible ? 'none' : 'block';
         if (isVisible) {
             this.requestUnpause();
-        } else {
+        }
+        else {
             this.isPaused = true;
         }
     }
 
     isAnyModalOpen(exclude = null) {
         const modals = [
-            '#component-modal', '#piggy-modal', '#gummy-worm-modal',
+            '#start-game-modal', '#component-modal', '#piggy-modal', '#gummy-worm-modal',
             '#marshmallow-modal', '#boss-modal',
             '#component-quarters-overlay', '#settings-modal', '#shop-overlay',
             '#guide-modal', '#stats-modal'
@@ -638,6 +643,7 @@ if (dist < settingsBtn.radius) {
     requestUnpause(exclude = null) {
         if (!this.isAnyModalOpen(exclude)) {
             this.isPaused = false;
+            this.lastTime = 0;
         }
     }
                             
@@ -700,8 +706,7 @@ if (dist < settingsBtn.radius) {
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
         this.gameTime = 0; this.isGameOver = false; this.isPaused = true; this.currentRPM = 5.5;
         this.piggyTimer = 0; this.piggyBankSeen = false;
-        this.shopOpenedFirstTime = false;
-        this.shopReminderShown = false;
+
 
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
@@ -713,6 +718,7 @@ if (dist < settingsBtn.radius) {
 
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
         this.player.reset();
+        this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);
         this.lastTime = 0;
         document.getElementById('restart-btn').style.display = 'none';
@@ -741,7 +747,7 @@ if (dist < settingsBtn.radius) {
             gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
     
                     if (this.isShopOpen) { 
-                        this.shopOpenedFirstTime = true;
+                        
                         document.getElementById('notification').innerText = 'Game Paused';
                         document.getElementById('notification').style.opacity = 1;
                         setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);

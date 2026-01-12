@@ -69,6 +69,15 @@ export default class Emporium {
                 getNext: () => (this.game.emporiumUpgrades.enemy_xp.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `x${this.game.emporiumUpgrades.enemy_xp.values[this.game.emporiumUpgrades.enemy_xp.level + 1].toFixed(1)}`,
                 getLevel: () => `${this.game.emporiumUpgrades.enemy_xp.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
                 action: () => { this.game.emporiumUpgrades.enemy_xp.level++; }
+            },
+            {
+                id: 'starting_component_points', name: 'Component Capacity', icon: '🧰',
+                desc: 'Increases your starting component points.',
+                getCost: () => (this.game.emporiumUpgrades.starting_component_points.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : EMPORIUM_UPGRADE_COSTS[this.game.emporiumUpgrades.starting_component_points.level],
+                getValue: () => `${this.game.emporiumUpgrades.starting_component_points.values[this.game.emporiumUpgrades.starting_component_points.level]}`,
+                getNext: () => (this.game.emporiumUpgrades.starting_component_points.level >= EMPORIUM_UPGRADE_COSTS.length) ? 'MAX' : `${this.game.emporiumUpgrades.starting_component_points.values[this.game.emporiumUpgrades.starting_component_points.level + 1]}`,
+                getLevel: () => `${this.game.emporiumUpgrades.starting_component_points.level}/${EMPORIUM_UPGRADE_COSTS.length}`,
+                action: () => { this.game.emporiumUpgrades.starting_component_points.level++; }
             }
         ];
     }
@@ -91,13 +100,14 @@ export default class Emporium {
 
     getInitialEmporiumUpgrades() {
         return {
-            starting_money: { level: 0, values: [25, 150, 300, 450, 600, 800, 1000, 1500, 2000, 3000] },
-            piggy_cooldown: { level: 0, values: [60, 55, 50, 45, 40, 35, 30] },
-            castle_health: { level: 0, values: [100, 110, 120, 130, 140, 160, 180, 200, 220, 250] },
-            heart_heal: { level: 0, values: [10, 12, 14, 16, 18, 20, 22, 24, 26, 30] },
-            big_coin_value: { level: 0, values: [100, 120, 140, 160, 180, 200, 220, 240, 260, 300] },
-            ice_cream_chance: { level: 0, values: [[1.5, 10], [2.5, 15], [3.5, 20], [4.5, 25], [5.5, 30], [6.5, 35], [7.5, 40], [8.5, 50]] },
+            starting_money: { level: 0, values: [25, 150, 300, 450, 600, 800, 1000, 1500, 2000, 3000, 4000] },
+            piggy_cooldown: { level: 0, values: [60, 56, 52, 48, 44, 40, 37, 34, 31, 28, 25] },
+            castle_health: { level: 0, values: [100, 110, 120, 130, 140, 160, 180, 200, 220, 250, 300] },
+            heart_heal: { level: 0, values: [6, 8, 9, 10, 11, 12, 14, 16, 18, 19, 20] },
+            big_coin_value: { level: 0, values: [75, 85, 100, 120, 140, 160, 180, 200, 220, 240, 250] },
+            ice_cream_chance: { level: 0, values: [[1, 5], [1.5, 7.5], [2, 10], [2.5, 12.5], [3, 15], [3.5, 17.5], [4, 20], [4.5, 22.5], [5, 25], [5.5, 27.5], [6, 30]] },
             enemy_xp: { level: 0, values: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] },
+            starting_component_points: { level: 0, values: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] },
         };
     }
     
@@ -107,6 +117,10 @@ export default class Emporium {
 
     getEnemyXpMultiplier() {
         return this.game.emporiumUpgrades.enemy_xp.values[this.game.emporiumUpgrades.enemy_xp.level];
+    }
+
+    getStartingComponentPoints() {
+        return this.game.emporiumUpgrades.starting_component_points.values[this.game.emporiumUpgrades.starting_component_points.level];
     }
 
     getStartingMoney() {

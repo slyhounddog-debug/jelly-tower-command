@@ -48,7 +48,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Greed", description: "Cash injection bonus ($500 + total money earned).", icon: "💰", rarity: "normal" },
+                        { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
 
         
 
@@ -624,7 +624,7 @@ export default class LevelingManager {
 
         
 
-                                                                                                    const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.1));
+                                                                                                    const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
 
         
 

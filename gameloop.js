@@ -31,12 +31,7 @@ export default class GameLoop {
                 this.game.audioManager.setBossMusic(false);
             }
 
-            if (this.game.money >= 100 && !this.game.shopOpenedFirstTime && !this.game.shopReminderShown) {
-                this.game.shopReminderShown = true;
-                const reminder = document.getElementById('shop-reminder');
-                if (reminder) reminder.style.display = 'block';
-                this.game.isPaused = true;
-            }
+
 
             const pLvl = this.game.emporiumUpgrades.piggy_cooldown.level;
             const pCooldown = this.game.emporiumUpgrades.piggy_cooldown.values[pLvl] * 60;

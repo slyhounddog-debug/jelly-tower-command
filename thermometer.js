@@ -50,10 +50,20 @@ export default class Thermometer {
         const intersectY = bulbY - Math.cos(intersectAngle) * bulbRadius;
 
         // --- 3. ANIMATION LOGIC ---
-        const time = Date.now() * 0.001;
-        let pulse = (this.pulse || this.game.boss) ? (Math.sin(Date.now() * 0.005) + 1) / 2 : (Math.sin(time * 2) + 1) / 2;
-        const scale = 1 + (pulse * 0.05); 
-        const wobbleAngle = Math.sin(time * 0.8) * 0.035; 
+        let time = Date.now() * 0.001;
+        let pulse, scale, wobbleAngle;
+
+        if (this.game.boss) {
+            // 50% faster animation and 10% more aggressive wobble/size change during boss event
+            time = Date.now() * 0.0015;
+            pulse = (this.pulse || this.game.boss) ? (Math.sin(Date.now() * 0.005) + 1) / 2 : (Math.sin(time * 2) + 1) / 2;
+            scale = 1 + (pulse * 0.05); 
+            wobbleAngle = Math.sin(time * 0.8) * 0.035; 
+        } else {
+            pulse = (this.pulse || this.game.boss) ? (Math.sin(Date.now() * 0.003) + 1) / 2 : (Math.sin(time * 2) + 1) / 2;
+            scale = 1 + (pulse * 0.03); 
+            wobbleAngle = Math.sin(time * 0.8) * 0.02; 
+        }
         const recoilOffset = this.recoil > 0 ? Math.sin(this.recoil * 0.5) * this.recoil : 0;
 
         ctx.save();
@@ -98,6 +108,38 @@ export default class Thermometer {
         drawGlassShape();
         ctx.fill();
 
+        // "Boss Time" text
+        ctx.save();
+        ctx.translate(x, y + h / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 48px "VT323"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw transparent text first
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillText('B o s s   T i m e', 0, 0);
+
+        // Draw filled text
+        ctx.save();
+        ctx.rect(-w / 2, h / 2, w, -h * fillPercent);
+        ctx.clip();
+
+        if (this.game.boss) {
+            const gradient = ctx.createLinearGradient(-h/2, 0, h/2, 0);
+            const hue = (this.game.gameTime * 2) % 360;
+            gradient.addColorStop(0, `hsl(${hue}, 100%, 50%)`);
+            gradient.addColorStop(0.5, `hsl(${(hue + 90) % 360}, 100%, 50%)`);
+            gradient.addColorStop(1, `hsl(${(hue + 180) % 360}, 100%, 50%)`);
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        }
+        ctx.fillText('B o s s   T i m e', 0, 0);
+        ctx.restore();
+
+        ctx.restore();
+
         // 5. INTERNAL PINK JAM
         ctx.save();
         drawGlassShape();
@@ -124,38 +166,6 @@ export default class Thermometer {
         ctx.fill();
         
         ctx.restore(); 
-
-        // 6. NOTCHES & BOSS THRESHOLD TEXT
-        const bossThreshold = this.game.killsForNextBoss;
-        for (let i = 1; i <= 10; i++) {
-            const notchPct = i / 10;
-            const notchY = bulbY - (h * notchPct);
-            const isGlowing = fillPercent >= notchPct;
-
-            if (i % 2 === 0) { // Only draw text for every second notch
-                ctx.font = '14px "VT323"';
-                ctx.fillStyle = isGlowing ? 'white' : 'rgba(255,255,255,0.4)';
-                ctx.textAlign = 'left';
-                ctx.fillText(Math.floor(bossThreshold * notchPct), x + w / 2 + 10, notchY + 5);
-            }
-
-            ctx.beginPath();
-            ctx.moveTo(x - w / 2 + 5, notchY);
-            ctx.lineTo(x + w / 2 - 5, notchY);
-            
-            if (isGlowing) {
-                ctx.strokeStyle = "rgba(255, 180, 220, 0.9)";
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = "pink";
-            } else {
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-                ctx.lineWidth = 1;
-                ctx.shadowBlur = 0;
-            }
-            ctx.stroke();
-        }
-        ctx.shadowBlur = 0;
 
         // Main Border
         ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";

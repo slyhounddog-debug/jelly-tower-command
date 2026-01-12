@@ -37,8 +37,13 @@ export default class Projectile {
 
         // Collision detection with missiles
         let hitSomething = false;
-        for (let i = this.game.missiles.length - 1; i >= 0; i--) {
-            const m = this.game.missiles[i];
+        const allEnemies = [...this.game.missiles];
+        if (this.game.boss) {
+            allEnemies.push(this.game.boss);
+        }
+
+        for (let i = allEnemies.length - 1; i >= 0; i--) {
+            const m = allEnemies[i];
             if (this.hitEnemies.includes(m)) continue;
 
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
@@ -63,7 +68,7 @@ export default class Projectile {
                 if (this.chainBounceCount > 0 && this.hitEnemies.length <= this.chainBounceCount) {
                     let closestEnemy = null;
                     let minDistance = Infinity;
-                    for (const enemy of this.game.missiles) {
+                    for (const enemy of allEnemies) {
                         if (!this.hitEnemies.includes(enemy)) {
                             const distance = Math.hypot(this.x - enemy.x, this.y - enemy.y);
                             if (distance < minDistance) {
@@ -140,7 +145,12 @@ export default class Projectile {
         const explosionRadius = this.radius * multiplier;
         const explosionDamage = this.damage * 0.5;
 
-        this.game.missiles.forEach(m => {
+        const allEnemies = [...this.game.missiles];
+        if (this.game.boss) {
+            allEnemies.push(this.game.boss);
+        }
+
+        allEnemies.forEach(m => {
             if (m.dead) return;
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < explosionRadius + m.width / 2) {

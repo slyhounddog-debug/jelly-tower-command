@@ -3,6 +3,7 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import Drop from './drop.js';
 import FloatingText from './floatingText.js';
+import DamageSpot from './damageSpot.js';
 
 export class GummyBear {
     constructor(game, x, y) {
@@ -72,8 +73,19 @@ export class GummyBear {
         } else {
             this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount.toFixed(0)}`, 'red'));
         }
+        
+        const numSpots = Math.floor(roundedAmount / 5);
+        for (let i = 0; i < numSpots; i++) {
+            const spotX = (this.width / 2) + (Math.random() - 0.5) * (this.width * 0.5);
+            const spotY = (this.height / 2) + (Math.random() - 0.5) * (this.height * 0.5);
+            const spotRadius = Math.random() * 3 + 2;
+            const spotColor = darkenColor('#FF0000', 20);
+            this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor, this));
+        }
 
-        return this.health <= 0.5;
+        if (this.health <= 0) {
+            this.kill();
+        }
     }
 
     kill() {
@@ -140,6 +152,11 @@ export class GummyBear {
         if (this.y > this.game.height) {
             this.dead = true;
         }
+
+        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
+            this.damageSpots[i].update(tsf);
+            if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1);
+        }
     }
 
     draw(ctx) {
@@ -157,6 +174,11 @@ export class GummyBear {
         if (this.image && this.image.complete) {
             ctx.drawImage(this.image, 0, 0, this.width, this.height);
         }
+
+        for (const spot of this.damageSpots) {
+            spot.draw(ctx);
+        }
+
         ctx.restore();
     }
 }
@@ -167,21 +189,54 @@ export default class GummyCluster {
         this.game = game;
         this.x = (this.game.width / 2) + (Math.random() * 200 - 100);
         this.y = +20;
-        this.width = 450; // 50% bigger (200 * 1.5)
-        this.height = 450; // 50% bigger (200 * 1.5)
-        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5; // 1/5th speed of jelly bean
+        this.width = 450;
+        this.height = 450;
+        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5;
         this.health = 150 + (this.game.currentRPM * 100);
         this.maxHealth = this.health;
         this.type = 'gummy_cluster_boss';
         this.hitTimer = 0;
         this.healthThresholds = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, .05, .02, .01];
         this.groundProximity = false;
+        this.damageSpots = [];
+        this.criticalHitFlashTimer = 0;
+        this.shakeDuration = 0;
+        this.shakeMagnitude = 0;
+        this.fireStacks = [];
+        this.fireFlashTimer = 0;
+        this.slowEffects = [];
+        this.totalSlow = 0;
     }
 
-    takeDamage(amount) {
+    applyFire(damage, stacks) {
+        if (stacks <= 0) return;
+        this.fireStacks.push({
+            damage: damage * 0.1 * stacks,
+            duration: 300,
+            timer: 300,
+        });
+    }
+
+    applySlow(duration, amount, source = 'generic') {
+        if (!this.slowEffects.some(e => e.source === source)) {
+            this.slowEffects.push({ timer: duration, amount, source });
+        }
+    }
+
+    takeDamage(amount, isCritical = false) {
         this.health -= amount;
         this.hitTimer = 10;
         this.game.audioManager.playSound('bossHit');
+
+        this.shakeDuration = 10;
+        this.shakeMagnitude = 4;
+
+        if (isCritical) {
+            this.criticalHitFlashTimer = 15;
+            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${amount.toFixed(0)}`, 'yellow', 4));
+        } else {
+            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${amount.toFixed(0)}`, 'red'));
+        }
 
         const healthPercentage = this.health / this.maxHealth;
         
@@ -199,7 +254,7 @@ export default class GummyCluster {
                 this.spawnGummyBear();
                 this.width *= 0.995;
                 this.height *= 0.995;
-                break; // only spawn one per frame
+                break;
             }
         }
 
@@ -234,17 +289,47 @@ export default class GummyCluster {
         const spawnX = this.x + Math.random() * this.width;
         const spawnY = this.y + Math.random() * this.height;
         const gummyBear = new GummyBear(this.game, spawnX, spawnY);
-        gummyBear.vx = (Math.random() - 0.5) * 12; // Increased horizontal velocity spread
-        gummyBear.vy = -Math.random() * 10; // Initial upward velocity
+        gummyBear.vx = (Math.random() - 0.5) * 12;
+        gummyBear.vy = -Math.random() * 10;
         this.game.missiles.push(gummyBear);
     }
 
     update(tsf) {
-        this.y += this.speed * tsf;
+        if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
+        for (let i = this.fireStacks.length - 1; i >= 0; i--) {
+            const stack = this.fireStacks[i];
+            stack.timer -= tsf;
+            if (stack.timer <= 0) {
+                this.fireStacks.splice(i, 1);
+            } else {
+                if (Math.floor(stack.timer) % 60 === 0) {
+                    this.health -= stack.damage;
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
+                    this.fireFlashTimer = 10;
+                }
+            }
+        }
+
+        let totalSlow = 0;
+        for (let i = this.slowEffects.length - 1; i >= 0; i--) {
+            const effect = this.slowEffects[i];
+            effect.timer -= tsf;
+            if (effect.timer <= 0) {
+                this.slowEffects.splice(i, 1);
+            } else {
+                totalSlow += effect.amount;
+            }
+        }
+        this.totalSlow = Math.min(0.9, totalSlow);
+        const currentSpeed = this.speed * (1 - this.totalSlow);
+
+        this.y += currentSpeed * tsf;
 
         if (this.hitTimer > 0) {
             this.hitTimer -= tsf;
         }
+
+        if (this.shakeDuration > 0) this.shakeDuration -= tsf;
 
         const ground = this.game.platforms.find(p => p.type === 'ground');
         const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
@@ -254,6 +339,11 @@ export default class GummyCluster {
             this.game.castleHealth -= 50;
             this.game.castleHealthBar.triggerHit();
             this.game.boss = null;
+        }
+
+        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
+            this.damageSpots[i].update(tsf);
+            if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1);
         }
     }
 
@@ -269,7 +359,6 @@ export default class GummyCluster {
         }
         ctx.translate(this.x, this.y + 100);
 
-        // Blinking effect
         if (this.hitTimer > 0 && Math.floor(this.hitTimer / 2) % 2 === 0) {
             ctx.globalAlpha = 0.5;
         }
@@ -287,7 +376,9 @@ export default class GummyCluster {
             ctx.drawImage(image, 0, 0, this.width, this.height);
         }
 
-
+        for (const spot of this.damageSpots) {
+            spot.draw(ctx);
+        }
 
         ctx.restore();
     }
