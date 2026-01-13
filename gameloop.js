@@ -63,7 +63,7 @@ export default class GameLoop {
                 m.update(tsf);
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
-                if (m.y > this.game.height - 180) {
+                if (m.y > this.game.height - 95) {
                     if (m.type === 'gummy_bear') {
                         this.game.castleHealth -= 10;
                     } else {
@@ -231,6 +231,21 @@ export default class GameLoop {
             this.game.ctx.restore();
         });
 
+        // Draw ground with shadow -- MOVED HERE
+        const ground = this.game.platforms.find(p => p.type === 'ground');
+        if (ground) {
+            this.game.ctx.save();
+            this.game.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            this.game.ctx.shadowBlur = 10;
+            this.game.ctx.shadowOffsetY = 5;
+            
+            const shake = this.game.screenShake.getOffset();
+            const yOffset = -170; // This specific yOffset is being applied to the ground image
+            this.game.ctx.translate(shake.x, shake.y - 100); 
+            this.game.ctx.drawImage(this.game.groundImage, ground.x, ground.y + yOffset, ground.width, ground.height);
+            this.game.ctx.restore();
+        }
+
         this.game.damageSpots.forEach(s => s.draw(this.game.ctx));
         this.game.towers.forEach(t => t.draw(this.game.ctx));
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
@@ -263,22 +278,7 @@ export default class GameLoop {
         ctx.fillStyle = '#eb9cbeff';
         ctx.fillRect(0, game.height - ui.barHeight, game.width, ui.barHeight);
         
-        // 2. Draw ground with shadow
-        const ground = game.platforms.find(p => p.type === 'ground');
-        if (ground) {
-            ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 5;
-            
-            const shake = game.screenShake.getOffset();
-            const yOffset = -170;
-            ctx.translate(shake.x, shake.y - 100); // Apply manual translation
-            ctx.drawImage(game.groundImage, ground.x, ground.y + yOffset, ground.width, ground.height);
-            ctx.restore();
-        }
-
-        // 3. Draw UI Elements
+        // 3. Draw UI Elements (these are drawn AFTER the ground)
         const barCenterY = game.height - ui.barHeight / 2;
         const healthBarWidth = 525;
         const xpBarWidth = 200;

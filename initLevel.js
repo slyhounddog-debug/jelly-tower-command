@@ -9,10 +9,10 @@ export default class initLevel {
         // --- 1. CORE ENVIRONMENT & COLORS ---
         const groundPlatform = { 
             x: 0, 
-            y: game.height - 70, 
+            y: game.height +28, 
             width: game.width, 
             height: 330, 
-            hitboxOffsetY: +5, // Move hitbox 100px UP from visual Y
+            hitboxOffsetY: -95, // Move hitbox 100px UP from visual Y
             type: 'ground'
         };
 
