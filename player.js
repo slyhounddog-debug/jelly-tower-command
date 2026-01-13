@@ -347,15 +347,26 @@ export default class Player {
         this.isOnGround = false;
 
         this.game.platforms.forEach((p) => {
-            // NOTE: Added hitbox offsets for platforms that have them.
-            const hitboxX = p.x + (p.hitboxOffsetX || 0);
-            const hitboxY = p.y + (p.hitboxOffsetY || 0);
+            let hitboxX = p.x + (p.hitboxOffsetX || 0);
+            let hitboxY = p.y + (p.hitboxOffsetY || 0);
+            let hitboxWidth = p.width;
+            let hitboxHeight = p.height;
+
+            if (p.type === 'castle') {
+                hitboxWidth *= 0.6;
+                hitboxHeight *= 0.95;
+                hitboxX += (p.width - hitboxWidth) / 2;
+                hitboxY += (p.height - hitboxHeight) / 2;
+            } else if (p.type === 'cloud') {
+                hitboxWidth *= 0.7;
+                hitboxX += (p.width - hitboxWidth) / 2;
+            }
 
             if ((p.type === 'cloud' || p.type === 'castle') && this.isPassingThrough) return;
             const isMovingDown = this.vy >= 0;
             const playerWasAbove = (this.y) + this.height <= hitboxY + 2; 
-            const horizontalOverlap = this.x < hitboxX + p.width && this.x + this.width > hitboxX;
-            const verticalOverlap = (this.y + this.vy * tsf) + this.height > hitboxY && (this.y + this.vy * tsf) < hitboxY + p.height;
+            const horizontalOverlap = this.x < hitboxX + hitboxWidth && this.x + this.width > hitboxX;
+            const verticalOverlap = (this.y + this.vy * tsf) + this.height > hitboxY && (this.y + this.vy * tsf) < hitboxY + hitboxHeight;
             
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
                 if (!wasOnGround && this.vy > 5) {
@@ -473,11 +484,25 @@ export default class Player {
         let minDistance = Infinity;
 
         this.game.platforms.forEach(p => {
-            const hitboxY = p.y + (p.hitboxOffsetY || 0);
-            const hitboxX = p.x + (p.hitboxOffsetX || 0);
-            const isHorizontallyOverlapping = this.x + this.width > hitboxX && this.x < hitboxX + p.width;
-            const isBelow = this.y + this.height <= hitboxY;
-            if (isHorizontallyOverlapping && isBelow) {
+            let hitboxX = p.x + (p.hitboxOffsetX || 0);
+            let hitboxY = p.y + (p.hitboxOffsetY || 0);
+            let hitboxWidth = p.width;
+
+            if (p.type === 'castle') {
+                hitboxWidth *= 0.9;
+                hitboxX += (p.width - hitboxWidth) / 2;
+            } else if (p.type === 'cloud') {
+                hitboxWidth *= 0.9;
+                hitboxX += (p.width - hitboxWidth) / 2;
+            }
+
+            const isHorizontallyOverlapping = this.x + this.width > hitboxX && this.x < hitboxX + hitboxWidth;
+            const shadowIsHorizontallyOverlapping = this.x + this.width / 1.5 > hitboxX && this.x + this.width / 5 < hitboxX + hitboxWidth;
+
+            // Allow a small tolerance for when the player is standing on the platform
+            const isBelow = this.y + this.height <= hitboxY + 1; 
+
+            if (isHorizontallyOverlapping && shadowIsHorizontallyOverlapping && isBelow) {
                 const distance = hitboxY - (this.y + this.height);
                 if (distance < minDistance) {
                     minDistance = distance;
