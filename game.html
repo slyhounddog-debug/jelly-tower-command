@@ -211,7 +211,7 @@
 
         #shop-info {
             position: absolute;
-            top: 25%;
+            top: 23%;
             left: 50%;
             transform: translateX(-50%);
             width: 80%;
@@ -227,6 +227,16 @@
         #shop-info p, #emporium-info p {
             color: var(--body-color);
         }
+        #shop-info .detail-info #detail-title {
+            color: #9966CC; /* dark-lilac */
+        }
+        #shop-info .detail-info #detail-desc {
+            color: #3e2e4d; /* dark-gray */
+        }
+        #shop-info .detail-info #detail-level-display {
+            color: #3e2e4d !important; /* dark-gray */
+        }
+
 
         #shop-grid {
             position: absolute;
@@ -308,6 +318,13 @@
 
 .detail-icon {
     width: 34%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    --icon-scale-factor: 4; /* Adjust this value to shrink/grow the icon */
+    font-size: calc(26px * var(--icon-scale-factor)); 
+    transform: translateX(15%);
 }
 
 .detail-info {
@@ -583,7 +600,9 @@
             box-shadow: 0 6px 0 #8e44ad;
         }
 
-        /* Forces "Current -> Next" info onto one line */
+        body #shop-info .detail-info #detail-level-display {
+            color: #3e2e4d; /* dark-gray */
+        }
 .stat-comparison {
     display: flex;
     gap: 15px;
@@ -986,7 +1005,7 @@
                 </div>
                 <div id="shop-title">Upgrade Shop</div>
         <div id="shop-info">
-        <div class="detail-icon" id="detail-icon" style="font-size: 26px; display: flex; align-items: center; justify-content: center; width: 30%;">🔧</div>
+        <div class="detail-icon" id="detail-icon">🔧</div>
         
         <div class="detail-info" style="width: 70%; display: flex; flex-direction: column;">
             <h2 id="detail-title" style="margin: 0;">Select an Item</h2>

@@ -837,9 +837,9 @@ selectShopItem(item) {
     let nextValue = item.getNext();
     const statsDiv = document.getElementById('detail-stats');
     if (nextValue === "MAX") {
-        statsDiv.innerHTML = `<span>${item.getValue()}</span> ➜ <span>MAX</span>`;
+        statsDiv.innerHTML = `<span style="color: red;">${item.getValue()}</span> <span style="color: #3e2e4d;">➜</span> <span>MAX</span>`;
     } else {
-        statsDiv.innerHTML = `<span>${item.getValue()}</span> ➜ <span>${nextValue}</span>`;
+        statsDiv.innerHTML = `<span style="color: red;">${item.getValue()}</span> <span style="color: #3e2e4d;">➜</span> <span style="color: green;">${nextValue}</span>`;
     }
     
     // This updates ONLY the level text, leaving the button row intact
