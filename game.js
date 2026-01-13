@@ -626,14 +626,7 @@ class Game {
                 grid.appendChild(leftColumn);
                 grid.appendChild(rightColumn);
 
-                // Add event listeners for the new buttons
-                document.getElementById('stats-btn-components').onclick = () => {
-                    this.updateStatsWindow();
-                    document.getElementById('stats-modal').style.display = 'flex';
-                };
-                document.getElementById('help-btn-components').onclick = () => {
-                    document.getElementById('guide-modal').style.display = 'flex';
-                };
+
             }
                                             toggleComponentQuarters() {
                                                 const modal = document.getElementById('component-quarters-overlay');

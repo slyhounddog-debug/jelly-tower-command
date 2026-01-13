@@ -419,7 +419,7 @@
         /* Generic positioning for modals that DON'T have specific overrides */
         .modal-title {
             position: absolute;
-            top: 18%; left: 50%;
+            top: 16%; left: 50%;
             transform: translateX(-50%);
             width: 58%; height: 10%;
             text-align: center;
@@ -1186,14 +1186,18 @@
                 </div>
             </div>
             <div id="component-modal" class="modal enemy-modal" style="display: none;">
-                <h2>🔧 New Component! 🔧</h2>
-                <div class="modal-content-area">
+                <div class="modal-title">
+                    <h2>🔧 New Component! 🔧</h2>
+                </div>
+                <div class="modal-body">
                     <p>You've found a Component! These are special augments for your towers.</p>
                     <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
                     <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
                 </div>
-                <div class="modal-confirm-button-wrapper">
-                <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
+                    </div>
                 </div>
             </div>
             <div id="boss-modal" class="modal enemy-modal" style="display: none;">

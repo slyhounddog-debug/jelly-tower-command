@@ -42,7 +42,7 @@ export default class GameLoop {
             this.game.piggyTimer += tsf;
             if (this.game.piggyTimer >= pCooldown) {
                 this.game.piggyTimer = 0;
-                this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 50) + 25, 'piggy'));
+                this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 390) + 25, 'piggy'));
                 if (!this.game.piggyBankSeen) {
                     this.game.piggyBankSeen = true;
                     this.game.isPaused = true;
