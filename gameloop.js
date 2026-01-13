@@ -63,7 +63,7 @@ export default class GameLoop {
                 m.update(tsf);
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
-                if (m.y > this.game.height - 95) {
+                if (m.y > this.game.height - 100) {  // enemy death vertical threshold 
                     if (m.type === 'gummy_bear') {
                         this.game.castleHealth -= 10;
                     } else {
@@ -315,9 +315,11 @@ export default class GameLoop {
 
         // Settings Button (Right-most)
         const settingsBtn = ui.settingsButton;
-        settingsBtn.x = btn.x + btn.width + 35; // 10px padding from shop button
-        settingsBtn.y = barCenterY;
-        game.drawing.drawGear(ctx, settingsBtn.x, settingsBtn.y, settingsBtn.radius, 8, 10);
+        settingsBtn.x = btn.x + btn.width + 15; 
+        settingsBtn.y = barCenterY - (settingsBtn.height / 2); // Center vertically on the bar
+        if (game.settingButtonImage.complete) {
+            ctx.drawImage(game.settingButtonImage, settingsBtn.x, settingsBtn.y, settingsBtn.width, settingsBtn.height);
+        }
         ctx.shadowBlur = 0;
 
         const bossHealthContainer = document.getElementById('boss-health-container');

@@ -474,7 +474,8 @@ export default class Player {
 
         this.game.platforms.forEach(p => {
             const hitboxY = p.y + (p.hitboxOffsetY || 0);
-            const isHorizontallyOverlapping = this.x + this.width > p.x && this.x < p.x + p.width;
+            const hitboxX = p.x + (p.hitboxOffsetX || 0);
+            const isHorizontallyOverlapping = this.x + this.width > hitboxX && this.x < hitboxX + p.width;
             const isBelow = this.y + this.height <= hitboxY;
             if (isHorizontallyOverlapping && isBelow) {
                 const distance = hitboxY - (this.y + this.height);
@@ -504,13 +505,11 @@ export default class Player {
                 const shadowFactor = 1 - (distance / maxShadowDistance);
                 let shadowY = hitboxY;
                 if (closestPlatform.type === 'ground') {
-                    shadowY += 100;
-                } else if (closestPlatform.type === 'castle') {
-                    shadowY += 200;
+                    shadowY -= 1; //player shadow offset
                 }
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * 0.5 / 1.7) * shadowFactor, (this.width * 0.12 / 1.7) * shadowFactor, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * this.scaleX * 0.5 / 1.7) * shadowFactor, (this.width * 0.12 / 1.7) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }

@@ -263,7 +263,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 const shadowOpacity = 0.3 * shadowFactor;
                 ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, ground.y + 2, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, ground.y - 90, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }

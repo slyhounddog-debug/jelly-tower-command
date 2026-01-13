@@ -393,30 +393,94 @@
             height: 40%;
         }
 
+        .settings-modal-size {
+            height: 30%;
+        }
+
+        #settings-modal .modal-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 40%; /* Adjust as needed */
+        }
+        
+        #settings-modal .setting-row {
+            width: 40%; /* Or adjust as needed */
+        }
+
+        #settings-modal .slider-container {
+            flex-grow: 1;
+            margin-left: 20px;
+        }
+
+        /* --- START OF MODAL REFACTOR --- */
+
+        /* Generic positioning for modals that DON'T have specific overrides */
         .modal-title {
             position: absolute;
-            top: 18%;
-            left: 50%;
+            top: 18%; left: 50%;
             transform: translateX(-50%);
-            width: 58%;
-            height: 10%;
+            width: 58%; height: 10%;
             text-align: center;
         }
         .modal-body {
             position: absolute;
-            top: 32%;
-            left: 50%;
+            top: 32%; left: 50%;
             transform: translateX(-50%);
-            width: 75%;
-            height: 50%;
+            width: 75%; height: 50%;
             overflow-y: auto;
         }
         .modal-button-container {
             position: absolute;
-            bottom: 8%;
-            left: 50%;
+            bottom: 8%; left: 50%;
             transform: translateX(-50%);
         }
+
+        /* --- Settings Modal --- */
+        #settings-modal .modal-title {
+            top: 12%;
+        }
+        #settings-modal .modal-body {
+            top: 28%;
+            height: 45%;
+        }
+        #settings-modal .modal-button-container {
+            bottom: 6%;
+        }
+
+        /* --- Guide Modal --- */
+        #guide-modal .modal-title {
+            top: 18%; left: 50%;
+            transform: translateX(-50%);
+            width: 58%; height: 10%;
+            text-align: center;
+        }
+        #guide-modal .modal-body {
+            top: 32%; left: 50%;
+            transform: translateX(-50%);
+            width: 75%; height: 50%;
+            overflow-y: auto;
+        }
+        #guide-modal .modal-button-container {
+            bottom: 8%; left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* --- Component Quarters Modal --- */
+        #component-quarters-overlay .modal-title {
+            top: 15%;
+        }
+        #component-quarters-overlay .modal-body {
+            top: 33%;
+            height: 60%;
+        }
+        #component-quarters-overlay .modal-button-container {
+            bottom: 9%;
+        }
+
+        /* --- END OF MODAL REFACTOR --- */
+
         .modal h2 {
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -517,88 +581,6 @@
             background: #a569bd;
             transform: translateY(-2px);
             box-shadow: 0 6px 0 #8e44ad;
-        }
-
-        /* Emporium Styles */
-        #emporium-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('assets/Images/shopoverlay.png');
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            z-index: 100;
-            flex-direction: column;
-            box-sizing: border-box;
-            color: var(--body-color);
-            font-family: 'Nunito', sans-serif;
-        }
-
-        #emporium-header-bar {
-            position: absolute;
-            top: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 10%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #emporium-title {
-            color: var(--title-color);
-            font-family: 'Titan One', cursive;
-            font-size: 46px;
-            font-weight: bold;
-        }
-
-        #emporium-info {
-            position: absolute;
-            top: 25%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 25%;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-        }
-
-        #emporium-grid {
-            position: absolute;
-            top: 55%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 40%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        #emporium-reset-btn {
-            background-image: url('assets/Images/resetbutton.png');
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            width: 120px;
-            height: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            align-self: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px auto 0 auto;
-            flex-shrink: 0;
-            flex-grow: 0;
-        }
-        #emporium-reset-btn:hover {
-            filter: drop-shadow(0 0 10px #00aaff); /* Light blue glow */
         }
 
         /* Forces "Current -> Next" info onto one line */
@@ -877,37 +859,6 @@
 }
 /* --- END OF SHOP FIX --- */
 
-        #component-modal {
-            width: 50%;
-            height: 60%;
-        }
-
-        #component-modal h2 {
-            position: absolute;
-            top: 16%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            text-align: center;
-        }
-
-        #component-modal .modal-content-area {
-            position: absolute;
-            top: 30%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 35%;
-            overflow-y: auto;
-        }
-
-        #component-modal .modal-confirm-button-wrapper {
-            position: absolute;
-            bottom: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
         #settings-icon {
                     position: absolute;
                     top: 10px;
@@ -1085,7 +1036,7 @@
                 </div>
             </div>
     
-            <div id="emporium-overlay" class="modal" style="display: none;">
+            <div id="emporium-overlay" class="modal shop-overlay" style="display: none;">
                 <div class="modal-title">
                     <h2 id="emporium-title">The Emporium</h2>
                 </div>
@@ -1120,7 +1071,7 @@
             </div>
             <div id="guide-modal" class="modal" style="display: none;">
                 <div class="modal-title">
-                    <h2>Field Manual & Mechanics</h2>
+                    <h2>Field Manual</h2>
                 </div>
                 <div class="modal-body">
                     <h3>Defensive Systems</h3>
@@ -1236,7 +1187,7 @@
                     </div>
                 </div>
             </div>
-            <div id="component-modal" class="modal" style="display: none;">
+            <div id="component-modal" class="modal enemy-modal" style="display: none;">
                 <h2>🔧 New Component! 🔧</h2>
                 <div class="modal-content-area">
                     <p>You've found a Component! These are special augments for your towers.</p>
@@ -1263,9 +1214,11 @@
                     </div>
                 </div>
             </div>
-            <div id="settings-modal" class="modal" style="display: none;">
-                <h2>Settings</h2>
-                <div class="modal-content-area">
+            <div id="settings-modal" class="modal enemy-modal settings-modal-size" style="display: none;">
+                <div class="modal-title">
+                    <h2>Settings</h2>
+                </div>
+                <div class="modal-body">
                     <div class="setting-row">
                         <span>Sound Effects</span>
                         <div class="slider-container">
@@ -1281,8 +1234,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-confirm-button-wrapper">
-                <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
+                    </div>
                 </div>
             </div>
            

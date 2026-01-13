@@ -255,6 +255,8 @@ class Game {
 
         this.shopButtonImage = new Image();
         this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';
+        this.settingButtonImage = new Image();
+        this.settingButtonImage.src = 'assets/Images/settings.png';
         this.ui = {
             barHeight: 100,
             shopButton: {
@@ -262,7 +264,7 @@ class Game {
                 x: 0, y: 0, width: 0, height: 80
             },
             settingsButton: {
-                x: 0, y: 0, radius: 25
+                x: 0, y: 0, height: 80
             }
         };
 
@@ -329,6 +331,7 @@ class Game {
             ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
             ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
             new Promise(r => this.shopButtonImage.onload = r),
+            new Promise(r => this.settingButtonImage.onload = r),
             new Promise(r => this.lootImage.onload = r),
         ]).then(() => {
             startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
@@ -337,6 +340,9 @@ class Game {
             btn.width = (btn.img.width / btn.img.height) * btn.height;
             btn.x = (this.width - btn.width) / 2;
             btn.y = this.height - this.ui.barHeight + (this.ui.barHeight - btn.height) / 2;
+
+            const settingsBtn = this.ui.settingsButton;
+            settingsBtn.width = (this.settingButtonImage.width / this.settingButtonImage.height) * settingsBtn.height;
         }).catch(error => {
             console.error("Failed to load assets:", error);
         });
@@ -394,21 +400,21 @@ class Game {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = ((e.clientY - rect.top) * scaleY);
+            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
         });
         this.canvas.addEventListener('mousedown', () => {
           this.mouse.isDown = true;
 
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-                this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+                this.mouse.y - 100 > shopBtn.y && this.mouse.y - 100 < shopBtn.y + shopBtn.height) {
                 this.toggleShop();
                 return; 
             }
 
             const settingsBtn = this.ui.settingsButton;
-            const dist = Math.hypot(this.mouse.x - settingsBtn.x, this.mouse.y - settingsBtn.y);
-            if (dist < settingsBtn.radius) {
+            if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width &&
+                this.mouse.y - 100 > settingsBtn.y && this.mouse.y - 100 < settingsBtn.y + settingsBtn.height) {
                 this.toggleSettings();
                 return;
             }
