@@ -179,6 +179,69 @@ export class GummyBear {
             spot.draw(ctx);
         }
 
+        if (this.health < this.maxHealth) {
+            const pct = Math.max(0, this.health / this.maxHealth);
+            const isLow = pct < 0.25;
+            
+            let sizeMult = 1.0;
+            
+            const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
+            const finalMult = sizeMult * pulse;
+            
+            let offsetX = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
+            let offsetY = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
+            
+            const barWidth = (this.width * 1.2) * finalMult;
+            const barHeight = 18 * finalMult; 
+            const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
+            const barY = this.y - 22 + offsetY;
+
+            const frameColor = darkenColor('#FF0000', 20);
+
+            // Glass Tube Background
+            ctx.fillStyle = frameColor + '66'; 
+            ctx.beginPath(); ctx.roundRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 10); ctx.fill();
+            
+            // Inner Empty Tube
+            ctx.fillStyle = darkenColor(frameColor, 30) + '99'; 
+            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth, barHeight, 8); ctx.fill();
+
+            // Health Fill Logic (Red < 25%, Yellow < 60%, Green otherwise)
+            let healthFillColor = '#2ecc71'; // Green
+            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
+            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
+            
+            ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthFillColor;
+            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8); ctx.fill();
+
+            // Candy Glaze Shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath(); ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 8); ctx.fill();
+
+            if (this.damageTextTimer > 0) {
+                const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
+                ctx.save();
+                ctx.globalAlpha = alpha; 
+                ctx.font = 'bold 44px "VT323"';
+                ctx.textAlign = 'center';
+                
+                const tx = barX + barWidth / 2;
+                const ty = barY + 5;
+                const val = Math.ceil(this.health);
+
+                // Add the gray border
+                ctx.strokeStyle = '#213625ff'; // Dark gray border
+                ctx.lineWidth = 3;           // Thickness of the border
+                ctx.strokeText(val, tx, ty);
+
+                // Fill the white text
+                ctx.fillStyle = 'white';
+                ctx.fillText(val, tx, ty);
+                
+                ctx.restore();
+            }
+        }
+
         ctx.restore();
     }
 }

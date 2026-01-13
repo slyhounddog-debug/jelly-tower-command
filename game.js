@@ -2,7 +2,7 @@ import Player from './player.js?v=2';
 import Tower from './tower.js';
 import Missile from './missile.js?v=25';
 import ThreatManager from './threatManager.js';
-import { ScreenShake, darkenColor, lightenColor } from './utils.js?v=25';
+import { ScreenShake, darkenColor, lightenColor, showNotification } from './utils.js?v=25';
 import Drop from './drop.js?v=25';
 import Particle from './particle.js';
 import WaveAttack from './waveAttack.js';
@@ -148,13 +148,12 @@ class Game {
             turretsBought: 0,
             maxTurrets: 3,
             critLvl: 0,
-            criticalHitChance: 1, // 1% initial chance
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
             getNextDamage() { return (this.damageLvl >= this.game.DAMAGE_TIERS.length - 1) ? "MAX" : this.game.DAMAGE_TIERS[this.damageLvl + 1]; },
-            get fireRate() { return Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.9, this.fireRateLvl))); },
-            get projectileSpeed() { return 4 + .5 * this.fireRateLvl; },
-            getNextProjectileSpeed() { return 4 + .5 * (this.fireRateLvl + 1); },
+            get fireRate() { return Math.max(5, Math.floor(this.baseFireRate * Math.pow(0.92, this.fireRateLvl))); },
+            get projectileSpeed() { return 4 + .1 * this.fireRateLvl; },
+            getNextProjectileSpeed() { return 4 + .1 * (this.fireRateLvl + 1); },
             get range() { return this.baseRange + (this.rangeLvl * 50); },
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
@@ -169,28 +168,28 @@ class Game {
               getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
               getValue: () => this.stats.damage, 
               getNext: () => this.stats.getNextDamage(),
-              getLevel: () => `${this.stats.damageLvl}/${this.DAMAGE_TIERS.length}`,
+              getLevel: () => `${this.stats.damageLvl}/${this.DAMAGE_TIERS.length - 1}`,
               action: () => { if (this.stats.damageLvl < this.DAMAGE_TIERS.length - 1) this.stats.damageLvl++; }
             },
             { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
               getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
-              getNext: () => `${(60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.9, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
-              getLevel: () => `${this.stats.fireRateLvl}/15`,
+              getNext: () => `${(60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.92, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
+              getLevel: () => `${this.stats.fireRateLvl}/${this.UPGRADE_COSTS.length -1}`,
               action: () => this.stats.fireRateLvl++ 
             },
             { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX', 
               getValue: () => this.stats.range + 'px', 
               getNext: () => (this.stats.range + 50) + 'px',
-              getLevel: () => `${this.stats.rangeLvl}/15`, 
+              getLevel: () => `${this.stats.rangeLvl}/${this.UPGRADE_COSTS.length - 1}`, 
               action: () => this.stats.rangeLvl++ 
             },
             { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX', 
               getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`, 
               getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`, 
-              getLevel: () => `${this.stats.luckLvl}/15`,
+              getLevel: () => `${this.stats.luckLvl}/${this.UPGRADE_COSTS.length - 1}`,
               action: () => this.stats.luckLvl++ 
             },
             { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
@@ -198,7 +197,7 @@ class Game {
               getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
               getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`, 
               getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
-              getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length}`,
+              getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length - 1}`,
               action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
             },
             { id: 'piggy_bonus', name: 'Piggy Bank Bonus', icon: '🐷', 
@@ -210,7 +209,7 @@ class Game {
                  const next = this.PIGGY_TIERS[this.stats.piggyLvl+1];
                  return `${(next.bonus*100).toFixed(0)}% | ${next.mult}x`;
               },
-              getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length}`,
+              getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length - 1}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
             { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
@@ -218,7 +217,7 @@ class Game {
               getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
               getValue: () => `${this.stats.criticalHitChance}%`,
               getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
-              getLevel: () => `${this.stats.critLvl}/${this.CRITICAL_CHANCE_TIERS.length}`,
+              getLevel: () => `${this.stats.critLvl}/${this.CRITICAL_CHANCE_TIERS.length - 1}`,
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
@@ -303,9 +302,9 @@ class Game {
 
     resizeModals() {
         const modals = document.querySelectorAll('.modal');
-        const canvasWidth = this.canvas.clientWidth;
+        const windowWidth = window.innerWidth;
         modals.forEach(modal => {
-            modal.style.width = `${canvasWidth}px`;
+            modal.style.width = `${windowWidth * 0.4}px`;
         });
     }
 
@@ -400,33 +399,44 @@ class Game {
         this.canvas.addEventListener('mousedown', () => {
           this.mouse.isDown = true;
 
-    // We subtract 100 here to cancel out the mouse offset 
-    // and match the actual visual position of the buttons
-    const adjustedY = this.mouse.y - 100; 
+            const shopBtn = this.ui.shopButton;
+            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
+                this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+                this.toggleShop();
+                return; 
+            }
 
-    const shopBtn = this.ui.shopButton;
-// We check the mouse directly because the UI bar is not affected by game world shifts
-if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-    this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
-    this.toggleShop();
-    return; 
-}
+            const settingsBtn = this.ui.settingsButton;
+            const dist = Math.hypot(this.mouse.x - settingsBtn.x, this.mouse.y - settingsBtn.y);
+            if (dist < settingsBtn.radius) {
+                this.toggleSettings();
+                return;
+            }
 
-const settingsBtn = this.ui.settingsButton;
-const dist = Math.hypot(this.mouse.x - settingsBtn.x, this.mouse.y - settingsBtn.y);
-if (dist < settingsBtn.radius) {
-    this.toggleSettings();
-    return;
-}
+            if (this.sellMode) {
+                for (let i = this.towers.length - 1; i >= 0; i--) {
+                    const t = this.towers[i];
+                    if (this.mouse.x > t.x && this.mouse.x < t.x + t.width &&
+                        this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
 
-            if ((!this.isPaused || this.placementMode || this.sellMode) && !this.isGameOver) {
-                if (this.placementMode) {
-                    this.tryPlaceItem();
-                } else if (this.sellMode) {
-                    // The logic for selling is handled within the gameLoop's sellMode block
-                } else if (!this.isShopOpen && !this.player.isControlling) {
-                    this.player.tryLick();
+                        const costs = [5000, 50000, 500000];
+                        const lastTurretCost = this.stats.turretsBought > 0 ? costs[this.stats.turretsBought - 1] : 0;
+                        const sellPrice = lastTurretCost / 2;
+
+                        this.money += sellPrice;
+                        this.towers.splice(i, 1);
+                        this.stats.turretsBought--;
+                        this.sellMode = false;
+                        this.audioManager.playSound('purchase');
+                        showNotification(`Turret sold for +$${sellPrice}!`);
+                        this.toggleShop();
+                        return; // Exit after selling one turret
+                    }
                 }
+            } else if (this.placementMode) {
+                this.tryPlaceItem();
+            } else if (!this.isShopOpen && !this.isPaused && !this.isGameOver && !this.player.isControlling) {
+                this.player.tryLick();
             }
         });
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
@@ -445,29 +455,27 @@ if (dist < settingsBtn.radius) {
 
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
+
+
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'flex');
         document.getElementById('stats-btn').addEventListener('click', () => {
             this.updateStatsWindow();
             document.getElementById('stats-modal').style.display = 'flex';
         });
         document.getElementById('open-emporium-btn').addEventListener('click', () => this.emporium.toggle());
+        document.getElementById('emporium-close-btn').addEventListener('click', () => this.emporium.toggle());
         document.getElementById('emporium-reset-btn').addEventListener('click', () => this.emporium.reset());
                 document.getElementById('stats-btn-emporium').addEventListener('click', () => {
                     this.updateStatsWindow();
                     document.getElementById('stats-modal').style.display = 'block';
                 });
                 document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
-                document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
-                document.getElementById('stats-btn-components').addEventListener('click', () => {
-                    this.updateStatsWindow();
-                    document.getElementById('stats-modal').style.display = 'flex';
-                });
-                document.getElementById('help-btn-components').addEventListener('click', () => {
-                    document.getElementById('guide-modal').style.display = 'flex';
-                });
-        
-                document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
-                document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
+
+                                
+
+                                        document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
+
+                                        document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
 
                 // Add event listeners for modal-confirm-buttons
                 document.querySelectorAll('.modal .modal-confirm-button').forEach(button => {
@@ -482,10 +490,18 @@ if (dist < settingsBtn.radius) {
                 // Add event listeners for shop-upgrade-buttons
                 document.querySelectorAll('.shop-upgrade-button').forEach(button => {
                     button.addEventListener('mousedown', () => {
-                        button.src = 'assets/Images/shopupgradedown.png';
+                        if (button.id === 'sell-btn') {
+                            button.src = 'assets/Images/sellbuttondown.png';
+                        } else {
+                            button.src = 'assets/Images/shopupgradedown.png';
+                        }
                     });
                     button.addEventListener('mouseup', () => {
-                        button.src = 'assets/Images/shopupgradeup.png';
+                        if (button.id === 'sell-btn') {
+                            button.src = 'assets/Images/sellbuttonup.png';
+                        } else {
+                            button.src = 'assets/Images/shopupgradeup.png';
+                        }
                     });
                 });
 
@@ -506,102 +522,113 @@ if (dist < settingsBtn.radius) {
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }                
                         renderComponentQuarters() {
-                            const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
-                            const maxPoints = this.player.maxComponentPoints;
+                const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+                const maxPoints = this.player.maxComponentPoints;
 
-                            // Render component points bar
-                            const bar = document.getElementById('component-points-bar');
-                            const barFill = bar.querySelector('.xp-fill');
-                            const barSegmentsContainer = bar.querySelector('.xp-segments');
-                            const barText = bar.parentElement.querySelector('.xp-text');
-                            
-                            barFill.style.width = `${(usedPoints / maxPoints) * 100}%`;
-                            barSegmentsContainer.innerHTML = ''; // Clear existing segments
+                // Render component points bar
+                const bar = document.getElementById('component-points-bar');
+                const barFill = bar.querySelector('.xp-fill');
+                const barSegmentsContainer = bar.querySelector('.xp-segments');
+                const barText = bar.parentElement.querySelector('.xp-text');
+                
+                barFill.style.width = `${(usedPoints / maxPoints) * 100}%`;
+                barSegmentsContainer.innerHTML = ''; // Clear existing segments
 
-                            for (let i = 0; i < maxPoints - 1; i++) {
-                                const segment = document.createElement('div');
-                                segment.classList.add('segment-line');
-                                barSegmentsContainer.appendChild(segment);
+                for (let i = 0; i < maxPoints - 1; i++) {
+                    const segment = document.createElement('div');
+                    segment.classList.add('segment-line');
+                    barSegmentsContainer.appendChild(segment);
+                }
+
+                barText.innerText = `POINTS: ${usedPoints} / ${maxPoints}`;
+
+                // Render component grid
+                const grid = document.getElementById('component-grid');
+                const tooltip = document.getElementById('component-tooltip');
+                grid.innerHTML = '';
+
+                const leftColumn = document.createElement('div');
+                leftColumn.className = 'component-column';
+                const rightColumn = document.createElement('div');
+                rightColumn.className = 'component-column';
+                
+                this.player.collectedComponents.forEach((component, index) => {
+                    const componentData = COMPONENTS[component.name];
+                    const div = document.createElement('div');
+                    div.className = 'component-item';
+                    
+                    const isEquipped = this.player.equippedComponents.some(equipped => equipped.id === component.id);
+
+                    if (isEquipped) {
+                        div.classList.add('equipped');
+                        div.style.boxShadow = '0 0 15px #00ff00';
+                    }
+                    div.innerHTML = `
+                        <div class="component-name">${component.name}</div>
+                        <div class="component-cost">${componentData.cost}</div>
+                    `;
+
+                    // Tooltip events
+                    div.addEventListener('mouseover', (e) => {
+                        tooltip.style.display = 'block';
+                        tooltip.innerHTML = `<strong>${component.name}</strong><br>${componentData.description}`;
+                    });
+                    div.addEventListener('mouseout', () => {
+                        tooltip.style.display = 'none';
+                    });
+                    div.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = `${e.clientX + 15}px`;
+                        tooltip.style.top = `${e.clientY}px`;
+                    });
+
+                    div.onclick = () => {
+                        const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+
+                        if (isEquipped) {
+                            // Unequip
+                            const equippedIndex = this.player.equippedComponents.findIndex(equipped => equipped.id === component.id);
+                            if (equippedIndex > -1) {
+                                this.player.equippedComponents.splice(equippedIndex, 1);
                             }
-
-                            barText.innerText = `POINTS: ${usedPoints} / ${maxPoints}`;
-
-                            // Render component grid
-                            const grid = document.getElementById('component-grid');
-                            const tooltip = document.getElementById('component-tooltip');
-                            grid.innerHTML = '';
-                            
-                            this.player.collectedComponents.forEach((component) => {
-                                const componentData = COMPONENTS[component.name];
-                                const div = document.createElement('div');
-                                div.className = 'component-item';
-                                
-                                const isEquipped = this.player.equippedComponents.some(equipped => equipped.id === component.id);
-
-                                if (isEquipped) {
-                                    div.classList.add('equipped');
-                                    div.style.boxShadow = '0 0 15px #00ff00';
+                            this.audioManager.playSound('reset'); // Sound for unequipping
+                        } else {
+                            // Equip
+                            const newUsedPoints = currentUsedPoints + componentData.cost;
+                            if (newUsedPoints <= this.player.maxComponentPoints) {
+                                this.player.equippedComponents.push(component);
+                                this.audioManager.playSound('purchase'); // Sound for equipping
+                            } else {
+                                // Not enough points
+                                this.audioManager.playSound('pop'); // Error sound
+                                const barContainer = document.getElementById('component-points-bar-container');
+                                if(barContainer) {
+                                    barContainer.style.animation = 'shake 0.5s';
+                                    setTimeout(() => {
+                                        barContainer.style.animation = '';
+                                    }, 500);
                                 }
-                                div.innerHTML = `
-                                    <div class="component-name">${component.name}</div>
-                                    <div class="component-cost">${componentData.cost}</div>
-                                `;
+                            }
+                        }
+                        this.renderComponentQuarters();
+                    };
+                    if (index % 2 === 0) {
+                        leftColumn.appendChild(div);
+                    } else {
+                        rightColumn.appendChild(div);
+                    }
+                });
+                grid.appendChild(leftColumn);
+                grid.appendChild(rightColumn);
 
-                                // Tooltip events
-                                div.addEventListener('mouseover', (e) => {
-                                    tooltip.style.display = 'block';
-                                    tooltip.innerHTML = `<strong>${component.name}</strong><br>${componentData.description}`;
-                                });
-                                div.addEventListener('mouseout', () => {
-                                    tooltip.style.display = 'none';
-                                });
-                                div.addEventListener('mousemove', (e) => {
-                                    tooltip.style.left = `${e.clientX + 15}px`;
-                                    tooltip.style.top = `${e.clientY}px`;
-                                });
-
-                                div.onclick = () => {
-                                    const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
-
-                                    if (isEquipped) {
-                                        // Unequip
-                                        const equippedIndex = this.player.equippedComponents.findIndex(equipped => equipped.id === component.id);
-                                        if (equippedIndex > -1) {
-                                            this.player.equippedComponents.splice(equippedIndex, 1);
-                                        }
-                                        this.audioManager.playSound('reset'); // Sound for unequipping
-                                    } else {
-                                        // Equip
-                                        const newUsedPoints = currentUsedPoints + componentData.cost;
-                                        if (newUsedPoints <= this.player.maxComponentPoints) {
-                                            this.player.equippedComponents.push(component);
-                                            this.audioManager.playSound('purchase'); // Sound for equipping
-                                        } else {
-                                            // Not enough points
-                                            this.audioManager.playSound('pop'); // Error sound
-                                            const barContainer = document.getElementById('component-points-bar-container');
-                                            if(barContainer) {
-                                                barContainer.style.animation = 'shake 0.5s';
-                                                setTimeout(() => {
-                                                    barContainer.style.animation = '';
-                                                }, 500);
-                                            }
-                                        }
-                                    }
-                                    this.renderComponentQuarters();
-                                };
-                                grid.appendChild(div);
-                            });
-
-                            // Add event listeners for the new buttons
-                            document.getElementById('stats-btn-components').onclick = () => {
-                                this.updateStatsWindow();
-                                document.getElementById('stats-modal').style.display = 'flex';
-                            };
-                            document.getElementById('help-btn-components').onclick = () => {
-                                document.getElementById('guide-modal').style.display = 'flex';
-                            };
-                                            }
+                // Add event listeners for the new buttons
+                document.getElementById('stats-btn-components').onclick = () => {
+                    this.updateStatsWindow();
+                    document.getElementById('stats-modal').style.display = 'flex';
+                };
+                document.getElementById('help-btn-components').onclick = () => {
+                    document.getElementById('guide-modal').style.display = 'flex';
+                };
+            }
                                             toggleComponentQuarters() {
                                                 const modal = document.getElementById('component-quarters-overlay');
                                                 const isVisible = modal.style.display === 'block';
@@ -710,6 +737,9 @@ if (dist < settingsBtn.radius) {
 
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
+        this.boss = null;
+        this.bossesKilled = 0;
+        document.getElementById('boss-health-container').style.display = 'none';
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
         this.stats.luckLvl = 0;
@@ -730,133 +760,131 @@ if (dist < settingsBtn.radius) {
                     }
 
 
-        toggleShop() {
-            if (this.placementMode) { this.cancelPlacement(); return; }
-            if (this.isGameOver) return;
-            this.isShopOpen = !this.isShopOpen;
-            document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
-
-            if (this.isShopOpen) {
-                this.isPaused = true;
-                this.lastShopOpenTime = this.gameTime;
-            } else {
-                this.requestUnpause('#shop-overlay');
+            toggleShop() {
+                if (this.placementMode) { this.cancelPlacement(); return; }
+                if (this.isGameOver) return;
+                this.isShopOpen = !this.isShopOpen;
+                document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
+        
+                if (this.isShopOpen) {
+                    this.isPaused = true;
+                    this.lastShopOpenTime = this.gameTime;
+                    document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
+                } else {
+                    this.requestUnpause('#shop-overlay');
+                }
+        
+                const gamePausedIndicator = document.getElementById('game-paused-indicator');
+                gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
+            
+                            if (this.isShopOpen) { 
+                                showNotification('Game Paused');
+                                this.audioManager.playSound('purchase'); // Play sound when shop opens
+                            } else {
+                                this.audioManager.playSound('reset'); // Play sound when shop closes
+                            }
+                            if (this.audioManager) {
+                                this.audioManager.setMuffled(this.isShopOpen);
+                            }
+                            
+                            if (this.isShopOpen) { 
+                                document.getElementById('shop-money-display').innerText = this.money; 
+                                this.renderShopGrid(); 
+                                this.selectShopItem(this.shopItems[0]); 
+                            }
+                }
+    renderShopGrid() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        this.shopItems.forEach(item => {
+            const cost = item.getCost();
+            const slot = document.createElement('div');
+            slot.className = 'upgrade-slot';
+            if (this.selectedShopItem && this.selectedShopItem.id === item.id) {
+                slot.classList.add('selected');
             }
 
-            const gamePausedIndicator = document.getElementById('game-paused-indicator');
-            gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
-    
-                    if (this.isShopOpen) { 
-                        
-                        document.getElementById('notification').innerText = 'Game Paused';
-                        document.getElementById('notification').style.opacity = 1;
-                        setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
-                        this.audioManager.playSound('purchase'); // Play sound when shop opens
-                    } else {
-                        this.audioManager.playSound('reset'); // Play sound when shop closes
-                    }
-                    if (this.audioManager) {
-                        this.audioManager.setMuffled(this.isShopOpen);
-                    }
-                    
-                    if (this.isShopOpen) { 
-                        document.getElementById('shop-money-display').innerText = this.money; 
-                        this.renderShopGrid(); 
-                        this.selectShopItem(this.shopItems[0]); 
-                    }
-        }
+            const img = document.createElement('img');
+            img.src = 'assets/Images/upgradeslot.png';
+            slot.appendChild(img);
 
-    renderShopGrid() {
-        document.getElementById('shop-grid').innerHTML = '';
-        this.shopItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'shop-item';
-            if (this.selectedShopItem === item) div.classList.add('selected');
-            const cost = item.getCost();
-            div.innerHTML = `
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class.shop-item-name">${item.name}</div>
-                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `$${cost}`}</div>
-                ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
+            const content = document.createElement('div');
+            content.className = 'upgrade-slot-content';
+            content.innerHTML = `
+                <div class="upgrade-slot-icon">${item.icon}</div>
+                <div class="upgrade-slot-name">${item.name}</div>
+                <div class="upgrade-slot-cost">${cost === 'MAX' ? 'MAX' : `$${cost}`}</div>
             `;
-            div.onclick = () => this.selectShopItem(item);
-            document.getElementById('shop-grid').appendChild(div);
+            slot.appendChild(content);
+            
+            slot.onclick = () => this.selectShopItem(item);
+            grid.appendChild(slot);
         });
     }
 
-   selectShopItem(item) {
-        this.selectedShopItem = item;
-        this.renderShopGrid();
-        document.getElementById('detail-icon').innerText = item.icon;
-        document.getElementById('detail-title').innerText = item.name;
-        document.getElementById('detail-desc').innerText = item.desc;
-        const cost = item.getCost();
+selectShopItem(item) {
+    this.selectedShopItem = item;
+    this.renderShopGrid(); 
+    const cost = item.getCost();
+    const canAfford = typeof cost === 'number' && this.money >= cost;
+    const isMaxLevel = cost === 'MAX';
 
-        const buyBtn = document.getElementById('buy-btn');
-        const sellBtn = document.getElementById('sell-btn');
-        const canAfford = typeof cost === 'number' && this.money >= cost;
-        const isMaxLevel = cost === 'MAX';
+    // Update text elements safely
+    document.getElementById('detail-icon').innerText = item.icon;
+    document.getElementById('detail-title').innerText = item.name;
+    document.getElementById('detail-desc').innerText = item.desc;
+    document.getElementById('shop-money-display').innerText = '$' + this.money;
+    
+    let nextValue = item.getNext();
+    const statsDiv = document.getElementById('detail-stats');
+    if (nextValue === "MAX") {
+        statsDiv.innerHTML = `<span>${item.getValue()}</span> ➜ <span>MAX</span>`;
+    } else {
+        statsDiv.innerHTML = `<span>${item.getValue()}</span> ➜ <span>${nextValue}</span>`;
+    }
+    
+    // This updates ONLY the level text, leaving the button row intact
+    const levelDisplay = document.getElementById('detail-level-display');
+    levelDisplay.innerText = item.getLevel ? `Level: ${item.getLevel()}` : '';
 
-        if (item.id === 'buy_turret' && this.stats.turretsBought > 0) {
-            sellBtn.style.display = 'block';
-            sellBtn.onclick = () => this.sellItem();
-        } else {
-            sellBtn.style.display = 'none';
-        }
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
 
-        if (isMaxLevel) {
-            buyBtn.src = 'assets/Images/disabledbutton.png';
-            buyBtn.style.pointerEvents = 'none';
-        } else if (canAfford) {
-            buyBtn.src = 'assets/Images/shopupgradeup.png';
-            buyBtn.style.pointerEvents = 'all';
-        } else {
-            buyBtn.src = 'assets/Images/disabledbutton.png';
-            buyBtn.style.pointerEvents = 'none';
-        }
+    if (isMaxLevel) {
+        buyBtn.src = 'assets/Images/disabledbutton.png';
+        buyBtn.style.pointerEvents = 'none';
+    } else {
+        buyBtn.src = canAfford ? 'assets/Images/shopupgradeup.png' : 'assets/Images/disabledbutton.png';
+        buyBtn.style.pointerEvents = canAfford ? 'all' : 'none';
+    }
 
-        buyBtn.onclick = () => {
-            if (canAfford && !isMaxLevel) {
-                this.buyItem(item);
-            }
-        };
-
-        // --- Stat Comparison Logic ---
-        let nextValue = item.getNext();
-        if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
-        else document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
-
-        // --- NEW LEVEL DISPLAY LOGIC ---
-        const levelDisplay = document.getElementById('detail-level-display'); // Get the new element
-        if (item.getLevel) {
-            // Use the getLevel() function to get the current/max level text
-            levelDisplay.innerText = `Level: ${item.getLevel()}`;
-        } else {
-            levelDisplay.innerText = ''; // Clear the text for items like 'Sell Item' or placeables
-        }
-    }
+    sellBtn.style.display = (item.id === 'buy_turret' && this.stats.turretsBought > 0) ? 'inline' : 'none';
+    
+    buyBtn.onclick = () => { if (canAfford && !isMaxLevel) this.buyItem(item); };
+    sellBtn.onclick = () => this.sellItem();
+}
 
     buyItem(item) {
         const cost = item.getCost();
         if (item.type === 'item' && typeof cost === 'number' && this.money >= cost) {
+            if (item.id === 'buy_turret' && this.stats.turretsBought >= this.stats.maxTurrets) {
+                this.audioManager.playSound('error');
+                return;
+            }
             this.placementMode = item.id === 'buy_turret' ? 'turret' : 'shield';
             this.placementItemCost = cost;
-            this.isPaused = true; this.isShopOpen = false; document.getElementById('shop-overlay').style.display = 'none';
-            document.getElementById('notification').innerText = `Click to Place ${this.placementMode.toUpperCase()} | ESC to Cancel`;
-            document.getElementById('notification').style.opacity = 1;
-            setTimeout(() => { if (this.placementMode) document.getElementById('notification').style.opacity = 0; }, 2000);
-        } else if (item.type === 'sell' && cost !== 'N/A') {
-            this.sellMode = true;
-            this.isPaused = true; this.isShopOpen = false; document.getElementById('shop-overlay').style.display = 'none';
-            document.getElementById('notification').innerText = `Click an item to Sell | ESC to Cancel`;
-            document.getElementById('notification').style.opacity = 1;
-            setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
-        } else {
+            this.isShopOpen = false;
+            document.getElementById('shop-overlay').style.display = 'none';
+            this.isPaused = true;
+            showNotification('Left click to place | ESC to cancel');
+        } else if (item.type === 'upgrade') {
             if (typeof cost === 'number' && this.money >= cost) {
                 this.money -= cost;
                 item.action();
-                this.selectShopItem(item);
                 this.audioManager.playSound('upgrade');
+                this.selectShopItem(item); // Reselect to update UI
+            } else {
+                this.audioManager.playSound('error');
             }
         }
         document.getElementById('shop-money-display').innerText = '$' + this.money;
@@ -867,9 +895,7 @@ if (dist < settingsBtn.radius) {
         this.isPaused = true; 
         this.isShopOpen = false; 
         document.getElementById('shop-overlay').style.display = 'none';
-        document.getElementById('notification').innerText = `Click an item to Sell | ESC to Cancel`;
-        document.getElementById('notification').style.opacity = 1;
-        setTimeout(() => { if (this.sellMode) document.getElementById('notification').style.opacity = 0; }, 2000);
+        showNotification(`Click an item to Sell | ESC to Cancel`);
     }
 
 
@@ -895,17 +921,23 @@ if (dist < settingsBtn.radius) {
         document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
     }
     
-    cancelPlacement() { this.placementMode = null; this.requestUnpause(); document.getElementById('notification').style.opacity = 0; }
-    cancelSell() { this.sellMode = null; this.requestUnpause(); document.getElementById('notification').style.opacity = 0; }
+    cancelPlacement() { 
+        this.placementMode = null; 
+        this.toggleShop(); 
+    }
+    cancelSell() { this.sellMode = null; this.requestUnpause(); }
 
     tryPlaceItem() {
         if (this.money < this.placementItemCost) return;
         if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
-        this.money -= this.placementItemCost; this.placementMode = null; this.requestUnpause();
-        document.getElementById('notification').innerText = "DEPLOYED";
-        document.getElementById('notification').style.opacity = 1;
-        setTimeout(() => document.getElementById('notification').style.opacity = 0, 1000);
+        this.money -= this.placementItemCost; this.placementMode = null;
+        showNotification("Turret placed!");
         document.getElementById('shop-money-display').innerText = this.money;
+        this.toggleShop();
+    }
+
+    handlePiggyDeath(bonus) {
+        showNotification(`PIGGY SMASHED! +$${bonus}`);
     }
 
 

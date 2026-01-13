@@ -1,6 +1,6 @@
 import Particle from './particle.js';
 import Drop from './drop.js';
-import { darkenColor } from './utils.js?v=25';
+import { darkenColor, showNotification } from './utils.js?v=25';
 import DamageSpot from './damageSpot.js';
 import FloatingText from './floatingText.js';
 import SpriteAnimation from './SpriteAnimation.js';
@@ -61,17 +61,11 @@ export default class Missile {
             this.color = '#F8F8FF';
             this.health = 9;
             this.baseSpeed = 0.5;
-        }
-        else if (type === 'piggy') {
+        } else if (type === 'piggy') {
             this.width = 33;
             this.height = 44;
             this.health = (40 + (this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1)) * 2;
             this.baseSpeed = 0.5;
-         } else { 
-            this.width = 30;
-            this.height = 40;
-            this.health = (40 + (this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1));
-            this.baseSpeed = 0.7;
         }
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
@@ -610,9 +604,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;
-            document.getElementById('notification').innerText = `PIGGY SMASHED! +$${bonus}`;
-            document.getElementById('notification').style.opacity = 1;
-            setTimeout(() => document.getElementById('notification').style.opacity = 0, 2000);
+            this.game.handlePiggyDeath(bonus);
         }
         
         for (let k = 0; k < 20; k++) this.game.particles.push(new Particle(this.game, this.x, this.y, (this.type === 'piggy' ? '#ff69b4' : this.color), 'smoke'));

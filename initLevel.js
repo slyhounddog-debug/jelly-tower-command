@@ -12,14 +12,14 @@ export default class initLevel {
             y: game.height - 70, 
             width: game.width, 
             height: 330, 
-            hitboxOffsetY: -101, // Move hitbox 100px UP from visual Y
+            hitboxOffsetY: +5, // Move hitbox 100px UP from visual Y
             type: 'ground'
         };
 
                          const castlePlatforms = [
             { 
                 x: game.width - 1100, 
-                y: game.height - 110,
+                y: game.height - 10,
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, // MOVED UP 100 (was -200)
                 width: 150,   
@@ -30,7 +30,7 @@ export default class initLevel {
             },
             { 
                 x: game.width - 425, 
-                y: game.height - 110, 
+                y: game.height - 10, 
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, // MOVED UP 100 (was -200)
                 width: 150, 
@@ -41,7 +41,7 @@ export default class initLevel {
             },
             { 
                 x: game.width - 760, 
-                y: game.height - 70, 
+                y: game.height + 30, 
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, // MOVED UP 100 (was -200)
                 width: 150, 

@@ -44,7 +44,7 @@ class AudioManager {
 
             // UI
             purchase: './assets/sfx/chime.mp3',
-            reset: './assets.sfx/reset.mp3',
+            reset: './assets/sfx/reset.mp3',
             upgrade: './assets/sfx/ding.mp3',
             levelUp: './assets/sfx/levelUp.mp3',
 

@@ -91,7 +91,7 @@
 
         #gameCanvas {
             /* Background handled in JS for dynamic hue */
-            background: #000;
+            background: #bd7dad;
             display: block;
             border: 4px solid #fff;
             border-radius: 4px;
@@ -174,216 +174,297 @@
         #shop-overlay {
             display: none;
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('assets/Images/shopoverlay.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
             z-index: 100;
             flex-direction: column;
-            padding: 0; /* Remove padding here, handled by internal elements */
             box-sizing: border-box;
-            color: #ecf0f1;
+            color: var(--body-color);
             font-family: 'Nunito', sans-serif;
-            border-radius: 15px; /* Match modal border radius */
-            overflow: hidden; /* Ensure content stays within rounded corners */
-        }
-        
-        #shop-money-counter { /* Carved-out slot with glowing green text */
-            background-color: #3e2723; /* Chocolate brown, matching ground platform */
-            border: 3px solid #6d4c41; /* Darker brown border */
-            border-radius: 15px;
-            padding: 10px 20px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 255, 0, 0.5); /* Inset and green glow */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute; /* Positioned by JS or specific parent div */
-            top: 15px; /* Example positioning, adjust as needed */
-            right: 15px; /* Example positioning, adjust as needed */
-            z-index: 101;
         }
 
-        #shop-money-counter span {
-            font-size: 28px;
-            color: #0f0; /* Bright green */
-            text-shadow: 0 0 8px #0f0; /* Glowing effect */
+        #shop-top-bar {
+            position: absolute;
+            top: 2%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        #shop-title {
+            position: absolute;
+            top: 14%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--title-color);
+            font-family: 'Titan One', cursive;
+            font-size: 46px;
             font-weight: bold;
-            font-family: 'VT323', monospace;
         }
 
-        #shop-content {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 10px;
-            gap: 10px;
-            background-color: rgba(0,0,0,0.7);
-            border-radius: 0 0 15px 15px;
-        }
-
-        #shop-details {
-            flex: 1;
-            background-color: rgba(0, 0, 0, 0.5); /* Dark background for inset effect */
-            border-radius: 10px;
-            padding: 20px;
+        #shop-info {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 25%;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 40px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
-            margin-bottom: 10px;
-            border: 3px solid #4a2c4a; /* Dark magenta border, matching health bar theme */
+            justify-content: space-around;
         }
 
-        #shop-details h2 { color: #f1c40f; font-family: 'Fredoka One', sans-serif; } /* Gold-like for selected item title */
-        #shop-details p { color: #ccc; font-style: normal; font-family: 'Nunito', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); } /* Lighter text for description */
-
-        .detail-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        #shop-info h2, #emporium-info h2 {
+            color: var(--title-color);
         }
-        
-        .stat-comparison {
-            display: grid;
-            grid-template-columns: auto auto auto;
-            gap: 10px;
-            align-items: center;
-            font-size: 20px; /* Slightly larger */
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1); /* Subtle background */
-            padding: 10px;
-            border-radius: 5px;
-            width: fit-content;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            font-family: 'VT323', monospace;
-        }        
-        .stat-old { color: #e74c3c; text-align: right; } /* Red for old stat */
-        .stat-new { color: #00ff00; font-weight: bold; text-align: left; text-shadow: 0 0 5px #0f0; } /* Bright green for new stat with glow */
-        .arrow { color: #ecf0f1; padding: 0 10px; } /* White arrow */
-
-
+        #shop-info p, #emporium-info p {
+            color: var(--body-color);
+        }
 
         #shop-grid {
-            flex: 3;
+            position: absolute;
+            top: 49.5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 78%;
+            height: 43%;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
-            gap: 15px; /* Increased gap */
-            padding: 10px;
-            overflow-y: auto;
-            background-color: rgba(0, 0, 0, 0.3); /* Match inset background */
-            border-radius: 10px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
-        }
-
-        .shop-item {
-            background: #342234; /* Dark gray background */
-            border: 3px solid #7a4d7a; /* Dark magenta border, matching health bar theme */
-            border-radius: 10px;
-            padding: 15px; /* Increased padding */
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease-in-out; /* Smooth transition for hover */
-            position: relative;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Deeper shadow */
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
             text-align: center;
         }
-        .shop-item:hover { 
-            border-color: #f1c40f; /* Yellow border on hover */
-            transform: scale(1.05); /* Scale up slightly */
-            box-shadow: 0 0 20px #f1c40f; /* Glowing effect */
-        }
-        .shop-item.selected { 
-            border-color: #00ff00; /* Bright green for selected */
-            background: #4a2c4a; /* Slightly lighter dark magenta */
-            box-shadow: 0 0 20px #0f0; /* Green glow for selected */
-            transform: scale(1.02); /* Slight scale for selected */
-        }
-        .shop-item-icon { font-size: 48px; margin-bottom: 10px; } /* Larger icon */
-        .shop-item-name { font-size: 16px; font-weight: bold; color: #ecf0f1; margin-bottom: 5px; font-family: 'Fredoka One', sans-serif;}
-        .shop-item-cost { font-size: 16px; color: #f39c12; font-weight: bold; font-family: 'VT323', monospace;} /* Orange for cost */
-        .shop-item-count { 
-            position: absolute; 
-            top: 5px; right: 8px; 
-            font-size: 12px; 
-            color: #bdc3c7; 
-            font-weight: bold;
-            background-color: rgba(0,0,0,0.5);
-            padding: 2px 6px;
-            border-radius: 5px;
+        
+        .upgrade-slot {
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            text-align: center;
         }
         
-
-        
-        .notification {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255,255,255,0.9); color: #333; padding: 20px; border-radius: 10px;
-            pointer-events: none; opacity: 0; transition: opacity 0.5s;
-            text-align: center; font-size: 24px; font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 101;
-            font-family: 'Fredoka One', sans-serif;
+        .upgrade-slot:hover {
+            filter: drop-shadow(0 0 10px #ffa807);
         }
+        
+.upgrade-slot.selected .upgrade-slot-content {
+    filter: drop-shadow(0 0 12px #ec5700);
+}
 
+.upgrade-slot-icon {
+    font-size: 36px;
+    margin-bottom: 15px;
+    margin-left: 1px;
+    font-family: 'Fredoka One', sans-serif;
+    font-weight: normal;
+}
+
+.upgrade-slot-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 5px;
+    margin-left: 14%;
+    margin-right: 14%;
+    font-family: 'Fredoka One', sans-serif;
+}
+
+.upgrade-slot-cost {
+    font-size: 28px;
+    font-weight: bold;
+    color: #9966CC;
+    margin-left: 1px;
+    font-family: 'VT323', monospace;
+}
+
+#components-btn {
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    transition: all 0.1s ease;
+    color: #5a486e;
+}
+
+#components-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+}
+
+#components-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+#shop-info {
+    display: flex;
+    width: 100%;
+}
+
+.detail-icon {
+    width: 34%;
+}
+
+.detail-info {
+    width: 66%;
+}
+
+#component-quarters-overlay {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 75%;
+    height: 80%;
+    background-image: url('assets/Images/modal.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    z-index: 200;
+    color: #333333;
+    max-width: 80vw;
+    max-height: 80vh;
+    font-family: 'Nunito', sans-serif;
+}
+
+#component-quarters-header-plate {
+    text-align: center;
+    font-size: 28px;
+    color: #5a486e;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 2px solid #5a486e;
+    padding-bottom: 10px;
+    font-family: 'Titan One', cursive;
+}
+
+#component-quarters-overlay .modal-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.component-column {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+}
+
+#component-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10dpx;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+    min-height: 200px;
+}
 
 
         /* Guide Modal Styles */
         .modal {
             display: none;
             position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: linear-gradient(to bottom, #7a4d7a, #4a2c4a); /* Dark, stylized background */
-            border: 5px solid #4a2c4a; /* Thick dark magenta border */
-            border-radius: 25px; /* Very large border-radius */
-            padding: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75%;
+            height: 80%;
+            background-image: url('assets/Images/modal.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
             z-index: 200;
-            overflow-y: auto;
-            color: #ecf0f1; /* Light text for dark background */
-            box-shadow: 0 0 50px 10px rgba(122, 77, 122, 0.7); /* Deep glow */
+            color: var(--body-color);
             max-width: 80vw;
             max-height: 80vh;
-            flex-direction: column;
-            font-family: 'Nunito', sans-serif; /* Apply Nunito font */
+            font-family: 'Nunito', sans-serif;
+            --title-color: #872657; /* dark-raspberry */
+            --body-color: #9966CC; /* dark-lilac */
         }
-        .modal h2 { 
-            color: #ffd700; /* Gold-like color for headings */
-            text-align: center; 
-            border-bottom: 2px solid #a55aab; /* Lighter magenta border */
-            padding-bottom: 10px; 
+        .enemy-modal {
+            width: 70%;
+            height: 40%;
+        }
+
+        .modal-title {
+            position: absolute;
+            top: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 58%;
+            height: 10%;
+            text-align: center;
+        }
+        .modal-body {
+            position: absolute;
+            top: 32%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75%;
+            height: 50%;
+            overflow-y: auto;
+        }
+        .modal-button-container {
+            position: absolute;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .modal h2 {
             text-transform: uppercase;
             letter-spacing: 2px;
-            background-color: rgba(0, 0, 0, 0.3); /* Dark bar for header plate */
-            padding: 10px;
-            margin: -20px -20px 20px -20px; /* Adjust margin to act as header plate */
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
             font-family: 'Titan One', cursive;
+            color: #87266f; /* dark-raspberry */
         }
-        .modal h3 { 
-            color: #f39c12; /* Orange-yellow for subheadings */
-            margin-top: 20px; 
-            margin-bottom: 5px;
-            font-family: 'Fredoka One', sans-serif;
-        }
+
         .modal p { 
             line-height: 1.6; 
             margin: 5px 0; 
-            font-size: 16px; 
-            color: #e0e0e0; /* Slightly lighter text for content */
+            font-size: 18px; 
+            color: #3e2e4d; /* dark-gray */
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        .modal p strong {
-            font-family: 'Fredoka One', sans-serif;
-            color: #f39c12;
+
+        #shop-title {
+            color: #8b2257; /* dark-raspberry */
         }
-        .modal-content-area { /* New class for inset content */
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Inset shadow */
-            margin-bottom: 15px;
+
+        #ui-overlay {
+            top: 5px;
         }
+
+        #stats-btn, #help-btn {
+            color: #5a486e; /* dark-lilac */
+        }
+        
+        .upgrade-slot {
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upgrade-slot-content {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+        
+        .upgrade-slot img {
+            width: 100%;
+            height: 100%;
+        }
+
         .modal-close {
             display: block; margin: 20px auto 0;
             background: #27ae60; color: white; border: none;
@@ -397,7 +478,7 @@
         .modal-close:active { transform: translateY(2px); border-bottom: 3px solid darkgreen; }
 
         /* Game Over Stats */
-        #game-over-stats, #shop-reminder {
+        #game-over-stats {
             display: none;
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, 0.95);
@@ -418,12 +499,12 @@
             margin: -30px -30px 20px -30px; /* Adjust margin to act as header plate */
         }
 
-        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; font-family: 'VT323', monospace; }
+        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; font-family: 'VT323', monospace; }
         .stat-points-value {
-            font-size: 14px; /* Smaller font for points */
+            font-size: 16px; /* Smaller font for points */
             color: #7f8c8d; /* Muted color */
             margin-left: 10px; /* Separates the raw stat from the points */
-        .final-score { font-size: 28px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; font-family: 'VT323', monospace; }
+        .final-score { font-size: 38px; color: #27ae60; font-weight: bold; margin-top: 20px; border-top: 3px solid #27ae60; padding-top: 10px; font-family: 'VT323', monospace; }
 
         #open-emporium-btn {
             background: #9b59b6; color: white; border: none; padding: 10px 20px;
@@ -440,88 +521,107 @@
 
         /* Emporium Styles */
         #emporium-overlay {
-            /* Styles are now handled by the .modal class */
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('assets/Images/shopoverlay.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            z-index: 100;
+            flex-direction: column;
+            box-sizing: border-box;
+            color: var(--body-color);
+            font-family: 'Nunito', sans-serif;
         }
-        #emporium-money {
-            text-align: right;
-            font-size: 28px;
-            color: #9b59b6; /* Emporium purple */
-            margin-bottom: 10px;
-            font-weight: bold;
-            padding: 5px 15px;
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
-            border: 1px solid #9b59b6; /* Border color matches text */
-            align-self: flex-end; 
-            font-family: 'VT323', monospace;
-        }
-        #emporium-header {
-            text-align: center; font-size: 32px; color: #8e44ad; margin-bottom: 20px;
-            text-transform: uppercase; letter-spacing: 2px;
-            border-bottom: 2px solid #8e44ad; padding-bottom: 10px;
-            font-family: 'Titan One', cursive;
-        }
-        #emporium-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
-        #emporium-details {
-            flex: 2; background: rgba(0, 0, 0, 0.03); border-radius: 8px;
-            padding: 20px; display: flex; align-items: center; justify-content: center;
-            gap: 40px; border: 1px solid #ddd;
-        }
-        #emporium-grid {
-            flex: 3; display: grid; 
-            grid-template-columns: repeat(4, 1fr); /* Explicitly 4 columns */
-            gap: 10px; padding: 10px; overflow-y: auto;
-        }
-        #emporium-buy-btn {
-            background: #9b59b6; color: white; border: none; padding: 15px 40px;
-            font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-            box-shadow: 0 4px 0 #8e44ad;
-            font-family: 'Fredoka One', sans-serif;
-        }
-        #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
-        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
-        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
 
-        /* Emporium Styles */
-        #emporium-overlay {
-            /* Styles are now handled by the .modal class */
+        #emporium-header-bar {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 10%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        #emporium-money {
-            text-align: right;
-            font-size: 28px;
-            color: #9b59b6; /* Emporium purple */
-            margin-bottom: 10px;
+
+        #emporium-title {
+            color: var(--title-color);
+            font-family: 'Titan One', cursive;
+            font-size: 46px;
             font-weight: bold;
-            padding: 5px 15px;
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
-            border: 1px solid #9b59b6; /* Border color matches text */
-            align-self: flex-end; 
         }
-        #emporium-header {
-            text-align: center; font-size: 32px; color: #8e44ad; margin-bottom: 20px;
-            text-transform: uppercase; letter-spacing: 2px;
-            border-bottom: 2px solid #8e44ad; padding-bottom: 10px;
+
+        #emporium-info {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 25%;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
         }
-        #emporium-content { display: flex; flex-direction: column; flex: 1; gap: 20px; }
-        #emporium-details {
-            flex: 2; background: rgba(0, 0, 0, 0.03); border-radius: 8px;
-            padding: 20px; display: flex; align-items: center; justify-content: center;
-            gap: 40px; border: 1px solid #ddd;
-        }
+
         #emporium-grid {
-            flex: 3; display: grid; 
-            grid-template-columns: repeat(4, 1fr); /* Explicitly 4 columns */
-            gap: 10px; padding: 10px; overflow-y: auto;
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 40%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
         }
-        #emporium-buy-btn {
-            background: #9b59b6; color: white; border: none; padding: 15px 40px;
-            font-size: 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-            box-shadow: 0 4px 0 #8e44ad;
+        
+        #emporium-reset-btn {
+            background-image: url('assets/Images/resetbutton.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            width: 120px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            align-self: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto 0 auto;
+            flex-shrink: 0;
+            flex-grow: 0;
         }
-        #emporium-buy-btn:hover { background: #a569bd; transform: translateY(-2px); box-shadow: 0 6px 0 #8e44ad; }
-        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
-        #emporium-buy-btn:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; color: #ecf0f1; }
+        #emporium-reset-btn:hover {
+            filter: drop-shadow(0 0 10px #00aaff); /* Light blue glow */
+        }
+
+        /* Forces "Current -> Next" info onto one line */
+.stat-comparison {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+/* Creates a single row for "Level: 0/10" and the Buy/Sell buttons */
+.detail-info-row {
+    display: flex;
+    justify-content: space-between; /* Pushes text to left, buttons to right */
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Remove default margins that might break the alignment */
+#detail-level-display {
+    margin-bottom: 0 !important;
+}
         
         /* XP BAR STYLES */
         .xp-bar-container {
@@ -599,20 +699,20 @@
             align-items: center;
             justify-content: center;
             color: #ecf0f1;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             font-family: 'VT323', monospace;
         }
         .xp-bar-container.large .xp-text {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         /* Component Quarters Styles - NEW */
         #component-quarters-header-plate {
             text-align: center; 
-            font-size: 32px; 
+            font-size: 28px; 
             color: #a0c4ff; /* Light blue */
             margin-bottom: 20px;
             text-transform: uppercase; 
@@ -747,21 +847,65 @@
                     transform: translateX(26px);
                 }
         
-        .shop-upgrade-button {
-            cursor: pointer;
-            transition: all 0.2s;
-            height: 40px; /* Adjust height as needed */
-            width: 120px; /* Adjust width as needed */
-            margin-top: 10px; /* Add some margin for spacing */
+/* --- START OF SHOP FIX --- */
+.detail-info-row {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.shop-buttons {
+    display: flex !important;
+    gap: 10px;
+    /* Lock the width so the buttons can't shrink */
+    min-width: 120px !important; 
+    flex-shrink: 0 !important;
+}
+
+.shop-upgrade-button:hover {
+    filter: drop-shadow(0 0 10px #00aaff);
+}
+
+.shop-upgrade-button {
+    width: 120px !important;
+    height: 40px !important;
+    cursor: pointer;
+    object-fit: contain;
+}
+/* --- END OF SHOP FIX --- */
+
+        #component-modal {
+            width: 50%;
+            height: 60%;
         }
 
-        .shop-upgrade-button:hover {
-            filter: drop-shadow(0 0 10px #00aaff); /* Light blue glow */
+        #component-modal h2 {
+            position: absolute;
+            top: 16%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            text-align: center;
         }
 
-        .shop-buttons {
-            display: flex;
-            gap: 10px;
+        #component-modal .modal-content-area {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 35%;
+            overflow-y: auto;
+        }
+
+        #component-modal .modal-confirm-button-wrapper {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         #settings-icon {
@@ -818,300 +962,335 @@
         .game-over-buttons .modal-confirm-button-wrapper {
             margin: 0; /* Reset margin as gap is used */
         }
-    </style>
-</head>
-<body>
-
-    <div id="game-wrapper">
-        <div id="boss-pulse-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: radial-gradient(circle, rgba(255,0,255,0.2) 0%, rgba(255,0,255,0) 70%); pointer-events: none;"></div>
-        <div id="settings-icon" style="display: none;">⚙️</div>
-        <div id="component-tooltip" style="display: none; position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 210; pointer-events: none; font-size: 14px; max-width: 200px;"></div>
-        <div id="ui-overlay">
-            <div id="game-paused-indicator" style="position: absolute; top: 10px; left: 10px; color: red; font-weight: bold; display: none;">Game Paused</div>
-
-            <div id="boss-health-container" style="display: none; width: 400px; height: 24px; background: rgba(0,0,0,0.3); border: 2px solid #fff; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 10px;">
-                <div id="boss-health-bar-fill" style="width: 100%; height: 100%; transition: width 0.2s;"></div>
-                <div id="boss-health-text" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; text-align: center; line-height: 24px; font-size: 14px; color: #fff; font-weight: bold; text-shadow: 0px 0px 2px black;">BOSS</div>
+        </style>
+    </head>
+        <body>
+    
+        <div id="game-wrapper">
+            <div id="boss-pulse-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: radial-gradient(circle, rgba(255,0,255,0.2) 0%, rgba(255,0,255,0) 70%); pointer-events: none;"></div>
+            <div id="settings-icon" style="display: none;">⚙️</div>
+            <div id="component-tooltip" style="display: none; position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 210; pointer-events: none; font-size: 14px; max-width: 200px;"></div>
+            <div id="ui-overlay">
+                <div id="game-paused-indicator" style="position: absolute; top: 10px; left: 10px; color: red; font-weight: bold; display: none;">Game Paused</div>
+    
+                <div id="boss-health-container" style="display: none; width: 400px; height: 24px; background: rgba(0,0,0,0.3); border: 2px solid #fff; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 10px;">
+                    <div id="boss-health-bar-fill" style="width: 100%; height: 100%; transition: width 0.2s;"></div>
+                    <div id="boss-health-text" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; text-align: center; line-height: 24px; font-size: 14px; color: #fff; font-weight: bold; text-shadow: 0px 0px 2px black;">BOSS</div>
+                </div>
             </div>
-        </div>
-        <div id="bottom-ui-overlay">
+            <div id="bottom-ui-overlay">
+                
+            </div>
+    
+            <!-- Zoomed out resolution -->
+            <canvas id="gameCanvas" width="1200" height="1500"></canvas>
+            <div id="game-over-stats" style="display: none;">
+                <h1>Mission Failed</h1>
+                <div class="stat-row">
+                    <span>Time Survived:</span>
+                    <span>
+                        <span id="go-time">0s</span>
+                        <span id="go-time-points" class="stat-points-value"></span>
+                    </span>
+                </div>
+                <div class="stat-row">
+                    <span>Enemies Killed:</span>
+                    <span>
+                        <span id="go-kills">0</span>
+                        <span id="go-kills-points" class="stat-points-value"></span>
+                    </span>
+                </div>
+                <div class="stat-row">
+                    <span>Money Earned:</span>
+                    <span>
+                        <span id="go-money">$0</span>
+                        <span id="go-money-points" class="stat-points-value"></span>
+                    </span>
+                </div>
+                <div class="stat-row">
+                    <span>Accuracy:</span>
+                    <span>
+                        <span id="go-acc">0%</span>
+                        <span id="go-mult-display" class="stat-points-value">(1.0x)</span>
+                    </span>
+                </div>
+                <div class="final-score">SCORE: <span id="go-score">0</span></div>
+                <div id="high-score-display" class="stat-row">
+                <span>High Score:</span>
+                <span id="go-high-score">0</span>
+            </div>
+            <div class="game-over-buttons">
+            <div class="modal-confirm-button-wrapper">
+            <img src="assets/Images/restartbutton.png" id="restart-btn" class="modal-confirm-button">
+            </div>
+            <div class="modal-confirm-button-wrapper">
+            <img src="assets/Images/emporiumbutton.png" id="open-emporium-btn" class="modal-confirm-button">
+            </div>
+            </div>
+            </div>
+            <div id="shop-overlay" style="display: none;">
+                <div id="shop-top-bar">
+                    <div id="shop-money-display" style="font-size: 44px; font-weight: bold; color: #915bc7; font-family: 'VT323', monospace;">$0</div>
+                    <button id="stats-btn" class="modal-internal-button">Stats</button>
+                    <button id="components-btn" class="modal-internal-button">Components</button>
+                    <button id="help-btn" class="modal-internal-button">?</button>
+                </div>
+                <div id="shop-title">Upgrade Shop</div>
+        <div id="shop-info">
+        <div class="detail-icon" id="detail-icon" style="font-size: 26px; display: flex; align-items: center; justify-content: center; width: 30%;">🔧</div>
+        
+        <div class="detail-info" style="width: 70%; display: flex; flex-direction: column;">
+            <h2 id="detail-title" style="margin: 0;">Select an Item</h2>
+            <p id="detail-desc" style="margin: 5px 0;">Hover over items below to see stats.</p>
             
-        </div>
-
-        <!-- Zoomed out resolution -->
-        <canvas id="gameCanvas" width="1200" height="1500"></canvas>
-        <div id="game-over-stats" style="display: none;">
-            <h1>Mission Failed</h1>
-            <div class="stat-row">
-                <span>Time Survived:</span>
-                <span>
-                    <span id="go-time">0s</span>
-                    <span id="go-time-points" class="stat-points-value"></span>
-                </span>
-            </div>
-            <div class="stat-row">
-                <span>Enemies Killed:</span>
-                <span>
-                    <span id="go-kills">0</span>
-                    <span id="go-kills-points" class="stat-points-value"></span>
-                </span>
-            </div>
-            <div class="stat-row">
-                <span>Money Earned:</span>
-                <span>
-                    <span id="go-money">$0</span>
-                    <span id="go-money-points" class="stat-points-value"></span>
-                </span>
-            </div>
-            <div class="stat-row">
-                <span>Accuracy:</span>
-                <span>
-                    <span id="go-acc">0%</span>
-                    <span id="go-mult-display" class="stat-points-value">(1.0x)</span>
-                </span>
-            </div>
-            <div class="final-score">SCORE: <span id="go-score">0</span></div>
-            <div id="high-score-display" class="stat-row">
-            <span>High Score:</span>
-            <span id="go-high-score">0</span>
-        </div>
-        <div class="game-over-buttons">
-        <div class="modal-confirm-button-wrapper">
-        <img src="assets/Images/restartbutton.png" id="restart-btn" class="modal-confirm-button">
-        </div>
-        <div class="modal-confirm-button-wrapper">
-        <img src="assets/Images/emporiumbutton.png" id="open-emporium-btn" class="modal-confirm-button">
-        </div>
-        </div>
-        </div>
-        <div id="shop-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; flex-direction: column; box-sizing: border-box; color: #ecf0f1;">
-            <!-- Header Bar -->
-            <div id="shop-header-bar" style="background-color: #2d1b2d; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4a2c4a;">
-                <button id="stats-btn" class="modal-internal-button">Stats</button>
-                <span style="font-family: 'Titan One'; font-size: 46px; font-weight: bold; background: linear-gradient(to right, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upgrade Shop</span>
-                <button id="components-btn" class="modal-internal-button">Components</button>
-                <button id="help-btn" class="modal-internal-button">?</button>
-            </div>
-            
-            <!-- Currency Counter -->
-            <div id="shop-money-counter" style="position: absolute; top: 70px; right: 20px; background-color: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 15px; border: 2px solid #3e2723; box-shadow: inset 0 0 8px rgba(0,255,0,0.7); display: flex; align-items: center;">
-                <span style="font-size: 24px; color: #0f0; text-shadow: 0 0 5px #0f0;">$</span>
-                <span id="shop-money-display" style="font-size: 24px; color: #0f0; text-shadow: 0 0 5px #0f0; margin-left: 5px;">0</span>
-            </div>
-
-            <div id="shop-content">
-                <div id="shop-details">
-                    <div class="detail-icon" id="detail-icon" style="font-size: 96px; display: flex; align-items: center; justify-content: center;">🔧</div>
-                    <div class="detail-info">
-                        <h2 id="detail-title">Select an Item</h2>
-                        <p id="detail-desc">Hover over items below to see stats.</p>
-                        <div class="stat-comparison" id="detail-stats"></div>
-
-<div id="detail-level-display" style="font-size: 1.2em; margin-bottom: 10px; font-weight: bold;"></div>
-
-<div class="shop-buttons">
-    <img src="assets/Images/shopupgradeup.png" id="buy-btn" class="shop-upgrade-button">
-    <img src="assets/Images/shopupgradeup.png" id="sell-btn" class="shop-upgrade-button" style="display: none;">
-</div>
-                    </div>
+            <div class="stat-comparison" id="detail-stats" style="display: flex; gap: 15px; margin-bottom: 10px;"></div>
+    
+                    <div class="detail-info-row">
+                        <div id="detail-level-display" style="font-weight: bold;"></div>
+                        <div class="shop-buttons">
+                            <img src="assets/Images/shopupgradeup.png" id="buy-btn" class="shop-upgrade-button">
+                            <img src="assets/Images/sellbuttonup.png" id="sell-btn" class="shop-upgrade-button" style="display: none;">
+                        </div>
+                    </div>        </div>
+    </div>
+                <div id="shop-grid">
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
+                    <div class="upgrade-slot"></div>
                 </div>
-                <div id="shop-grid"></div>
             </div>
-            
-        </div>
-        <div id="notification" class="notification">Item Placed!</div>
-        <div id="component-quarters-overlay" class="modal" style="display: none;">
-            <h2 id="component-quarters-header-plate" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin: -20px -20px 20px -20px; padding: 10px 20px; box-sizing: border-box; background-color: rgba(0,0,0,0.3); border-top-left-radius: 20px; border-top-right-radius: 20px;">
-                <button id="stats-btn-components" class="modal-internal-button">Stats</button>
-                <span style="color: #ffd700; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Component Quarters</span>
-                <button id="help-btn-components" class="modal-internal-button">?</button>
-            </h2>
-            <div class="modal-content-area" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-                <div id="component-points-bar-container" class="xp-bar-container large">
-                    <div id="component-points-bar" class="xp-bar">
-                        <div class="xp-fill"></div>
-                        <div class="xp-segments"></div>
-                    </div>
-                    <div class="xp-text"></div>
+            <div id="component-quarters-overlay" class="modal" style="display: none;">
+                <div class="modal-title">
+                    <h2 id="component-quarters-header-plate">Component Quarters</h2>
                 </div>
-                <div id="component-grid"></div>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentQuarters()">
-            </div>
-        </div>
-
-        <div id="emporium-overlay" class="modal" style="display: none;">
-            <div id="emporium-money" style="position: absolute; top: 15px; right: 15px; z-index: 1;">
-                CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
-            </div>
-
-            <h2 id="emporium-header-plate" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin: -20px -20px 20px -20px; padding: 10px 20px; box-sizing: border-box; background-color: rgba(0,0,0,0.3); border-top-left-radius: 20px; border-top-right-radius: 20px;">
-                <button id="stats-btn-emporium" class="modal-internal-button">Stats</button>
-                <span style="color: #ffd700; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">The Emporium</span>
-                <button id="help-btn-emporium" class="modal-internal-button">?</button>
-            </h2>
-            <div id="emporium-content" class="modal-content-area" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-                <div id="emporium-details">
-                    <div class="detail-icon" id="emporium-detail-icon">⭐</div>
-                    <div class="detail-info">
-                        <h2 id="emporium-detail-title">Select an Upgrade</h2>
-                        <p id="emporium-detail-desc">Purchase persistent upgrades.</p>
-                        <div class="stat-comparison" id="emporium-detail-stats"></div>
-                        <div id="emporium-detail-level-display" style="font-size: 1.2em; margin-bottom: 10px; font-weight: bold;"></div>
-                        <img src="assets/Images/shopupgradeup.png" id="emporium-buy-btn" class="shop-upgrade-button">
-                        <img src="assets/Images/shopupgradeup.png" id="emporium-reset-btn" class="shop-upgrade-button" style="background: #e74c3c; margin-top: 10px;">
+                <div class="modal-body">
+                    <div id="component-points-bar-container" class="xp-bar-container large">
+                        <div id="component-points-bar" class="xp-bar">
+                            <div class="xp-fill"></div>
+                            <div class="xp-segments"></div>
+                        </div>
+                        <div class="xp-text"></div>
                     </div>
+                    <div id="component-grid"></div>
                 </div>
-                <div id="emporium-grid" style="flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; overflow-y: auto;"></div>
-            </div>
-            
-        </div>
-        <div id="guide-modal" class="modal" style="display: none;">
-            <h2>Field Manual & Mechanics</h2>
-            <div class="modal-content-area">
-                <h3>Defensive Systems</h3>
-                <p><strong>Auto-Turrets:</strong> Deal 50% damage/range. Target closest enemy.</p>
-                <h3>Enemies</h3>
-                <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
-                <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
-                <h3>Platforming</h3>
-                <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
-                <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('guide-modal').style.display='none'">
-            </div>
-        </div>
-        <div id="stats-modal" class="modal" style="display: none;">
-            <h2>Current Stats</h2>
-            <div class="modal-content-area">
-                <p><strong>Shot Damage:</strong> <span id="stat-shot-damage"></span></p>
-                <p><strong>Fire Rate:</strong> <span id="stat-fire-rate"></span></p>
-                <p><strong>Projectile Speed:</strong> <span id="stat-projectile-speed"></span></p>
-                <p><strong>Range:</strong> <span id="stat-range"></span></p>
-                <p><strong>Lick Damage:</strong> <span id="stat-lick-damage"></span></p>
-                <p><strong>Lick Knockback:</strong> <span id="stat-lick-knockback"></span></p>
-                <p><strong>Enemy Health:</strong> <span id="stat-enemy-health"></span></p>
-                <p><strong>Castle Max Health:</strong> <span id="stat-castle-max-health"></span></p>
-                <p><strong>Big Coin Drop Chance:</strong> <span id="stat-big-coin-chance"></span></p>
-                <p><strong>Big Coin Cash Amount:</strong> <span id="stat-big-coin-cash"></span></p>
-                <p><strong>Heart Drop Chance:</strong> <span id="stat-heart-chance"></span></p>
-                <p><strong>Heart Heal Amount:</strong> <span id="stat-heart-heal"></span></p>
-                <p><strong>Piggy Bank Bonus %:</strong> <span id="stat-piggy-bonus"></span></p>
-                <p><strong>Piggy Bank Kill Multiplier:</strong> <span id="stat-piggy-multiplier"></span></p>
-                <p><strong>Piggy Bank Cooldown:</strong> <span id="stat-piggy-cooldown"></span></p>
-                <p><strong>Critical Hit Chance:</strong> <span id="stat-critical-hit-chance"></span></p>
-                <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('stats-modal').style.display='none'">
-            </div>
-        </div>
-        <div id="start-game-modal" class="modal" style="display: block;">
-            <h2>Welcome to Jelly Tower Command!</h2>
-            <div class="modal-content-area">
-                <h3>WARNING!</h3>
-                <p>Ahh Sugar Honey Iced Tea! Why are delicious sweets, deliciously attacking? Protect your castle from those meanies for as long as possible! </p>
-                <h3>Controls</h3>
-                <p><strong>A / D:</strong> Move Left / Right</p>
-                <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
-                <p><strong>Mouse:</strong> Aim your glove</p>
-                <p><strong>Click:</strong> Lick</p>
-                <p><strong>Dash:</strong> Quickly double-tap A or D to dash, or press <strong>Shift</strong>.</p>
-                <h3>The Shop</h3>
-                <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
-                <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>
-                <h3>Prepare your Butts!</h3>
-                <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
-                <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/disabledbutton.png" class="modal-confirm-button" id="start-game-btn" style="pointer-events: none;">
-            </div>
-        </div>
-        <div id="piggy-modal" class="modal">
-            <h2>🐷 Piggy Bank Unlocked! 🐷</h2>
-            <div class="modal-content-area">
-                <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
-                <p id="piggy-cooldown-text">It appears once every minute.</p>
-                <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closePiggyModal()">
-            </div>
-        </div>
-        <div id="gummy-worm-modal" class="modal" style="display: none;">
-            <h2>🐍 Gummy Worm Spotted in the Wild! 🐍</h2>
-            <div class="modal-content-area">
-                <p>These slippery foes slither as they fall!</p>
-                <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeGummyWormModal()">
-            </div>
-        </div>
-        <div id="marshmallow-modal" class="modal" style="display: none;">
-            <h2>⚪ Marshmallow Menace! ⚪</h2>
-            <div class="modal-content-area">
-                <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
-                <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeMarshmallowModal()">
-            </div>
-        </div>
-        <div id="component-modal" class="modal" style="display: none;">
-            <h2>🔧 New Component! 🔧</h2>
-            <div class="modal-content-area">
-                <p>You've found a Component! These are special augments for your towers.</p>
-                <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
-                <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
-            </div>
-        </div>
-        <div id="boss-modal" class="modal" style="display: none;">
-            <h2>🚨 BOSS INCOMING! 🚨</h2>
-            <div class="modal-content-area">
-                <h3>The Gummy Cluster</h3>
-                <p>A massive conglomeration of angry gummy bears approaches! This boss is slow but tough.</p>
-                <p>As you damage the Gummy Cluster, it will shed smaller Gummy Bears that will attack your castle.</p>
-                <p><strong>Rewards:</strong> Defeating the boss will grant a huge loot bonus and make the game more challenging!</p>
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeBossModal()">
-            </div>
-        </div>
-        <div id="settings-modal" class="modal" style="display: none;">
-            <h2>Settings</h2>
-            <div class="modal-content-area">
-                <div class="setting-row">
-                    <span>Sound Effects</span>
-                    <div class="slider-container">
-                        <input type="range" id="sound-effects-slider" min="0" max="100" value="100">
-                        <span id="sound-effects-value">100%</span>
-                    </div>
-                </div>
-                <div class="setting-row">
-                    <span>Music</span>
-                    <div class="slider-container">
-                        <input type="range" id="music-slider" min="0" max="100" value="100">
-                        <span id="music-value">100%</span>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentQuarters()">
                     </div>
                 </div>
             </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
+    
+            <div id="emporium-overlay" class="modal" style="display: none;">
+                <div class="modal-title">
+                    <h2 id="emporium-title">The Emporium</h2>
+                </div>
+                <div id="emporium-header-bar">
+                    <button id="stats-btn-emporium" class="modal-internal-button">Stats</button>
+                    <div id="emporium-money" style="z-index: 1;">
+                        CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
+                    </div>
+                    <button id="help-btn-emporium" class="modal-internal-button">?</button>
+                </div>
+                <div class="modal-body">
+                    <div id="emporium-info">
+                        <div class="detail-icon" id="emporium-detail-icon">⭐</div>
+                        <div class="detail-info">
+                            <h2 id="emporium-detail-title">Select an Upgrade</h2>
+                            <p id="emporium-detail-desc">Purchase persistent upgrades.</p>
+                            <div class="stat-comparison" id="emporium-detail-stats"></div>
+                            <div id="emporium-detail-level-display" style="font-size: 1.2em; margin-bottom: 10px; font-weight: bold;"></div>
+                            <img src="assets/Images/shopupgradeup.png" id="emporium-buy-btn" class="shop-upgrade-button">
+                        </div>
+                    </div>
+                    <div id="emporium-grid">
+                        </div>
+                    <button id="emporium-reset-btn" class="modal-internal-button">Reset Upgrades</button>
+                    </div>
+                    <div class="modal-button-container">
+                        <div class="modal-confirm-button-wrapper">
+                            <img src="assets/Images/modalconfirmup.png" class.name="modal-confirm-button" id="emporium-close-btn" />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+            <div id="guide-modal" class="modal" style="display: none;">
+                <div class="modal-title">
+                    <h2>Field Manual & Mechanics</h2>
+                </div>
+                <div class="modal-body">
+                    <h3>Defensive Systems</h3>
+                    <p><strong>Auto-Turrets:</strong> Deal 50% damage/range. Target closest enemy.</p>
+                    <h3>Enemies</h3>
+                    <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
+                    <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
+                    <h3>Platforming</h3>
+                    <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
+                    <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('guide-modal').style.display='none'">
+                    </div>
+                </div>
+            </div>
+            <div id="stats-modal" class="modal" style="display: none;">
+                <div class="modal-title">
+                    <h2>Current Stats</h2>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Shot Damage:</strong> <span id="stat-shot-damage"></span></p>
+                    <p><strong>Fire Rate:</strong> <span id="stat-fire-rate"></span></p>
+                    <p><strong>Projectile Speed:</strong> <span id="stat-projectile-speed"></span></p>
+                    <p><strong>Range:</strong> <span id="stat-range"></span></p>
+                    <p><strong>Lick Damage:</strong> <span id="stat-lick-damage"></span></p>
+                    <p><strong>Lick Knockback:</strong> <span id="stat-lick-knockback"></span></p>
+                    <p><strong>Enemy Health:</strong> <span id="stat-enemy-health"></span></p>
+                    <p><strong>Castle Max Health:</strong> <span id="stat-castle-max-health"></span></p>
+                    <p><strong>Big Coin Drop Chance:</strong> <span id="stat-big-coin-chance"></span></p>
+                    <p><strong>Big Coin Cash Amount:</strong> <span id="stat-big-coin-cash"></span></p>
+                    <p><strong>Heart Drop Chance:</strong> <span id="stat-heart-chance"></span></p>
+                    <p><strong>Heart Heal Amount:</strong> <span id="stat-heart-heal"></span></p>
+                    <p><strong>Piggy Bank Bonus %:</strong> <span id="stat-piggy-bonus"></span></p>
+                    <p><strong>Piggy Bank Kill Multiplier:</strong> <span id="stat-piggy-multiplier"></span></p>
+                    <p><strong>Piggy Bank Cooldown:</strong> <span id="stat-piggy-cooldown"></span></p>
+                    <p><strong>Critical Hit Chance:</strong> <span id="stat-critical-hit-chance"></span></p>
+                    <p><strong>Ice Cream Scoop Drop Chance:</strong> <span id="stat-ice-cream-chance"></span></p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="document.getElementById('stats-modal').style.display='none'">
+                    </div>
+                </div>
+            </div>
+            <div id="start-game-modal" class="modal" style="display: block;">
+                <div class="modal-title">
+                    <h2>Jelly Tower Command</h2>
+                </div>
+                <div class="modal-body">
+                    <h3>WARNING!</h3>
+                    <p>Ahh Sugar Honey Iced Tea! Why are delicious sweets, deliciously attacking? Protect your castle from those meanies for as long as possible! </p>
+                    <h3>Controls</h3>
+                    <p><strong>A / D:</strong> Move Left / Right</p>
+                    <p><strong>W / Space:</strong> Jump (you can jump twice)</p>
+                    <p><strong>Mouse:</strong> Aim your glove</p>
+                    <p><strong>Click:</strong> Lick</p>
+                    <p><strong>Dash:</strong> Quickly double-tap A or D to dash, or press <strong>Shift</strong>.</p>
+                    <h3>The Shop</h3>
+                    <p>Press <strong>F</strong> to open the shop. Here you can buy new turrets, barriers, and upgrade your abilities.</p>
+                    <p>If you're lucky enough to have your enemies drop <strong>Ice Cream Scoops</strong>, you'll get a chance to spend them at the end of the game.</p>
+                    <h3>Prepare your Butts!</h3>
+                    <p>The jelly beans get better, faster, stronger over time. Stay frosty!</p>
+                    <p><em>(You can review this information any time by clicking the <strong>?</strong> button in the shop. Or ignore all of this like I know you're going to.)</em></p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/disabledbutton.png" class="modal-confirm-button" id="start-game-btn" style="pointer-events: none;">
+                    </div>
+                </div>
+            </div>
+            <div id="piggy-modal" class="modal enemy-modal">
+                <div class="modal-title">
+                    <h2>🐷Piggy Bank Found!🐷</h2>
+                </div>
+                <div class="modal-body">
+                    <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
+                    <p id="piggy-cooldown-text">It appears once every minute.</p>
+                    <p><strong>Rewards:</strong> Destroying it grants a bonus based on your current funds, and counts as multiple kills for loot (affected by luck)!</p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closePiggyModal()">
+                    </div>
+                </div>
+            </div>
+            <div id="gummy-worm-modal" class="modal enemy-modal" style="display: none;">
+                <div class="modal-title">
+                    <h2>🐍 Gummy Worm Spotted in the Wild! 🐍</h2>
+                </div>
+                <div class="modal-body">
+                    <p>These slippery foes slither as they fall!</p>
+                    <p>They are faster and sillier than Jelly Beans, but not as tough.</p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeGummyWormModal()">
+                    </div>
+                </div>
+            </div>
+            <div id="marshmallow-modal" class="modal enemy-modal" style="display: none;">
+                <div class="modal-title">
+                    <h2>⚪ Marshmallow Menace! ⚪</h2>
+                </div>
+                <div class="modal-body">
+                    <p>This big fella is slow but tough. When you destroy it, it splits into smaller, faster versions of itself!</p>
+                    <p>Only the smallest marshmallows will drop loot. Aim carefully!</p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeMarshmallowModal()">
+                    </div>
+                </div>
+            </div>
+            <div id="component-modal" class="modal" style="display: none;">
+                <h2>🔧 New Component! 🔧</h2>
+                <div class="modal-content-area">
+                    <p>You've found a Component! These are special augments for your towers.</p>
+                    <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
+                    <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
+                </div>
+                <div class="modal-confirm-button-wrapper">
+                <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
+                </div>
+            </div>
+            <div id="boss-modal" class="modal enemy-modal" style="display: none;">
+                <div class="modal-title">
+                    <h2>🚨 BOSS INCOMING! 🚨</h2>
+                </div>
+                <div class="modal-body">
+                    <h3>The Gummy Cluster</h3>
+                    <p>A massive conglomeration of angry gummy bears approaches! This boss is slow but tough.</p>
+                    <p>As you damage the Gummy Cluster, it will shed smaller Gummy Bears that will attack your castle.</p>
+                    <p><strong>Rewards:</strong> Defeating the boss will grant a huge loot bonus and make the game more challenging!</p>
+                </div>
+                <div class="modal-button-container">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeBossModal()">
+                    </div>
+                </div>
+            </div>
+            <div id="settings-modal" class="modal" style="display: none;">
+                <h2>Settings</h2>
+                <div class="modal-content-area">
+                    <div class="setting-row">
+                        <span>Sound Effects</span>
+                        <div class="slider-container">
+                            <input type="range" id="sound-effects-slider" min="0" max="100" value="100">
+                            <span id="sound-effects-value">100%</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span>Music</span>
+                        <div class="slider-container">
+                            <input type="range" id="music-slider" min="0" max="100" value="100">
+                            <span id="music-value">100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-confirm-button-wrapper">
+                <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="settings-close-btn">
+                </div>
+            </div>
+           
        
-
-    <script type="module" src="emporium.js"></script>
-    <script type="module" src="levelUpScreen.js"></script>
-    <script type="module" src="xpBar.js"></script>
-    <script type="module" src="levelingManager.js"></script>
-    <script type="module" src="game.js?v=2"></script>
-</body>
-</html>
+           
+    <script type="module" src="emporium.js"></script>        <script type="module" src="levelUpScreen.js"></script>
+        <script type="module" src="xpBar.js"></script>
+        <script type="module" src="levelingManager.js"></script>
+        <script type="module" src="game.js?v=2"></script>
+    </body>
+    </html>

@@ -111,7 +111,7 @@ export default class Tower extends BaseStructure {
                 if (Math.hypot(missileCx - cx, missileCy - cy) < (30 * this.scale) + m.width / 2) {
                     const damageDealt = Math.min(this.game.projectiles[this.game.projectiles.length-1].hp, m.health);
                     this.game.projectiles[this.game.projectiles.length-1].hp -= damageDealt;
-                    if (m.takeDamage(damageDealt)) {
+                    if (m.takeDamage(damageDealt, false)) {
                         // The main loop will handle the missile removal
                     }
                     // Apply knockback

@@ -62,3 +62,39 @@ export function calculateChainBounceDamage(level) {
     falloff.push(0.25);
     return falloff;
 }
+
+export function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.innerText = message;
+    
+    // Styling
+    notification.style.position = 'fixed';
+    notification.style.top = '50%';
+    notification.style.left = '50%';
+    notification.style.transform = 'translate(-50%, -50%)';
+    notification.style.backgroundColor = 'lightpink';
+    notification.style.color = 'white'; // Change font color to white
+    notification.style.padding = '20px 40px';
+    notification.style.borderRadius = '25px'; // More rounded
+    notification.style.zIndex = '2000';
+    notification.style.fontSize = '32px'; // h2 font size (approx)
+   
+    notification.style.fontFamily = "'Titan One', cursive"; // h2 font type
+    notification.style.textAlign = 'center';
+    notification.style.opacity = '0';
+    notification.style.transition = 'opacity 0.5s';
+    notification.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.4)'; // Drop shadow
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.opacity = '1';
+    }, 1);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 500);
+    }, 1100);
+}

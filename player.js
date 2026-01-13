@@ -111,7 +111,7 @@ export default class Player {
                 this.game.missiles.forEach(m => {
                     if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
                         hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
-                        m.takeDamage(this.game.stats.lickDamage * 2);
+                        m.takeDamage(this.game.stats.lickDamage * 2, false);
                         m.kbVy = -this.game.stats.lickKnockback * .3;
                     }
                 });
@@ -172,7 +172,7 @@ export default class Player {
 
             if (hit) {
                 lickHasHit = true;
-                if (m.takeDamage(this.game.stats.lickDamage)) {
+                if (m.takeDamage(this.game.stats.lickDamage, false)) {
                     m.kill('tongue');
                 }
                 if (this.upgrades['Ice Tongue'] > 0) {
@@ -209,7 +209,7 @@ export default class Player {
 
             if (hit) {
                 lickHasHit = true;
-                boss.takeDamage(this.game.stats.lickDamage);
+                boss.takeDamage(this.game.stats.lickDamage, false);
                 this.game.screenShake.trigger(4, 10);
                 for (let i = 0; i < 15; i++) {
                     this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
@@ -235,7 +235,7 @@ export default class Player {
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
-                    if(m.takeDamage(this.game.stats.lickDamage * 0.1)) {
+                    if(m.takeDamage(this.game.stats.lickDamage * 0.1, false)) {
                         m.kill('tongue');
                     }
                     if (this.upgrades['Ice Tongue'] > 0) {
@@ -365,7 +365,7 @@ export default class Player {
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
-                                m.takeDamage(this.game.stats.lickDamage);
+                                m.takeDamage(this.game.stats.lickDamage, false);
                                 m.kbVy = -this.game.stats.lickKnockback * .3;
                             }
                         });

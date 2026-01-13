@@ -2,7 +2,6 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import DamageSpot from './damageSpot.js';
 import { darkenColor } from './utils.js';
-import SpriteAnimation from './SpriteAnimation.js';
 
 
 export default class GameLoop {
@@ -31,7 +30,12 @@ export default class GameLoop {
                 this.game.audioManager.setBossMusic(false);
             }
 
-
+            if (this.game.money >= 100 && !this.game.shopOpenedFirstTime && !this.game.shopReminderShown) {
+                this.game.shopReminderShown = true;
+                const reminder = document.getElementById('shop-o');
+                if (reminder) reminder.style.display = 'block';
+                this.game.isPaused = false;
+            }
 
             const pLvl = this.game.emporiumUpgrades.piggy_cooldown.level;
             const pCooldown = this.game.emporiumUpgrades.piggy_cooldown.values[pLvl] * 60;
@@ -82,6 +86,7 @@ export default class GameLoop {
             this.game.missiles = this.game.missiles.filter(m => !m.dead);
 
             this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
+            // document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
 
             for (let i = this.game.projectiles.length - 1; i >= 0; i--) {
                 const p = this.game.projectiles[i];
@@ -100,7 +105,7 @@ export default class GameLoop {
                 if (this.game.boss && p.x > this.game.boss.x && p.x < this.game.boss.x + this.game.boss.width && p.y > this.game.boss.y && p.y < this.game.boss.y + this.game.boss.height) {
                     const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                     let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
-                    this.game.boss.takeDamage(dmg);
+                    this.game.boss.takeDamage(dmg, isCrit);
                     this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                     if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                     if (p.popRockStacks > 0) {
@@ -187,7 +192,7 @@ export default class GameLoop {
 
         const offset = this.game.screenShake.getOffset();
         this.game.ctx.save(); 
-        this.game.ctx.translate(offset.x, offset.y);
+        this.game.ctx.translate(offset.x, offset.y - 100);
 
         this.game.platforms.forEach(p => {
             if (p.type === 'ground') return; // Will be drawn later
@@ -234,6 +239,7 @@ export default class GameLoop {
         this.game.drops.forEach(d => d.draw(this.game.ctx));
         this.game.particles.forEach(p => p.draw(this.game.ctx));
         this.game.thermometer.draw(this.game.ctx);
+        this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
@@ -313,7 +319,6 @@ export default class GameLoop {
         settingsBtn.y = barCenterY;
         game.drawing.drawGear(ctx, settingsBtn.x, settingsBtn.y, settingsBtn.radius, 8, 10);
         ctx.shadowBlur = 0;
-
 
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');

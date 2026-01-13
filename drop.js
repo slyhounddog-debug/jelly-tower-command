@@ -14,7 +14,7 @@ export default class Drop {
         this.gravity = 0.3;
         this.life = 1200; // Longer life
         this.width = 70; // Changed from 40 to 70 (75% bigger)
-        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
+        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 250000 : 0);
         this.xpValue = (type === 'xp_orb') ? value : 0;
         this.rotation = 0;
         this.rotationSpeed = this.vx * 0.1;

@@ -152,12 +152,12 @@ export default class Emporium {
     }
 
     toggle() {
-        // Only allow opening if game is over
         if (!this.isEmporiumOpen && !this.game.isGameOver) {
             return;
         }
 
         this.isEmporiumOpen = !this.isEmporiumOpen;
+        document.getElementById('emporium-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
         const gamePausedIndicator = document.getElementById('game-paused-indicator');
 
         if (this.isEmporiumOpen) {
@@ -165,9 +165,9 @@ export default class Emporium {
             this.game.audioManager.playMusic('shopMusic');
             this.game.isPaused = true; // Always pause when emporium is open
             gamePausedIndicator.style.display = 'flex';
-            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.game.iceCreamScoops;
+            document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
             this.renderGrid();
-            document.getElementById('emporium-overlay').style.display = 'flex';
+            this.selectItem(this.emporiumItems[0]);
         } else {
             this.game.audioManager.stopMusic('shopMusic');
             if (this.game.isGameOver) {
@@ -178,25 +178,33 @@ export default class Emporium {
                 this.game.isPaused = false;
             }
             gamePausedIndicator.style.display = 'none';
-            document.getElementById('emporium-overlay').style.display = 'none';
         }
     }
 
     renderGrid() {
-        document.getElementById('emporium-grid').innerHTML = '';
+        const grid = document.getElementById('emporium-grid');
+        grid.innerHTML = '';
         this.emporiumItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'shop-item';
-            if (this.selectedEmporiumItem === item) div.classList.add('selected');
+            const slot = document.createElement('div');
+            slot.className = 'upgrade-slot';
+
+            const img = document.createElement('img');
+            img.src = 'assets/Images/upgradeslot.png';
+
+            const content = document.createElement('div');
+            content.className = 'upgrade-slot-content';
             const cost = item.getCost();
-            div.innerHTML = `
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class.shop-item-name">${item.name}</div>
-                <div class="shop-item-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
-                ${item.getLevel ? `<div class="shop-item-count">${item.getLevel()}</div>` : ''}
+            content.innerHTML = `
+                <div class="upgrade-slot-icon">${item.icon}</div>
+                <div class="upgrade-slot-name">${item.name}</div>
+                <div class="upgrade-slot-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
+                ${item.getLevel ? `<div class="upgrade-slot-level">${item.getLevel()}</div>` : ''}
             `;
-            div.onclick = () => this.selectItem(item);
-            document.getElementById('emporium-grid').appendChild(div);
+            
+            slot.appendChild(img);
+            slot.appendChild(content);
+            slot.onclick = () => this.selectItem(item);
+            grid.appendChild(slot);
         });
     }
 
