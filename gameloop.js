@@ -253,11 +253,12 @@ export default class GameLoop {
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
         this.game.projectiles.forEach(p => p.draw(this.game.ctx));
-        this.game.drops.forEach(d => d.draw(this.game.ctx));
+        this.game.drops.filter(d => !d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.particles.forEach(p => p.draw(this.game.ctx));
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
+        this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));

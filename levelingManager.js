@@ -44,7 +44,7 @@ export default class LevelingManager {
 
         
 
-                                            { name: "Sweet Aura", description: "Enemies near you take 10% more damage from all sources.", icon: "💖", rarity: "normal" },
+                                            { name: "Sweet Aura", description: "Enemies near you take 10% more damage.", icon: "💖", rarity: "normal" },
 
         
 
@@ -120,11 +120,11 @@ export default class LevelingManager {
 
         
 
-                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave.", icon: "💥", rarity: "rare" },
+                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave (radius affected by tongue range)", icon: "💥", rarity: "rare" },
 
         
 
-                        { name: "Sugar Rush", description: "20% tower damage and fire rate boost for 10 seconds on tongue kill.", icon: "🍬", rarity: "rare" }
+                        { name: "Sugar Rush", description: "+20% tower damage and fire rate for 10 sec on tongue kill.", icon: "🍬", rarity: "rare" }
 
         
 

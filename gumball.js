@@ -6,8 +6,8 @@ export default class Gumball {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.width = 10;
-        this.height = 10;
+        this.width = 22.5;
+        this.height = 22.5;
         this.vx = initialVx;
         this.vy = initialVy;
         this.gravity = 0.5; // Gumballs are affected by gravity
@@ -17,7 +17,8 @@ export default class Gumball {
         this.dead = false;
         this.hitEnemyIds = new Set(); // To prevent hitting the same enemy multiple times
         this.spawner = spawner; // The enemy that spawned this gumball
-        this.knockback = this.game.stats.lickKnockback * 0.3;
+        this.knockback = this.game.stats.lickKnockback * 0.33;
+        this.collisionDelay = 5; // 5 frames delay before collision is active
     }
 
     update(tsf) {
@@ -25,6 +26,10 @@ export default class Gumball {
         if (this.life <= 0) {
             this.dead = true;
             return;
+        }
+
+        if (this.collisionDelay > 0) {
+            this.collisionDelay -= tsf;
         }
 
         this.x += this.vx * tsf;
@@ -37,6 +42,8 @@ export default class Gumball {
             this.dead = true;
             return;
         }
+
+        if (this.collisionDelay > 0) return;
 
         // Collision with missiles
         this.game.missiles.forEach(m => {
@@ -69,8 +76,8 @@ export default class Gumball {
                 }
 
                 // If Gumball Volley is active, this hit also spawns gumballs
-                if (this.game.player.upgrades['Gumball Volley'] > 0) {
-                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m);
+                if (this.game.player.upgrades['Gumball Volley'] > 0 && m && !m.dead) {
+                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1);
                 }
             }
         });
@@ -94,8 +101,8 @@ export default class Gumball {
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
                     this.game.player.sugarRushTimer = 600;
                 }
-                 if (this.game.player.upgrades['Gumball Volley'] > 0) {
-                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss);
+                 if (this.game.player.upgrades['Gumball Volley'] > 0 && this.game.boss) {
+                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss, 1);
                 }
             }
         }
@@ -103,6 +110,13 @@ export default class Gumball {
 
     draw(ctx) {
         ctx.save();
+        
+        // Shadow/outline
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x + this.width / 2 + 2, this.y + this.height / 2 + 2, this.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);

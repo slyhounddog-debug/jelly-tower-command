@@ -31,8 +31,8 @@ export default class Thermometer {
         // --- 1. DIMENSIONS ---
         const w = 42;
         const h = 375;
-        const xBase = this.width - 80;
-        const yBase = 100;
+        const xBase = this.width - 60;
+        const yBase = 150;
         const bulbRadius = 38;
         const bulbY = yBase + h;
 

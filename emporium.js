@@ -6,6 +6,9 @@ export default class Emporium {
         this.isEmporiumOpen = false;
         this.selectedEmporiumItem = null;
         this.loadEmporiumUpgrades();
+        document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggle());
+        document.getElementById('emporium-close-btn').addEventListener('click', () => this.toggle());
+        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.reset());
         this.emporiumItems = [
             { 
                 id: 'starting_money', name: 'Initial Funding', icon: '💰', 
@@ -157,18 +160,28 @@ export default class Emporium {
         }
 
         this.isEmporiumOpen = !this.isEmporiumOpen;
-        document.getElementById('emporium-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
+        this.game.isShopOpen = this.isEmporiumOpen; // The main shop overlay is used for the emporium as well
+        document.getElementById('shop-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
         const gamePausedIndicator = document.getElementById('game-paused-indicator');
 
         if (this.isEmporiumOpen) {
+            this.game.shopState = 'emporium';
+            document.getElementById('shop-top-bar').style.display = 'none';
+            document.getElementById('emporium-top-bar').style.display = 'flex';
+            document.getElementById('emporium-buttons').style.display = 'flex';
             this.game.audioManager.stopMusic('gameOverMusic');
             this.game.audioManager.playMusic('shopMusic');
             this.game.isPaused = true; // Always pause when emporium is open
-            gamePausedIndicator.style.display = 'flex';
+            gamePausedIndicator.style.display = 'block';
             document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
             this.renderGrid();
             this.selectItem(this.emporiumItems[0]);
+            document.getElementById('emporium-reset-btn').addEventListener('click', () => this.reset());
         } else {
+            this.game.shopState = 'shop';
+            document.getElementById('shop-top-bar').style.display = 'flex';
+            document.getElementById('emporium-top-bar').style.display = 'none';
+            document.getElementById('emporium-buttons').style.display = 'none';
             this.game.audioManager.stopMusic('shopMusic');
             if (this.game.isGameOver) {
                 this.game.audioManager.playMusic('gameOverMusic');
@@ -182,7 +195,7 @@ export default class Emporium {
     }
 
     renderGrid() {
-        const grid = document.getElementById('emporium-grid');
+        const grid = document.getElementById('shop-grid');
         grid.innerHTML = '';
         this.emporiumItems.forEach(item => {
             const slot = document.createElement('div');
@@ -211,20 +224,30 @@ export default class Emporium {
     selectItem(item) {
         this.selectedEmporiumItem = item;
         this.renderGrid();
-        document.getElementById('emporium-detail-icon').innerText = item.icon;
-        document.getElementById('emporium-detail-title').innerText = item.name;
-        document.getElementById('emporium-detail-desc').innerText = item.desc;
+        document.getElementById('detail-icon').innerText = item.icon;
+        document.getElementById('detail-title').innerText = item.name;
+        document.getElementById('detail-desc').innerText = item.desc;
         const cost = item.getCost();
 
-        document.getElementById('emporium-buy-btn').innerText = cost === 'MAX' ? 'MAXED' : `UPGRADE (🍦${cost})`;
-        document.getElementById('emporium-buy-btn').disabled = !((typeof cost === 'number' && this.game.iceCreamScoops >= cost));
-        document.getElementById('emporium-buy-btn').onclick = () => this.buyItem(item);
+        const buyBtn = document.getElementById('buy-btn');
+        const canAfford = typeof cost === 'number' && this.game.iceCreamScoops >= cost;
+        const isMaxLevel = cost === 'MAX';
+
+        if (isMaxLevel) {
+            buyBtn.src = 'assets/Images/disabledbutton.png';
+            buyBtn.style.pointerEvents = 'none';
+        } else {
+            buyBtn.src = canAfford ? 'assets/Images/shopupgradeup.png' : 'assets/Images/disabledbutton.png';
+            buyBtn.style.pointerEvents = canAfford ? 'all' : 'none';
+        }
+        
+        buyBtn.onclick = () => this.buyItem(item);
 
         let nextValue = item.getNext();
-        if (nextValue === "MAX") document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
-        else document.getElementById('emporium-detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
+        if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
+        else document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
 
-        const levelDisplay = document.getElementById('emporium-detail-level-display');
+        const levelDisplay = document.getElementById('detail-level-display');
         if (item.getLevel) {
             levelDisplay.innerText = `Level: ${item.getLevel()}`;
         } else {
@@ -239,7 +262,7 @@ export default class Emporium {
             this.game.iceCreamScoops -= cost;
             item.action();
             this.selectItem(item);
-            document.getElementById('emporium-scoops-display').innerText = '🍦' + this.game.iceCreamScoops;
+            document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
             this.saveEmporiumUpgrades(this.game.emporiumUpgrades);
             localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
         }
@@ -267,6 +290,6 @@ export default class Emporium {
         if (this.selectedEmporiumItem) {
             this.selectItem(this.selectedEmporiumItem);
         }
-        document.getElementById('emporium-scoops-display').innerText = '🍦' + this.game.iceCreamScoops;
+        document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
     }
 }

@@ -40,6 +40,7 @@ export default class Player {
         this.characterImage.src = 'assets/Images/character.png';
         this.tongueTipX = 0;
         this.tongueTipY = 0;
+        this.shockwaveAnimations = [];
         this.reset();
     }
     reset() {
@@ -98,6 +99,7 @@ export default class Player {
         this.sugarRushTimer = 0;
         this.tongueTipX = 0;
         this.tongueTipY = 0;
+        this.shockwaveAnimations = [];
     }
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
@@ -187,7 +189,7 @@ export default class Player {
 
             // --- Drop Collision ---
             this.game.drops.forEach(d => {
-                if (d.isBeingLicked) return; // Already being licked
+                if (d.isBeingLicked || (this.game.gameTime - d.spawnTime < 30)) return; // Already being licked or too new
 
                 let hit = false;
                 for (let i = 1; i <= lickSegments; i++) {
@@ -281,9 +283,6 @@ export default class Player {
 
                 if (hit && !this.hitEnemies.includes(boss.id)) {
                     this.hitEnemies.push(boss.id);
-                    if (this.upgrades['Jelly Tag'] > 0) {
-                        boss.isJellyTagged = true;
-                    }
                     boss.takeDamage(this.game.stats.lickDamage, false);
                     this.game.screenShake.trigger(4, 10);
                     for (let i = 0; i < 15; i++) {
@@ -426,7 +425,7 @@ export default class Player {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
                     if (this.upgrades['Squishy Butt'] > 0) {
-                        const shockwaveRange = 180;
+                        const shockwaveRange = this.lickRange * 0.76;
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
@@ -434,13 +433,18 @@ export default class Player {
                                 m.kbVy = -this.game.stats.lickKnockback * .3;
                             }
                         });
-                        for (let i = 0; i < 360; i += 10) {
-                            const angle = i * Math.PI / 180;
-                            const speed = 4;
-                            const vx = Math.cos(angle) * speed;
-                            const vy = Math.sin(angle) * speed;
-                            this.game.particles.push(new Particle(this.game, this.x + this.width/2, this.y + this.height, 'white', 'spark', 1.1, vx, vy));
-                        }
+                        this.shockwaveAnimations.push({
+                            x: this.x + this.width / 2,
+                            y: this.y + this.height,
+                            maxRadius: shockwaveRange,
+                            timer: 0,
+                            maxTimer: 30, // half a second
+                            rings: [
+                                { progress: 0, speed: 1 },
+                                { progress: -0.2, speed: 1 },
+                                { progress: -0.4, speed: 1 }
+                            ]
+                        });
                     }
                 }
                 this.y = hitboxY - this.height; 
@@ -455,6 +459,23 @@ export default class Player {
         // Only apply gravity movement if we didn't just snap to a floor
         if (!this.isOnGround) {
             this.y += this.vy * tsf;
+        }
+
+        // Update shockwave animations
+        for (let i = this.shockwaveAnimations.length - 1; i >= 0; i--) {
+            const anim = this.shockwaveAnimations[i];
+            anim.timer += tsf;
+            if (anim.timer >= anim.maxTimer) {
+                this.shockwaveAnimations.splice(i, 1);
+                continue;
+            }
+            anim.rings.forEach(ring => {
+                if (ring.progress >= 0) {
+                    ring.progress += (ring.speed / anim.maxTimer) * tsf;
+                } else {
+                    ring.progress += (1 / anim.maxTimer) * tsf;
+                }
+            });
         }
 
         // --- ENHANCED SQUASH/STRETCH ---
@@ -499,15 +520,15 @@ export default class Player {
           return this.equippedComponents.filter(c => c.name === componentName).length;
       }
 
-    spawnGumballs(x, y, spawner) {
+    spawnGumballs(x, y, spawner, count = 2) {
         if (this.upgrades['Gumball Volley'] > 0) {
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < count; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 5 + Math.random() * 3;
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
                 const randomColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage, randomColor, spawner));
+                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage * 0.5, randomColor, spawner));
             }
         }
     }
@@ -531,7 +552,7 @@ export default class Player {
             ctx.fill();
 
             // Light shafts
-            const shafts = 8;
+            const shafts = 5 + (this.upgrades['Sweet Aura'] * 2);
             ctx.save();
             ctx.translate(cx, cy);
             for (let i = 0; i < shafts; i++) {
@@ -798,4 +819,19 @@ export default class Player {
             ctx.arc(mouthX, mouthY, mouthSize, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        // Draw shockwave animations
+        this.shockwaveAnimations.forEach(anim => {
+            anim.rings.forEach(ring => {
+                if (ring.progress > 0 && ring.progress < 1) {
+                    const radius = anim.maxRadius * ring.progress;
+                    const alpha = 1 - ring.progress;
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(anim.x, anim.y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+        });
     }}

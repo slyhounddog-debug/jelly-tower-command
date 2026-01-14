@@ -24,6 +24,7 @@ export default class Drop {
         this.id = this.game.getNewId();
         this.isBeingLicked = false;
         this.lickedByPlayer = null;
+        this.spawnTime = this.game.gameTime;
     }
     update(tsf) {
         if (this.isBeingLicked) {

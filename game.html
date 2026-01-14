@@ -181,7 +181,7 @@
             background-image: url('assets/Images/shopoverlay.png');
             background-size: 100% 100%;
             background-repeat: no-repeat;
-            z-index: 100;
+            z-index: 160;
             flex-direction: column;
             box-sizing: border-box;
             color: var(--body-color);
@@ -941,11 +941,46 @@ body #shop-info .shop-buttons #detail-buy-cost {
         .game-over-buttons .modal-confirm-button-wrapper {
             margin: 0; /* Reset margin as gap is used */
         }
+
+        .aspect-ratio-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 80%; /* 5:4 aspect ratio */
+            max-width: 1200px;
+        }
+
+        .aspect-ratio-container > * {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #shop-title, #emporium-title {
+            font-size: 3.5vw;
+        }
+
+        .detail-info h2 {
+            font-size: 2vw;
+        }
+
+        .detail-info p {
+            font-size: 1.5vw;
+        }
+
+        .upgrade-slot-name {
+            font-size: 1.2vw;
+        }
+        
+        .upgrade-slot-cost {
+            font-size: 2vw;
+        }
         </style>
     </head>
         <body>
     
-        <div id="game-wrapper">
+        <div id="game-wrapper" class="aspect-ratio-container">
             <div id="boss-pulse-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: radial-gradient(circle, rgba(255,0,255,0.2) 0%, rgba(255,0,255,0) 70%); pointer-events: none;"></div>
             <div id="settings-icon" style="display: none;">⚙️</div>
             <div id="component-tooltip" style="display: none; position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 210; pointer-events: none; font-size: 14px; max-width: 200px;"></div>
@@ -1014,6 +1049,11 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     <button id="components-btn" class="modal-internal-button">Components</button>
                     <button id="help-btn" class="modal-internal-button">?</button>
                 </div>
+                <div id="emporium-top-bar" style="display: none; position: absolute; top: 2%; left: 50%; transform: translateX(-50%); width: 80%; justify-content: center;">
+                    <div id="emporium-money" style="font-size: 44px; font-weight: bold; color: #915bc7; font-family: 'VT323', monospace;">
+                        CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
+                    </div>
+                </div>
                 <div id="shop-title">Upgrade Shop</div>
         <div id="shop-info">
         <div class="detail-icon" id="detail-icon">🔧</div>
@@ -1045,6 +1085,14 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     <div class="upgrade-slot"></div>
                     <div class="upgrade-slot"></div>
                 </div>
+                <div id="emporium-buttons" style="display: none; position: absolute; bottom: -1%; left: 50%; transform: translateX(-50%); gap: 20px;">
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/resetbutton.png" class="modal-confirm-button" id="emporium-reset-btn" />
+                    </div>
+                    <div class="modal-confirm-button-wrapper">
+                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="emporium-close-btn" />
+                    </div>
+                </div>
             </div>
             <div id="component-quarters-overlay" class="modal" style="display: none;">
                 <div class="modal-title">
@@ -1066,40 +1114,7 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     </div>
                 </div>
             </div>
-    
-            <div id="emporium-overlay" class="modal shop-overlay" style="display: none;">
-                <div class="modal-title">
-                    <h2 id="emporium-title">The Emporium</h2>
-                </div>
-                <div id="emporium-header-bar">
-                    <button id="stats-btn-emporium" class="modal-internal-button">Stats</button>
-                    <div id="emporium-money" style="z-index: 1;">
-                        CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
-                    </div>
-                    <button id="help-btn-emporium" class="modal-internal-button">?</button>
-                </div>
-                <div class="modal-body">
-                    <div id="emporium-info">
-                        <div class="detail-icon" id="emporium-detail-icon">⭐</div>
-                        <div class="detail-info">
-                            <h2 id="emporium-detail-title">Select an Upgrade</h2>
-                            <p id="emporium-detail-desc">Purchase persistent upgrades.</p>
-                            <div class="stat-comparison" id="emporium-detail-stats"></div>
-                            <div id="emporium-detail-level-display" style="font-size: 1.2em; margin-bottom: 10px; font-weight: bold;"></div>
-                            <img src="assets/Images/shopupgradeup.png" id="emporium-buy-btn" class="shop-upgrade-button">
-                        </div>
-                    </div>
-                    <div id="emporium-grid">
-                        </div>
-                    <button id="emporium-reset-btn" class="modal-internal-button">Reset Upgrades</button>
-                    </div>
-                    <div class="modal-button-container">
-                        <div class="modal-confirm-button-wrapper">
-                            <img src="assets/Images/modalconfirmup.png" class.name="modal-confirm-button" id="emporium-close-btn" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <div id="guide-modal" class="modal" style="display: none;">
                 <div class="modal-title">
                     <h2>Field Manual</h2>

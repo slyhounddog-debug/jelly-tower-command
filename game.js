@@ -103,6 +103,7 @@ class Game {
 
         this.isShopOpen = false;
         this.isGameOver = false;
+        this.shopState = 'shop';
         this.gameTime = 0;
         this.placementMode = null;
         this.sellMode = null;
@@ -486,14 +487,6 @@ class Game {
             this.updateStatsWindow();
             document.getElementById('stats-modal').style.display = 'flex';
         });
-        document.getElementById('open-emporium-btn').addEventListener('click', () => this.emporium.toggle());
-        document.getElementById('emporium-close-btn').addEventListener('click', () => this.emporium.toggle());
-        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.emporium.reset());
-                document.getElementById('stats-btn-emporium').addEventListener('click', () => {
-                    this.updateStatsWindow();
-                    document.getElementById('stats-modal').style.display = 'block';
-                });
-                document.getElementById('help-btn-emporium').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'block');
 
                                 
 
@@ -784,6 +777,7 @@ class Game {
                 document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
         
                 if (this.isShopOpen) {
+                    this.shopState = 'shop';
                     this.isPaused = true;
                     this.lastShopOpenTime = this.gameTime;
                     document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
