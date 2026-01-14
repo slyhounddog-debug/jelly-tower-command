@@ -41,6 +41,8 @@ export class GummyBear {
         this.totalSlow = 0;
         this.slowParticleTimer = 0;
         this.groundProximity = false;
+        this.isJellyTagged = false;
+        this.id = this.game.getNewId();
     }
 
     applyFire(damage, stacks) {
@@ -60,6 +62,14 @@ export class GummyBear {
     }
 
     takeDamage(amount, isCritical = false) {
+        const player = this.game.player;
+        if (player.upgrades['Sweet Aura'] > 0) {
+            const dist = Math.hypot(this.x - player.x, this.y - player.y);
+            if (dist < player.lickRange) {
+                amount *= (1 + player.upgrades['Sweet Aura'] * 0.1);
+            }
+        }
+
         this.game.audioManager.playSound('towerHit');
         const roundedAmount = amount;
         this.health -= roundedAmount;
@@ -88,10 +98,38 @@ export class GummyBear {
         }
     }
 
-    kill() {
+    kill(killedBy = 'unknown') {
         this.dead = true;
         this.game.enemiesKilled++;
-        this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
+        
+        let lootMultiplier = 1;
+        let luckMultiplier = 1;
+        if (this.isJellyTagged && killedBy !== 'tongue') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
+            lootMultiplier = 2;
+            luckMultiplier = 2;
+        }
+
+        for (let c = 0; c < lootMultiplier; c++) {
+            this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
+            this.game.levelingManager.addXp(this.x, this.y, 10); // Gummy bears give a base of 10 xp
+        }
+        
+        for (let l = 0; l < luckMultiplier; l++) {
+            if (Math.random() * 100 < this.game.stats.luckHeart) this.game.drops.push(new Drop(this.game, this.x, this.y, 'heart'));
+            if (Math.random() * 100 < this.game.stats.luckCoin) this.game.drops.push(new Drop(this.game, this.x, this.y, 'lucky_coin'));
+
+            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
+            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+            const dropChance = chances[0];
+            if (Math.random() * 100 < dropChance) {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+            }
+            if (this.game.player.upgrades['Twin Scoop'] > 0) {
+                if (Math.random() < 0.33) {
+                    this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+                }
+            }
+        }
     }
 
     update(tsf) {
@@ -106,7 +144,7 @@ export class GummyBear {
                 this.fireStacks.splice(i, 1);
             } else {
                 if (Math.floor(stack.timer) % 60 === 0) { // Every second
-                    this.health -= stack.damage;
+                    this.takeDamage(stack.damage, false);
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
                     this.fireFlashTimer = 10;
                 }
@@ -173,6 +211,22 @@ export class GummyBear {
         ctx.rotate(this.angle);
         if (this.image && this.image.complete) {
             ctx.drawImage(this.image, 0, 0, this.width, this.height);
+        }
+
+        // Draw Jelly Tag Crown
+        if (this.isJellyTagged) {
+            const crownImg = this.game.tagCrownImage;
+            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
+            // Adjust this value to change the size of the crown
+            const crownSize = this.width * 0.35;
+            // Adjust this value to change the vertical position of the crown
+            const yOffset = 50;
+
+            const bob = Math.sin(this.game.gameTime * 0.2) * 5; // Bobbing effect
+            const crownX = (this.width - crownSize) / 2;
+            const crownY = -yOffset + bob;
+
+            ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
         }
 
         for (const spot of this.damageSpots) {
@@ -269,6 +323,8 @@ export default class GummyCluster {
         this.fireFlashTimer = 0;
         this.slowEffects = [];
         this.totalSlow = 0;
+        this.isJellyTagged = false;
+        this.id = this.game.getNewId();
     }
 
     applyFire(damage, stacks) {
@@ -287,6 +343,14 @@ export default class GummyCluster {
     }
 
     takeDamage(amount, isCritical = false) {
+        const player = this.game.player;
+        if (player.upgrades['Sweet Aura'] > 0) {
+            const dist = Math.hypot(this.x - player.x, this.y - player.y);
+            if (dist < player.lickRange) {
+                amount *= (1 + player.upgrades['Sweet Aura'] * 0.1);
+            }
+        }
+
         this.health -= amount;
         this.hitTimer = 10;
         this.game.audioManager.playSound('bossHit');
@@ -326,26 +390,53 @@ export default class GummyCluster {
         }
     }
 
-    kill() {
+    kill(killedBy = 'unknown') {
         this.game.audioManager.playSound('bossKilled');
         this.game.screenShake.trigger(30, 60);
         this.game.currentRPM += 10;
 
-        const lootCount = 3 + (this.game.bossesKilled * 2);
+        let lootMultiplier = 1;
+        let luckMultiplier = 1;
+        if (this.isJellyTagged && killedBy !== 'tongue') {
+            lootMultiplier = 2;
+            luckMultiplier = 2;
+        }
+
+        const lootCount = (3 + (this.game.bossesKilled * 2)) * lootMultiplier;
         for (let i = 0; i < lootCount; i++) {
             this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
         }
 
-        const componentCount = 1 + this.game.bossesKilled;
+        const componentCount = (1 + this.game.bossesKilled) * lootMultiplier;
         for (let i = 0; i < componentCount; i++) {
             this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
         }
         
-        
+        // Apply XP
+        const xpGained = (50 + (this.maxHealth / 10)) * lootMultiplier;
+        this.game.levelingManager.addXp(this.x, this.y, xpGained);
+
         this.game.killsSinceLastBoss = 0;
         this.game.killsForNextBoss = Math.floor(50 + this.game.threatManager.threatRPM * 2.5);
         this.game.bossesKilled++;
         this.game.boss = null;
+
+        for (let l = 0; l < luckMultiplier; l++) {
+            if (Math.random() * 100 < this.game.stats.luckHeart) this.game.drops.push(new Drop(this.game, this.x, this.y, 'heart'));
+            if (Math.random() * 100 < this.game.stats.luckCoin) this.game.drops.push(new Drop(this.game, this.x, this.y, 'lucky_coin'));
+
+            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
+            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+            const dropChance = chances[0];
+            if (Math.random() * 100 < dropChance) {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+            }
+            if (this.game.player.upgrades['Twin Scoop'] > 0) {
+                if (Math.random() < 0.33) {
+                    this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+                }
+            }
+        }
     }
 
     spawnGummyBear() {
@@ -366,7 +457,7 @@ export default class GummyCluster {
                 this.fireStacks.splice(i, 1);
             } else {
                 if (Math.floor(stack.timer) % 60 === 0) {
-                    this.health -= stack.damage;
+                    this.takeDamage(stack.damage, false);
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
                     this.fireFlashTimer = 10;
                 }
@@ -437,6 +528,22 @@ export default class GummyCluster {
 
         if (image && image.complete) {
             ctx.drawImage(image, 0, 0, this.width, this.height);
+        }
+
+        // Draw Jelly Tag Crown
+        if (this.isJellyTagged) {
+            const crownImg = this.game.tagCrownImage;
+            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
+            // Adjust this value to change the size of the crown
+            const crownSize = this.width * 0.8; 
+            // Adjust this value to change the vertical position of the crown
+            const yOffset = 80; 
+            
+            const bob = Math.sin(this.game.gameTime * 0.2) * 10; // Bobbing effect
+            const crownX = (this.width - crownSize) / 2;
+            const crownY = -yOffset + bob;
+
+            ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
         }
 
         for (const spot of this.damageSpots) {

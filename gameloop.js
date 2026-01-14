@@ -2,6 +2,7 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import DamageSpot from './damageSpot.js';
 import { darkenColor } from './utils.js';
+import Gumball from './gumball.js';
 
 
 export default class GameLoop {
@@ -161,6 +162,7 @@ export default class GameLoop {
             for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
             for (let i = this.game.damageSpots.length - 1; i >= 0; i--) { this.game.damageSpots[i].update(tsf); if (this.game.damageSpots[i].opacity <= 0) this.game.damageSpots.splice(i, 1); }
             for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
+            for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
 
             this.game.lootPopupManager.update(deltaTime);
 
@@ -257,6 +259,7 @@ export default class GameLoop {
         this.game.xpBar.draw(this.game.ctx);
         this.game.player.draw(this.game.ctx);
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
+        this.game.gumballs.forEach(g => g.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
 
         this.game.lootPopupManager.draw(this.game.ctx);
@@ -267,6 +270,9 @@ export default class GameLoop {
             this.game.levelUpScreen.update(tsf);
             this.game.levelUpScreen.draw(this.game.ctx);
         }
+
+        this.game.levelUpManagerScreen.update(tsf);
+        this.game.levelUpManagerScreen.draw(this.game.ctx);
 
         this.game.ctx.restore();
 

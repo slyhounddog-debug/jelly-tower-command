@@ -21,8 +21,78 @@ export default class Drop {
         this.glow = 0;
         this.glowTimer = 0;
         this.hue = 0;
+        this.id = this.game.getNewId();
+        this.isBeingLicked = false;
+        this.lickedByPlayer = null;
     }
     update(tsf) {
+        if (this.isBeingLicked) {
+            this.x = this.lickedByPlayer.tongueTipX - this.width / 2;
+            this.y = this.lickedByPlayer.tongueTipY - this.width / 2;
+
+            if (this.lickedByPlayer.lickAnim <= 0) {
+                // Collect the drop
+                if (this.type === 'coin') {
+                    this.game.money += this.coinValue;
+                    this.game.totalMoneyEarned += this.coinValue;
+                    this.game.audioManager.playSound('money');
+                    this.game.lootPopupManager.addLoot('cash', 'Cash', this.coinValue);
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰'));
+                }
+                if (this.type === 'lucky_coin') {
+                    this.game.money += this.coinValue;
+                    this.game.totalMoneyEarned += this.coinValue;
+                    this.game.audioManager.playSound('money');
+                    this.game.lootPopupManager.addLoot('cash', 'Cash', this.coinValue);
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+💰💰'));
+                }
+                if (this.type === 'heart') {
+                    const healAmount = this.game.emporium.getHeartHeal();
+                    this.game.castleHealth = Math.min(this.game.emporium.getCastleMaxHealth(), this.game.castleHealth + healAmount);
+                    this.game.castleHealthBar.triggerHeal();
+                    this.game.audioManager.playSound('heart');
+                    this.game.lootPopupManager.addLoot('health', 'Health', healAmount);
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
+                    const spotsToRemove = Math.floor(this.game.damageSpots.length / 5);
+                    for (let i = 0; i < spotsToRemove; i++) {
+                        if (this.game.damageSpots.length > 0) {
+                            this.game.damageSpots.splice(Math.floor(Math.random() * this.game.damageSpots.length), 1);
+                        }
+                    }
+                }
+                if (this.type === 'ice_cream_scoop') {
+                    this.game.iceCreamScoops++;
+                    localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
+                    this.game.audioManager.playSound('scoop');
+                    this.game.lootPopupManager.addLoot('scoop', 'Scoop', 1);
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
+                }
+                if (this.type === 'xp_orb') {
+                    this.game.levelingManager.grantXpToPlayer(this.xpValue);
+                    this.game.audioManager.playSound('xp');
+                    this.game.lootPopupManager.addLoot('xp', 'XP', this.xpValue);
+                    this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+XP'));
+                }
+                if (this.type === 'component') {
+                    const componentName = getRandomComponent();
+                    this.game.player.collectedComponents.push({
+                        name: componentName,
+                        id: this.game.getNewId()
+                    });
+                    this.game.lootPopupManager.addLoot('component', componentName, 1);
+                    this.game.audioManager.playSound('scoop'); // Sound for picking up a component
+                    if (!this.game.player.firstComponentCollected) {
+                        this.game.player.firstComponentCollected = true;
+                        document.getElementById('component-modal').style.display = 'block';
+                        this.game.isPaused = true;
+                    }
+                }
+                this.life = 0;
+                for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff'));
+            }
+            return; // Skip normal physics if being licked
+        }
+
         this.vy += this.gravity * tsf;
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
@@ -43,6 +113,7 @@ export default class Drop {
         if (this.y > this.game.height - 90 - this.width / 2) { this.y = this.game.height - 90 - this.width / 2; this.vy *= -0.3; }
 
         if (Math.abs(this.game.player.x - this.x) < this.game.player.pickupRange && Math.abs(this.game.player.y - this.y) < this.game.player.pickupRange) {
+            // This is the normal pickup logic
             if (this.type === 'coin') {
                 this.game.money += this.coinValue;
                 this.game.totalMoneyEarned += this.coinValue;
@@ -88,7 +159,7 @@ export default class Drop {
                 const componentName = getRandomComponent();
                 this.game.player.collectedComponents.push({
                     name: componentName,
-                    id: Date.now() + Math.random()
+                    id: this.game.getNewId()
                 });
                 this.game.lootPopupManager.addLoot('component', componentName, 1);
                 this.game.audioManager.playSound('scoop'); // Sound for picking up a component

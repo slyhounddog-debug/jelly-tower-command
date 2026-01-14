@@ -32,39 +32,67 @@ export default class LevelingManager {
 
         
 
-                    normal: [
+                            
 
         
 
-                        { name: "Quick Boi", description: "10% increase in movement speed.", icon: "🏃", rarity: "normal" },
+                                        normal: [
 
         
 
-                        { name: "++Gelatin", description: "10% increase in jump height.", icon: "🔼", rarity: "normal" },
+                            
 
         
 
-                        { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
+                                            { name: "Sweet Aura", description: "Enemies near you take 10% more damage from all sources.", icon: "💖", rarity: "normal" },
 
         
 
-                        { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
+                            
 
         
 
-                        { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
+                                            { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
 
         
 
-                        { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
+                            
 
         
 
-                        { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" }
+                                            { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
 
         
 
-                    ],
+                            
+
+        
+
+                                            { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
+
+        
+
+                            
+
+        
+
+                                            { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
+
+        
+
+                            
+
+        
+
+                                            { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" }
+
+        
+
+                            
+
+        
+
+                                        ],
 
         
 
@@ -76,7 +104,15 @@ export default class LevelingManager {
 
         
 
-                        { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
+                                                { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
+
+        
+
+                                
+
+        
+
+                                                { name: "Jelly Tag", description: "Licked enemies drop double loot if killed by a tower.", icon: "🎯", rarity: "rare" },
 
         
 
@@ -84,7 +120,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Squishy Butt", description: "Landing creates a damaging shockwave.", icon: "💥", rarity: "rare" },
+                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave.", icon: "💥", rarity: "rare" },
 
         
 
@@ -104,11 +140,23 @@ export default class LevelingManager {
 
         
 
-                        { name: "Twin Scoop", description: "33% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
+                                                { name: "Twin Scoop", description: "33% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
 
         
 
-                        { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
+                                
+
+        
+
+                                                { name: "Gumball Volley", description: "Licked enemies spawn 3 gumballs that shoot in random directions.", icon: "🍬", rarity: "legendary" },
+
+        
+
+                        
+
+        
+
+                                                { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
 
         
 
@@ -580,31 +628,11 @@ export default class LevelingManager {
 
         
 
-                        case 'Quick Boi':
+                        
 
         
 
-                            player.acceleration = player.baseAcceleration * (1 + player.upgrades['Quick Boi'] * 0.1);
-
-        
-
-                            break;
-
-        
-
-                        case '++Gelatin':
-
-        
-
-                            player.jumpForce = player.baseJumpForce * (1 + player.upgrades['++Gelatin'] * 0.1);
-
-        
-
-                            player.airJumpForce = player.baseAirJumpForce * (1 + player.upgrades['++Gelatin'] * 0.1);
-
-        
-
-                            break;
+                        
 
         
 

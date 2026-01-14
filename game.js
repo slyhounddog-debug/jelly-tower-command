@@ -18,6 +18,7 @@ import GameLoop from './gameloop.js';
 import AudioManager from './audioManager.js';
 import LootPopupManager from './lootPopup.js';
 import LevelUpScreen from './levelUpScreen.js';
+import LevelUpManagerScreen from './levelUpManagerScreen.js';
 import XPBar from './xpBar.js';
 import LevelingManager from './levelingManager.js';
 import { COMPONENTS } from './components.js';
@@ -69,6 +70,8 @@ class Game {
         }
         this.lootImage = new Image();
         this.lootImage.src = 'assets/Images/loot.png';
+        this.tagCrownImage = new Image();
+        this.tagCrownImage.src = 'assets/Images/tagcrown.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
@@ -243,12 +246,15 @@ class Game {
         this.damageSpots = [];
         this.waveAttacks = [];
         this.currentRPM = 5.5;
+        this.currentId = 0;
+        this.gumballs = [];
 
         this.player = new Player(this);
         this.levelingManager = new LevelingManager(this);
         this.levelingManager.initializePlayer(this.player);
         this.xpBar = new XPBar(this);
         this.levelUpScreen = new LevelUpScreen(this);
+        this.levelUpManagerScreen = new LevelUpManagerScreen(this);
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
@@ -333,6 +339,7 @@ class Game {
             new Promise(r => this.shopButtonImage.onload = r),
             new Promise(r => this.settingButtonImage.onload = r),
             new Promise(r => this.lootImage.onload = r),
+            new Promise(r => this.tagCrownImage.onload = r),
         ]).then(() => {
             startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
             startButton.style.pointerEvents = 'all'; // Enable click
@@ -392,8 +399,19 @@ class Game {
             if (k === 'shift') {
                 this.player.tryDash(this.lastMoveDirection);
             }
+            if (k === 'tab') {
+                e.preventDefault();
+                this.levelUpManagerScreen.show();
+            }
         });
-        document.addEventListener('keyup', (e) => this.keys[e.key.toLowerCase()] = false);
+        document.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            this.keys[k] = false;
+            if (k === 'tab') {
+                e.preventDefault();
+                this.levelUpManagerScreen.hide();
+            }
+        });
 
         this.canvas.addEventListener('mousemove', (e) => {
             const rect = this.canvas.getBoundingClientRect();
@@ -941,6 +959,12 @@ selectShopItem(item) {
     handlePiggyDeath(bonus) {
         showNotification(`PIGGY SMASHED! +$${bonus}`);
     }
+
+    getNewId() {
+        this.currentId++;
+        return this.currentId;
+    }
+
 
 
     start() {

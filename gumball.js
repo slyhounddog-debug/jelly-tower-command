@@ -1,0 +1,112 @@
+import Particle from './particle.js';
+import FloatingText from './floatingText.js';
+
+export default class Gumball {
+    constructor(game, x, y, initialVx, initialVy, damage, color, spawner) {
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.width = 10;
+        this.height = 10;
+        this.vx = initialVx;
+        this.vy = initialVy;
+        this.gravity = 0.5; // Gumballs are affected by gravity
+        this.damage = damage;
+        this.color = color;
+        this.life = 120; // Lifespan of 2 seconds at 60fps
+        this.dead = false;
+        this.hitEnemyIds = new Set(); // To prevent hitting the same enemy multiple times
+        this.spawner = spawner; // The enemy that spawned this gumball
+        this.knockback = this.game.stats.lickKnockback * 0.3;
+    }
+
+    update(tsf) {
+        this.life -= tsf;
+        if (this.life <= 0) {
+            this.dead = true;
+            return;
+        }
+
+        this.x += this.vx * tsf;
+        this.y += this.vy * tsf;
+        this.vy += this.gravity * tsf;
+
+        // Disappear off-screen
+        if (this.x < -this.width || this.x > this.game.width + this.width ||
+            this.y < -this.height || this.y > this.game.height + this.height) {
+            this.dead = true;
+            return;
+        }
+
+        // Collision with missiles
+        this.game.missiles.forEach(m => {
+            // Gumballs should not hit the enemy they spawned from
+            if (m === this.spawner || this.hitEnemyIds.has(m.id)) { // Assuming enemies have an 'id' property
+                return;
+            }
+
+            if (this.x < m.x + m.width &&
+                this.x + this.width > m.x &&
+                this.y < m.y + m.height &&
+                this.y + this.height > m.y) {
+                
+                this.hitEnemyIds.add(m.id); // Mark enemy as hit by this gumball
+                
+                if (m.takeDamage(this.damage, false)) {
+                    m.kill('gumball');
+                }
+                m.kbVy = -this.knockback;
+                this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
+
+                // Add particles for impact
+                for (let i = 0; i < 5; i++) {
+                    this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'spark'));
+                }
+                
+                // Gumball damage counts towards sugar rush
+                if (this.game.player.upgrades['Sugar Rush'] > 0) {
+                    this.game.player.sugarRushTimer = 600; // Reset sugar rush timer
+                }
+
+                // If Gumball Volley is active, this hit also spawns gumballs
+                if (this.game.player.upgrades['Gumball Volley'] > 0) {
+                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m);
+                }
+            }
+        });
+
+        // Collision with boss
+        if (this.game.boss && this.game.boss !== this.spawner && !this.hitEnemyIds.has(this.game.boss.id)) { // Assuming boss has an 'id' property
+            if (this.x < this.game.boss.x + this.game.boss.width &&
+                this.x + this.width > this.game.boss.x &&
+                this.y < this.game.boss.y + this.game.boss.height &&
+                this.y + this.height > this.game.boss.y) {
+                
+                this.hitEnemyIds.add(this.game.boss.id); // Mark boss as hit by this gumball
+                
+                this.game.boss.takeDamage(this.damage, false);
+                this.game.screenShake.trigger(1, 5);
+
+                for (let i = 0; i < 5; i++) {
+                    this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'spark'));
+                }
+
+                if (this.game.player.upgrades['Sugar Rush'] > 0) {
+                    this.game.player.sugarRushTimer = 600;
+                }
+                 if (this.game.player.upgrades['Gumball Volley'] > 0) {
+                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss);
+                }
+            }
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}

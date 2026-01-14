@@ -1,5 +1,6 @@
 import Particle from './particle.js';
 import WaveAttack from './waveAttack.js';
+import Gumball from './gumball.js';
 
 export default class Player {
     constructor(game) {
@@ -37,6 +38,8 @@ export default class Player {
         this.maxComponentPoints = 3;
         this.characterImage = new Image();
         this.characterImage.src = 'assets/Images/character.png';
+        this.tongueTipX = 0;
+        this.tongueTipY = 0;
         this.reset();
     }
     reset() {
@@ -62,8 +65,7 @@ export default class Player {
         this.totalMoneyEarned = 0;
         this.upgrades = {
             // Normals
-            'Quick Boi': 0,
-            '++Gelatin': 0,
+            'Sweet Aura': 0,
             'Tinkerer': 0,
             'Greed': 0,
             'Long Tongue': 0,
@@ -94,6 +96,8 @@ export default class Player {
         this.whirlwindAngle = 0;
         this.auraParticleTimer = 0;
         this.sugarRushTimer = 0;
+        this.tongueTipX = 0;
+        this.tongueTipY = 0;
     }
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
@@ -143,80 +147,7 @@ export default class Player {
         this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
         this.lickAnim = 15;
         this.lickCooldown = 20;
-
-        const lickSegments = 10;
-        const lickLength = this.lickRange;
-        let lickHasHit = false; // Ensure only one hit per lick
-
-        // --- Missile Collision ---
-        this.game.missiles.forEach(m => {
-            if (lickHasHit) return;
-
-            let hit = false;
-            for (let i = 1; i <= lickSegments; i++) {
-                const progress = i / lickSegments;
-                const drag = 2.5;
-                const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
-                const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
-                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
-                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
-                
-                const missileCx = m.x + m.width / 2;
-                const missileCy = m.y + m.height / 2;
-                
-                if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) { 
-                    hit = true;
-                    break;
-                }
-            }
-
-            if (hit) {
-                lickHasHit = true;
-                if (m.takeDamage(this.game.stats.lickDamage, false)) {
-                    m.kill('tongue');
-                }
-                if (this.upgrades['Ice Tongue'] > 0) {
-                    m.applySlow(180, 0.5, 'tongue');
-                }
-                m.kbVy = -this.game.stats.lickKnockback * 0.3;
-                this.game.screenShake.trigger(4, 10);
-                for (let i = 0; i < 15; i++) {
-                    this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
-                    if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
-                }
-            }
-        });
-
-        // --- Boss Collision ---
-        if (this.game.boss && !lickHasHit) {
-            let hit = false;
-            const boss = this.game.boss;
-            for (let i = 1; i <= lickSegments; i++) {
-                const progress = i / lickSegments;
-                const drag = 2.5;
-                const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
-                const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
-                const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
-                const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
-
-                // Simple AABB check for boss
-                if (checkX > boss.x && checkX < boss.x + boss.width &&
-                    checkY > boss.y && checkY < boss.y + boss.height) {
-                    hit = true;
-                    break;
-                }
-            }
-
-            if (hit) {
-                lickHasHit = true;
-                boss.takeDamage(this.game.stats.lickDamage, false);
-                this.game.screenShake.trigger(4, 10);
-                for (let i = 0; i < 15; i++) {
-                    this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
-                    if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
-                }
-            }
-        }
+        this.hitEnemies = [];
     }
     update(tsf) {
         this.lickRange = this.baseLickRange * (1 + this.upgrades['Long Tongue'] * 0.2);
@@ -243,6 +174,125 @@ export default class Player {
                     }
                 }
             });
+        }
+
+        if (this.lickAnim > 0) {
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            const animPhase = (15 - this.lickAnim) / 15;
+            const animCurve = Math.sin(animPhase * Math.PI);
+            const lickDistance = this.lickRange * animCurve;
+            const lickSegments = 10;
+            const lickLength = this.lickRange;
+
+            // --- Drop Collision ---
+            this.game.drops.forEach(d => {
+                if (d.isBeingLicked) return; // Already being licked
+
+                let hit = false;
+                for (let i = 1; i <= lickSegments; i++) {
+                    const progress = i / lickSegments;
+                    const drag = 2.5;
+                    const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                    const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                    const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                    const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+
+                    const dropCenterX = d.x + d.width / 2;
+                    const dropCenterY = d.y + d.width / 2;
+                    const dropRadius = d.width / 2;
+
+                    if (Math.hypot(checkX - dropCenterX, checkY - dropCenterY) < dropRadius + 10) { // 10 is a small tolerance
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if (hit) {
+                    d.isBeingLicked = true;
+                    d.lickedByPlayer = this;
+                    d.vx = 0; // Disable drop's physics
+                    d.vy = 0;
+                    d.gravity = 0;
+                    d.life = 600; // Give it a longer life to be brought back
+                }
+            });
+
+            // --- Missile Collision ---
+            this.game.missiles.forEach(m => {
+                let hit = false;
+                for (let i = 1; i <= lickSegments; i++) {
+                    const progress = i / lickSegments;
+                    const drag = 2.5;
+                    const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                    const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                    const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                    const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+
+                    const missileCx = m.x + m.width / 2;
+                    const missileCy = m.y + m.height / 2;
+
+                    if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) {
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if (hit && !this.hitEnemies.includes(m.id)) {
+                    this.hitEnemies.push(m.id);
+                    if (this.upgrades['Jelly Tag'] > 0) {
+                        m.isJellyTagged = true;
+                    }
+                    if (m.takeDamage(this.game.stats.lickDamage, false)) {
+                        m.kill('tongue');
+                    }
+                    if (this.upgrades['Ice Tongue'] > 0) {
+                        m.applySlow(180, 0.5, 'tongue');
+                    }
+                    m.kbVy = -this.game.stats.lickKnockback * 0.3;
+                    this.game.screenShake.trigger(4, 10);
+                    for (let i = 0; i < 15; i++) {
+                        this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
+                        if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
+                    }
+                    this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m);
+                }
+            });
+
+            // --- Boss Collision ---
+            if (this.game.boss) {
+                let hit = false;
+                const boss = this.game.boss;
+                for (let i = 1; i <= lickSegments; i++) {
+                    const progress = i / lickSegments;
+                    const drag = 2.5;
+                    const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                    const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                    const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                    const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+
+                    // Simple AABB check for boss
+                    if (checkX > boss.x && checkX < boss.x + boss.width &&
+                        checkY > boss.y && checkY < boss.y + boss.height) {
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if (hit && !this.hitEnemies.includes(boss.id)) {
+                    this.hitEnemies.push(boss.id);
+                    if (this.upgrades['Jelly Tag'] > 0) {
+                        boss.isJellyTagged = true;
+                    }
+                    boss.takeDamage(this.game.stats.lickDamage, false);
+                    this.game.screenShake.trigger(4, 10);
+                    for (let i = 0; i < 15; i++) {
+                        this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
+                        if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
+                    }
+                    this.spawnGumballs(boss.x + boss.width / 2, boss.y + boss.height / 2, boss);
+                }
+            }
         }
 
         if (this.transitionState === 'entering') {
@@ -332,6 +382,10 @@ export default class Player {
         }
         if (!this.game.keys[' '] && !this.game.keys['w']) this.jumpLock = false;
 
+        if (this.game.keys['s'] && !this.isOnGround) {
+            this.vy += 0.9;
+        }
+
         this.vy += this.gravity * tsf;
 
         if (this.upgrades['Winged Boots'] > 0 && (this.game.keys[' '] || this.game.keys['w']) && this.vy > 0) {
@@ -372,7 +426,7 @@ export default class Player {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
                     if (this.upgrades['Squishy Butt'] > 0) {
-                        const shockwaveRange = 150;
+                        const shockwaveRange = 180;
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
@@ -382,10 +436,10 @@ export default class Player {
                         });
                         for (let i = 0; i < 360; i += 10) {
                             const angle = i * Math.PI / 180;
-                            const speed = 5;
+                            const speed = 4;
                             const vx = Math.cos(angle) * speed;
                             const vy = Math.sin(angle) * speed;
-                            this.game.particles.push(new Particle(this.game, this.x + this.width/2, this.y + this.height, 'white', 'spark', 1.5, vx, vy));
+                            this.game.particles.push(new Particle(this.game, this.x + this.width/2, this.y + this.height, 'white', 'spark', 1.1, vx, vy));
                         }
                     }
                 }
@@ -444,8 +498,57 @@ export default class Player {
       getEquippedComponentCount(componentName) {
           return this.equippedComponents.filter(c => c.name === componentName).length;
       }
+
+    spawnGumballs(x, y, spawner) {
+        if (this.upgrades['Gumball Volley'] > 0) {
+            for (let i = 0; i < 3; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 5 + Math.random() * 3;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const randomColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage, randomColor, spawner));
+            }
+        }
+    }
       draw(ctx) {
         if (this.isControlling) return;
+
+        // Sweet Aura Effect
+        if (this.upgrades['Sweet Aura'] > 0) {
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            const radius = this.lickRange * ((Math.sin(this.game.gameTime * 0.1) + 1) / 2 * 0.2 + 0.8);
+            
+            // Pulsing glow
+            const gradient = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius);
+            const pulse = (Math.sin(this.game.gameTime * 0.15) + 1) / 2;
+            gradient.addColorStop(0, `rgba(255, 255, 220, ${0.45 * pulse})`);
+            gradient.addColorStop(1, `rgba(255, 255, 220, 0)`);
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Light shafts
+            const shafts = 8;
+            ctx.save();
+            ctx.translate(cx, cy);
+            for (let i = 0; i < shafts; i++) {
+                ctx.rotate((Math.PI * 2 / shafts));
+                const shaftGradient = ctx.createLinearGradient(0, 0, radius, 0);
+                shaftGradient.addColorStop(0, `rgba(255, 255, 240, ${0.5 * pulse})`);
+                shaftGradient.addColorStop(1, `rgba(255, 255, 240, 0)`);
+                ctx.fillStyle = shaftGradient;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(radius, 10);
+                ctx.lineTo(radius, -10);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
 
         // Draw whirlwind
         if (this.isWhirlwinding) {
@@ -649,6 +752,13 @@ export default class Player {
             const animCurve = Math.sin(animPhase * Math.PI);
             const lickDistance = this.lickRange * animCurve;
 
+            const drag = 2.5;
+            const shiftX = Math.sin(animPhase * Math.PI) * (this.vx * drag);
+            const shiftY = Math.sin(animPhase * Math.PI) * (this.vy * drag);
+
+            this.tongueTipX = tongueOriginX + Math.cos(mouseAngle) * lickDistance - shiftX;
+            this.tongueTipY = tongueOriginY + Math.sin(mouseAngle) * lickDistance - shiftY;
+
             ctx.save();
             const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
             const shadowCol = this.upgrades['Ice Tongue'] > 0 ? '#6a8ebf' : '#d6455d';
@@ -656,9 +766,6 @@ export default class Player {
 
             for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
-                const drag = 2.5;
-                const shiftX = Math.sin(t * Math.PI) * (this.vx * drag);
-                const shiftY = Math.sin(t * Math.PI) * (this.vy * drag);
                 const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - shiftX;
                 const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - shiftY;
 

@@ -89,6 +89,8 @@ export default class Missile {
         this.fireFlashTimer = 0;
         this.totalSlow = 0; // Initialize total slow effect
         this.slowParticleTimer = 0; // Timer for emitting slow particles
+        this.isJellyTagged = false;
+        this.id = this.game.getNewId(); // Unique ID for each missile
     }
 
     applyFire(damage, stacks) {
@@ -108,6 +110,14 @@ export default class Missile {
     }
 
     takeDamage(amount, isCritical = false) {
+        const player = this.game.player;
+        if (player.upgrades['Sweet Aura'] > 0) {
+            const dist = Math.hypot(this.x - player.x, this.y - player.y);
+            if (dist < player.lickRange) {
+                amount *= (1 + player.upgrades['Sweet Aura'] * 0.1);
+            }
+        }
+
         this.game.audioManager.playSound('towerHit');
         const roundedAmount = amount;
         this.health -= roundedAmount;
@@ -149,7 +159,7 @@ export default class Missile {
                 this.fireStacks.splice(i, 1);
             } else {
                 if (Math.floor(stack.timer) % 60 === 0) { // Every second
-                    this.health -= stack.damage;
+                    this.takeDamage(stack.damage, false);
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
                     this.fireFlashTimer = 10;
                 }
@@ -199,7 +209,7 @@ export default class Missile {
         const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
         this.groundProximity = distToGround < this.game.groundProximityThreshold;
 
-        if (distToGround < 5 && distToGround > -10) {
+        if (distToGround < 150) {
             this.squash = 1.35;
             this.stretch = 0.65;
         } else {
@@ -246,10 +256,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         if (this.groundProximity) {
             const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
             ctx.globalAlpha = 1 - alpha * 0.5;
-            if (alpha > 0.5) {
-                ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            }
+           
         }
         
         const ground = this.game.platforms.find(p => p.type === 'ground');
@@ -422,6 +429,23 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         }
 
         ctx.shadowBlur = 0;
+
+        // Draw Jelly Tag Crown
+        if (this.isJellyTagged) {
+            const crownImg = this.game.tagCrownImage;
+            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
+            // Adjust this value to change the size of the crown
+            const crownSize = this.width * 0.5; 
+            // Adjust this value to change the vertical position of the crown
+            const yOffset = 50; 
+            
+            const bob = Math.sin(this.game.gameTime * 0.1) * 5; // Bobbing effect
+            const crownX = this.x + (this.width - crownSize) / 2;
+            const crownY = this.y - yOffset + bob;
+
+            ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
+        }
+
       if (this.health < this.maxHealth) {
             const pct = Math.max(0, this.health / this.maxHealth);
             const isLow = pct < 0.25;
@@ -541,7 +565,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         }
 
         const pStats = this.game.stats.piggyStats;
-        const count = (this.type === 'piggy') ? pStats.mult : 1;
         
         this.game.enemiesKilled++;
 
@@ -560,7 +583,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
         const dropsToCreate = [];
         
-        for (let c = 0; c < count; c++) {
+        let lootMultiplier = 1;
+        let luckMultiplier = 1;
+        if (this.isJellyTagged && killedBy !== 'tongue') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
+            lootMultiplier = 2;
+            luckMultiplier = 2;
+        }
+
+        for (let c = 0; c < ((this.type === 'piggy' ? pStats.mult : 1) * lootMultiplier); c++) {
             dropsToCreate.push({ type: 'coin', value: 25 });
             
             let xpValue;
@@ -571,18 +601,20 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             }
             dropsToCreate.push({ type: 'xp_orb', value: xpValue });
             
-            if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
-            if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });
+            for (let l = 0; l < luckMultiplier; l++) {
+                if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
+                if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });
 
-            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
-            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
-            const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
-            if (Math.random() * 100 < dropChance) {
-                dropsToCreate.push({ type: 'ice_cream_scoop' });
-            }
-            if (this.game.player.upgrades['Twin Scoop'] > 0) {
-                if (Math.random() < 0.33) {
+                const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
+                const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
+                const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
+                if (Math.random() * 100 < dropChance) {
                     dropsToCreate.push({ type: 'ice_cream_scoop' });
+                }
+                if (this.game.player.upgrades['Twin Scoop'] > 0) {
+                    if (Math.random() < 0.33) {
+                        dropsToCreate.push({ type: 'ice_cream_scoop' });
+                    }
                 }
             }
         }

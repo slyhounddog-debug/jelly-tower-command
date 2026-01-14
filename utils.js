@@ -73,7 +73,7 @@ export function showNotification(message) {
     notification.style.left = '50%';
     notification.style.transform = 'translate(-50%, -50%)';
     notification.style.backgroundColor = 'lightpink';
-    notification.style.color = 'white'; // Change font color to white
+    notification.style.color = '#9966CC'; // Change font color to white
     notification.style.padding = '20px 40px';
     notification.style.borderRadius = '25px'; // More rounded
     notification.style.zIndex = '2000';
