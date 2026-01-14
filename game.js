@@ -73,23 +73,24 @@ class Game {
         this.tagCrownImage = new Image();
         this.tagCrownImage.src = 'assets/Images/tagcrown.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
+        this.FROSTING_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6d9', '#ffb3de'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
         this.LICK_DAMAGE_TIERS = [13, 17, 22, 28, 35, 43, 52, 62, 72, 83, 95, 110, 125];
         this.LICK_KNOCKBACK_TIERS = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100];
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
         this.PIGGY_TIERS = [
-            { bonus: 0.8, mult: 2 },
-            { bonus: 0.10, mult: 3 },
-            { bonus: 0.12, mult: 3 },
-            { bonus: 0.14, mult: 4 },
-            { bonus: 0.15, mult: 4 },
-            { bonus: 0.16, mult: 5 },
-            { bonus: 0.17, mult: 6 },
-            { bonus: 0.18, mult: 7 },
-            { bonus: 0.19, mult: 8 },
-            { bonus: 0.20, mult: 9 },
-            { bonus: 0.20, mult: 10 }
+            { bonus: 0.08, mult: 2 },
+            { bonus: 0.09, mult: 3 },
+            { bonus: 0.1, mult: 3 },
+            { bonus: 0.11, mult: 4 },
+            { bonus: 0.12, mult: 4 },
+            { bonus: 0.13, mult: 5 },
+            { bonus: 0.14, mult: 5 },
+            { bonus: 0.15, mult: 6 },
+            { bonus: 0.16, mult: 6 },
+            { bonus: 0.17, mult: 7 },
+            { bonus: 0.18, mult: 8 }
         ];
 
         this.lastTime = 0;
@@ -217,7 +218,7 @@ class Game {
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
             { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
-              desc: 'Increase the chance for tower shot to deal 200% damage.', type: 'upgrade',
+              desc: 'Chance for tower shot to deal 200% damage.', type: 'upgrade',
               getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
               getValue: () => `${this.stats.criticalHitChance}%`,
               getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
@@ -249,6 +250,7 @@ class Game {
         this.currentRPM = 5.5;
         this.currentId = 0;
         this.gumballs = [];
+        this.frostingParticles = [];
 
         this.player = new Player(this);
         this.levelingManager = new LevelingManager(this);
@@ -756,7 +758,7 @@ class Game {
         this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
+        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = []; this.frostingParticles = [];
         this.player.reset();
         this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);
@@ -778,6 +780,9 @@ class Game {
         
                 if (this.isShopOpen) {
                     this.shopState = 'shop';
+                    document.getElementById('shop-top-bar').style.display = 'flex';
+                    document.getElementById('emporium-top-bar').style.display = 'none';
+                    document.getElementById('emporium-buttons').style.display = 'none';
                     this.isPaused = true;
                     this.lastShopOpenTime = this.gameTime;
                     document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());

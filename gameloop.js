@@ -43,7 +43,7 @@ export default class GameLoop {
             this.game.piggyTimer += tsf;
             if (this.game.piggyTimer >= pCooldown) {
                 this.game.piggyTimer = 0;
-                this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 390) + 25, 'piggy'));
+                this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 90) + 25, 'piggy'));
                 if (!this.game.piggyBankSeen) {
                     this.game.piggyBankSeen = true;
                     this.game.isPaused = true;
@@ -163,6 +163,7 @@ export default class GameLoop {
             for (let i = this.game.damageSpots.length - 1; i >= 0; i--) { this.game.damageSpots[i].update(tsf); if (this.game.damageSpots[i].opacity <= 0) this.game.damageSpots.splice(i, 1); }
             for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
             for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
+            for (let i = this.game.frostingParticles.length - 1; i >= 0; i--) { this.game.frostingParticles[i].update(tsf); if (this.game.frostingParticles[i].lifespan <= 0) this.game.frostingParticles.splice(i, 1); }
 
             this.game.lootPopupManager.update(deltaTime);
 
@@ -261,6 +262,7 @@ export default class GameLoop {
         this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));
+        this.game.frostingParticles.forEach(p => p.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
 
         this.game.lootPopupManager.draw(this.game.ctx);

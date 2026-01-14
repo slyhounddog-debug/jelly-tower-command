@@ -105,7 +105,7 @@ export default class Missile {
     applySlow(duration, amount, source = 'generic') {
         // Prevent stacking the same type of slow from the same source
         if (!this.slowEffects.some(e => e.source === source)) {
-            this.slowEffects.push({ timer: duration, amount, source });
+            this.slowEffects.push({ timer: duration, amount, source, initialDuration: duration });
         }
     }
 
@@ -277,11 +277,22 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
         // Draw blue overlay if slowed
         if (this.totalSlow > 0) {
-            ctx.fillStyle = `rgba(100, 150, 255, ${this.totalSlow * 0.5})`; // More opaque for stronger slow
-            ctx.beginPath();
-            // Use enemy's actual dimensions
-            ctx.roundRect(this.x, this.y, this.width, this.height, 10);
-            ctx.fill();
+            const tongueSlow = this.slowEffects.find(e => e.source === 'tongue');
+            if (tongueSlow) {
+                const progress = tongueSlow.timer / tongueSlow.initialDuration;
+                const alpha = 0.2 + (0.6 * progress);
+                ctx.globalAlpha = alpha;
+                ctx.filter = 'hue-rotate(180deg) brightness(1.5)';
+                this.drawEnemy(ctx);
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1;
+            } else {
+                ctx.fillStyle = `rgba(100, 150, 255, ${this.totalSlow * 0.5})`; // More opaque for stronger slow
+                ctx.beginPath();
+                // Use enemy's actual dimensions
+                ctx.roundRect(this.x, this.y, this.width, this.height, 10);
+                ctx.fill();
+            }
         }
 
         ctx.shadowBlur = 15;
@@ -294,10 +305,103 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         ctx.shadowColor = color;
         ctx.fillStyle = color;
 
+        this.drawEnemy(ctx);
+
+        ctx.shadowBlur = 0;
+
+        // Draw Jelly Tag Crown
+        if (this.isJellyTagged) {
+            const crownImg = this.game.tagCrownImage;
+            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
+            // Adjust this value to change the size of the crown
+            const crownSize = 40; 
+            // Adjust this value to change the vertical position of the crown
+            const yOffset = 50; 
+            
+            const bob = Math.sin(this.game.gameTime * 0.1) * 5; // Bobbing effect
+            const crownX = this.x + (this.width - crownSize) / 2;
+            const crownY = this.y - yOffset + bob;
+
+            ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
+        }
+
+      if (this.health < this.maxHealth) {
+            const pct = Math.max(0, this.health / this.maxHealth);
+            const isLow = pct < 0.25;
+            
+            // Calculate size based on enemy type
+            let sizeMult = 1.0;
+            if (this.type === 'piggy') sizeMult = 1.15;
+            else if (this.type === 'marshmallow_large') sizeMult = 1.25;
+            else if (this.type === 'marshmallow_small') sizeMult = 0.8;
+            
+            // Pulsing effect for low health (under 25%)
+            const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
+            const finalMult = sizeMult * pulse;
+            
+            let offsetX = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
+            let offsetY = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
+            
+            const barWidth = (this.width * 1.2) * finalMult;
+            const barHeight = 18 * finalMult; 
+            const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
+            const barY = this.y - 22 + offsetY;
+
+            const frameColor = darkenColor(this.color, 10);
+
+            // Glass Tube Background
+            ctx.fillStyle = frameColor + '66'; 
+            ctx.beginPath(); ctx.roundRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 10); ctx.fill();
+            
+            // Inner Empty Tube
+            ctx.fillStyle = darkenColor(frameColor, 30) + '99'; 
+            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth, barHeight, 8); ctx.fill();
+
+            // Health Fill Logic (Red < 25%, Yellow < 60%, Green otherwise)
+            let healthFillColor = '#2ecc71'; // Green
+            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
+            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
+            
+            ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthFillColor;
+            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8); ctx.fill();
+
+            // Candy Glaze Shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath(); ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 8); ctx.fill();
+
+            if (this.damageTextTimer > 0) {
+                const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
+                ctx.save();
+                ctx.globalAlpha = alpha; 
+                ctx.font = 'bold 44px "VT323"';
+                ctx.textAlign = 'center';
+                
+                const tx = barX + barWidth / 2;
+                const ty = barY + 5;
+                const val = Math.ceil(this.health);
+
+                // Add the gray border
+                ctx.strokeStyle = '#213625ff'; // Dark gray border
+                ctx.lineWidth = 3;           // Thickness of the border
+                ctx.strokeText(val, tx, ty);
+
+                // Fill the white text
+                ctx.fillStyle = 'white';
+                ctx.fillText(val, tx, ty);
+                
+                ctx.restore();
+            }
+        }
+        ctx.restore();
+
+        for (const spot of this.damageSpots) spot.draw(ctx);
+    }
+
+    drawEnemy(ctx) {
         const shadowOffset = 5;
         const shadowDarkness = 20;
-        const shadowColor = darkenColor(color, shadowDarkness);
-        
+        const shadowColor = darkenColor(this.color, shadowDarkness);
+
         if (this.type === 'piggy') {
             const piggyLevel = this.game.stats.piggyLvl;
             const sizeMultiplier = 1 + (piggyLevel * 0.15);
@@ -314,7 +418,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.save();
             ctx.translate(cx, cy);
             ctx.scale(1.1 * this.squash * sizeMultiplier, 1.1 * this.stretch * sizeMultiplier);
-            ctx.fillStyle = color;
+            ctx.fillStyle = this.color;
             ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
             ctx.fillStyle = '#ffb7b2';
@@ -322,7 +426,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.fillStyle = 'black';
             ctx.beginPath(); ctx.arc(-2, -2, 1, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(2, -2, 1, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = color;
+            ctx.fillStyle = this.color;
             ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-15, -20); ctx.lineTo(-5, -15); ctx.fill();
             ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(15, -20); ctx.lineTo(5, -15); ctx.fill();
 
@@ -427,95 +531,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             }
             ctx.restore();
         }
-
-        ctx.shadowBlur = 0;
-
-        // Draw Jelly Tag Crown
-        if (this.isJellyTagged) {
-            const crownImg = this.game.tagCrownImage;
-            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
-            // Adjust this value to change the size of the crown
-            const crownSize = 40; 
-            // Adjust this value to change the vertical position of the crown
-            const yOffset = 50; 
-            
-            const bob = Math.sin(this.game.gameTime * 0.1) * 5; // Bobbing effect
-            const crownX = this.x + (this.width - crownSize) / 2;
-            const crownY = this.y - yOffset + bob;
-
-            ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
-        }
-
-      if (this.health < this.maxHealth) {
-            const pct = Math.max(0, this.health / this.maxHealth);
-            const isLow = pct < 0.25;
-            
-            // Calculate size based on enemy type
-            let sizeMult = 1.0;
-            if (this.type === 'piggy') sizeMult = 1.15;
-            else if (this.type === 'marshmallow_large') sizeMult = 1.25;
-            else if (this.type === 'marshmallow_small') sizeMult = 0.8;
-            
-            // Pulsing effect for low health (under 25%)
-            const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
-            const finalMult = sizeMult * pulse;
-            
-            let offsetX = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
-            let offsetY = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
-            
-            const barWidth = (this.width * 1.2) * finalMult;
-            const barHeight = 18 * finalMult; 
-            const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
-            const barY = this.y - 22 + offsetY;
-
-            const frameColor = shadowColor;
-
-            // Glass Tube Background
-            ctx.fillStyle = frameColor + '66'; 
-            ctx.beginPath(); ctx.roundRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 10); ctx.fill();
-            
-            // Inner Empty Tube
-            ctx.fillStyle = darkenColor(frameColor, 30) + '99'; 
-            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth, barHeight, 8); ctx.fill();
-
-            // Health Fill Logic (Red < 25%, Yellow < 60%, Green otherwise)
-            let healthFillColor = '#2ecc71'; // Green
-            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
-            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
-            
-            ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthFillColor;
-            ctx.beginPath(); ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8); ctx.fill();
-
-            // Candy Glaze Shine
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.beginPath(); ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 8); ctx.fill();
-
-            if (this.damageTextTimer > 0) {
-                const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
-                ctx.save();
-                ctx.globalAlpha = alpha; 
-                ctx.font = 'bold 44px "VT323"';
-                ctx.textAlign = 'center';
-                
-                const tx = barX + barWidth / 2;
-                const ty = barY + 5;
-                const val = Math.ceil(this.health);
-
-                // Add the gray border
-                ctx.strokeStyle = '#213625ff'; // Dark gray border
-                ctx.lineWidth = 3;           // Thickness of the border
-                ctx.strokeText(val, tx, ty);
-
-                // Fill the white text
-                ctx.fillStyle = 'white';
-                ctx.fillText(val, tx, ty);
-                
-                ctx.restore();
-            }
-        }
-        ctx.restore();
-
-        for (const spot of this.damageSpots) spot.draw(ctx);
     }
     
        kill(killedBy = 'unknown') {

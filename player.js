@@ -1,6 +1,7 @@
 import Particle from './particle.js';
 import WaveAttack from './waveAttack.js';
 import Gumball from './gumball.js';
+import FrostingParticle from './frostingParticle.js';
 
 export default class Player {
     constructor(game) {
@@ -372,11 +373,31 @@ export default class Player {
                 this.vy = this.jumpForce; this.isOnGround = false; this.jumpsLeft = this.maxJumps - 1; this.jumpLock = true;
                 this.jumpSquash = 15;
                 this.game.audioManager.playSound('jump');
+                // Spawn frosting particles for jumping
+                const numParticles = 4 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < numParticles; i++) {
+                    const radius = Math.random() * 4 + 2;
+                    const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                    const lifespan = 50 + Math.random() * 20;
+                    const vx = (Math.random() - 0.5) * 4;
+                    const vy = -Math.random() * 5 - 2;
+                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                }
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
                 this.jumpSquash = 15;
                 for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x + this.width / 2, this.y + this.height, '#fff'));
                 this.game.audioManager.playSound('midAirJump');
+                // Spawn frosting particles for double jumping
+                const numParticles = 4 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < numParticles; i++) {
+                    const radius = Math.random() * 4 + 2;
+                    const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                    const lifespan = 50 + Math.random() * 20;
+                    const vx = (Math.random() - 0.5) * 4;
+                    const vy = -Math.random() * 5 - 2;
+                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                }
             }
         }
         if (!this.game.keys[' '] && !this.game.keys['w']) this.jumpLock = false;
@@ -406,12 +427,12 @@ export default class Player {
             let hitboxHeight = p.height;
 
             if (p.type === 'castle') {
-                hitboxWidth *= 0.6;
+                hitboxWidth *= 0.8;
                 hitboxHeight *= 0.95;
                 hitboxX += (p.width - hitboxWidth) / 2;
                 hitboxY += (p.height - hitboxHeight) / 2;
             } else if (p.type === 'cloud') {
-                hitboxWidth *= 0.7;
+                hitboxWidth *= 0.85;
                 hitboxX += (p.width - hitboxWidth) / 2;
             }
 
@@ -424,6 +445,17 @@ export default class Player {
             if (horizontalOverlap && verticalOverlap && isMovingDown && playerWasAbove) {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
+                    // Spawn frosting particles for landing
+                    const numParticles = 9 + Math.floor(Math.random() * 8 * (this.vy / 20));
+                    for (let i = 0; i < numParticles; i++) {
+                        const radius = Math.random() * 4 + 2;
+                        const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                        const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
+                        const vx = (Math.random() - 0.5) * 8 * (this.vy / 10);
+                        const vy = -Math.random() * 10 * (this.vy / 10);
+                        this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                    }
+
                     if (this.upgrades['Squishy Butt'] > 0) {
                         const shockwaveRange = this.lickRange * 0.76;
                         this.game.missiles.forEach(m => {
@@ -491,6 +523,17 @@ export default class Player {
                 const bounce = Math.sin(this.game.gameTime * 0.4) * 0.02;
                 this.scaleY += bounce;
                 this.scaleX -= bounce;
+
+                // Spawn frosting particles for movement
+                const numParticles = Math.random() > 0.5 ? 3 : 2;
+                for (let i = 0; i < numParticles; i++) {
+                    const radius = Math.random() * 4 + 2;
+                    const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                    const lifespan = 30 + Math.random() * 20;
+                    const vx = -this.vx * 0.5 + (Math.random() - 0.5) * 2;
+                    const vy = -Math.random() * 3;
+                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                }
             }
         } else {
             // Cap the stretch so he doesn't look like a needle when falling fast
