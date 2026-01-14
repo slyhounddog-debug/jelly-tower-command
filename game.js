@@ -189,7 +189,7 @@ class Game {
               getLevel: () => `${this.stats.rangeLvl}/${this.UPGRADE_COSTS.length - 1}`, 
               action: () => this.stats.rangeLvl++ 
             },
-            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance. Heart heals 10 and Big Coins give $100.', type: 'upgrade', 
+            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance of heart and big coin.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX', 
               getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`, 
               getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`, 
@@ -217,7 +217,7 @@ class Game {
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
             { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
-              desc: 'Increases the chance for tower projectiles to deal double damage.', type: 'upgrade',
+              desc: 'Increase the chance for tower shot to deal 200% damage.', type: 'upgrade',
               getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
               getValue: () => `${this.stats.criticalHitChance}%`,
               getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
@@ -225,7 +225,7 @@ class Game {
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
-              getCost: () => { const costs = [5000, 50000, 500000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
+              getCost: () => { const costs = [7500, 75000, 750000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
               getValue: () => `${this.stats.turretsBought}/3`,
               getNext: () => `Place on a cloud.`,
               getLevel: () => `${this.stats.turretsBought}/3`,

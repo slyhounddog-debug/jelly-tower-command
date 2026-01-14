@@ -435,7 +435,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             const crownImg = this.game.tagCrownImage;
             // --- CROWN SIZE AND POSITION ADJUSTMENT ---
             // Adjust this value to change the size of the crown
-            const crownSize = this.width * 0.5; 
+            const crownSize = 40; 
             // Adjust this value to change the vertical position of the crown
             const yOffset = 50; 
             

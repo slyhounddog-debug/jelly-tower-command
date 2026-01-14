@@ -124,7 +124,7 @@ export default class LevelingManager {
 
         
 
-                        { name: "Sugar Rush", description: "+20% tower damage and fire rate for 10 sec on tongue kill.", icon: "🍬", rarity: "rare" }
+                        { name: "Sugar Rush", description: "+20% tower damage and fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
 
         
 
