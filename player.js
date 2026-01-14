@@ -4,7 +4,7 @@ import WaveAttack from './waveAttack.js';
 export default class Player {
     constructor(game) {
         this.game = game;
-        this.width = 85; this.height = 100; this.color = '#ffc1cc';
+        this.width = 55; this.height = 100; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
         this.lickCooldown = 0; this.lickAnim = 0;
 
@@ -534,7 +534,7 @@ export default class Player {
                 }
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, shadowY, (this.width * this.scaleX * 0.5 / 1.7) * shadowFactor, (this.width * 0.12 / 1.7) * shadowFactor, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, shadowY + 2, (this.width * this.scaleX * 0.5 / 1.2) * shadowFactor, (this.width * 0.12 / 1.2) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
@@ -598,23 +598,47 @@ export default class Player {
 
         ctx.restore(); // END PLAYER TRANSFORM
 
-        if (this.sugarRushTimer > 0) {
-            ctx.save();
-            ctx.globalAlpha = 0.5 + Math.sin(this.game.gameTime * 0.5) * 0.2;
-            const waveCount = 3;
-            for (let i = 0; i < waveCount; i++) {
-                const progress = (this.game.gameTime * 0.2 + i * (1 / waveCount)) % 1;
-                const yOffset = this.y + this.height * progress;
-                const alpha = 1 - progress;
-                
-                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
-                ctx.lineWidth = 3 + (1 - progress) * 4;
-                ctx.beginPath();
-                ctx.arc(this.x + this.width / 2, yOffset, this.width * 0.6 * progress, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
+     if (this.sugarRushTimer > 0) {
+    ctx.save();
+    
+    // 1. BOUNDARY LOCK: Keeps waves from bleeding out of character bounds
+    ctx.beginPath();
+    ctx.rect(this.x, this.y + (this.height * 0.33), this.width, this.height * 0.67);
+    ctx.clip();
+
+    const waveCount = 3;
+    const slowSpeed = 0.025; 
+    const colorSpeed = 2; 
+    const arcHeight = 10; // Controls how much the wave "curves"
+    
+    for (let i = 0; i < waveCount; i++) {
+        // 2. REVERSED DIRECTION: subtracted from 1 to move bottom-to-top
+        const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
+        
+        const minY = this.y + (this.height * 0.33);
+        const maxY = this.y + this.height;
+        const yPos = minY + ((maxY - minY) * progress);
+        
+        const alpha = Math.sin(progress * Math.PI);
+        const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
+        
+        ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
+        ctx.lineWidth = 11;
+
+        // 3. ARCHED WAVE LOGIC: Using Quadratic Curve
+        ctx.beginPath();
+        // Start point (left side)
+        ctx.moveTo(this.x, yPos);
+        // Arched path: control point is at center width but raised/lowered by arcHeight
+        ctx.quadraticCurveTo(
+            this.x + this.width / 2, yPos - arcHeight, 
+            this.x + this.width, yPos
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
 
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
         if (!this.isControlling && this.lickAnim > 0) {

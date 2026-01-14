@@ -848,13 +848,16 @@ selectShopItem(item) {
 
     const buyBtn = document.getElementById('buy-btn');
     const sellBtn = document.getElementById('sell-btn');
+    const costDisplay = document.getElementById('detail-buy-cost');
 
     if (isMaxLevel) {
         buyBtn.src = 'assets/Images/disabledbutton.png';
         buyBtn.style.pointerEvents = 'none';
+        costDisplay.innerText = '';
     } else {
         buyBtn.src = canAfford ? 'assets/Images/shopupgradeup.png' : 'assets/Images/disabledbutton.png';
         buyBtn.style.pointerEvents = canAfford ? 'all' : 'none';
+        costDisplay.innerText = typeof cost === 'number' ? `$${cost}` : '';
     }
 
     sellBtn.style.display = (item.id === 'buy_turret' && this.stats.turretsBought > 0) ? 'inline' : 'none';

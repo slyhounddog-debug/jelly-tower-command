@@ -858,6 +858,7 @@
 
 .shop-buttons {
     display: flex !important;
+    align-items: center; /* Vertically align items */
     gap: 10px;
     /* Lock the width so the buttons can't shrink */
     min-width: 120px !important; 
@@ -874,6 +875,16 @@
     cursor: pointer;
     object-fit: contain;
 }
+#detail-buy-cost {
+    font-family: 'VT323', monospace;
+    color: #9966CC;
+    font-size: 28px;
+    font-weight: bold;
+}
+body #shop-info .shop-buttons #detail-buy-cost {
+    color: #9966CC;
+}
+
 /* --- END OF SHOP FIX --- */
 
         #settings-icon {
@@ -1016,7 +1027,10 @@
                     <div class="detail-info-row">
                         <div id="detail-level-display" style="font-weight: bold;"></div>
                         <div class="shop-buttons">
-                            <img src="assets/Images/shopupgradeup.png" id="buy-btn" class="shop-upgrade-button">
+                            <div class="buy-action-container" style="display: flex; align-items: center; gap: 10px;">
+                                <img src="assets/Images/shopupgradeup.png" id="buy-btn" class="shop-upgrade-button">
+                                <div id="detail-buy-cost" style="font-family: 'VT323', monospace; color: #9966CC !important; font-size: 28px; font-weight: bold;"></div>
+                            </div>
                             <img src="assets/Images/sellbuttonup.png" id="sell-btn" class="shop-upgrade-button" style="display: none;">
                         </div>
                     </div>        </div>
