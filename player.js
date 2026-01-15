@@ -374,13 +374,13 @@ export default class Player {
                 this.jumpSquash = 15;
                 this.game.audioManager.playSound('jump');
                 // Spawn frosting particles for jumping
-                const numParticles = 4 + Math.floor(Math.random() * 4);
+                const numParticles = 8 + Math.floor(Math.random() * 4);
                 for (let i = 0; i < numParticles; i++) {
                     const radius = Math.random() * 4 + 2;
                     const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                     const lifespan = 50 + Math.random() * 20;
-                    const vx = (Math.random() - 0.5) * 4;
-                    const vy = -Math.random() * 5 - 2;
+                    const vx = (Math.random() - 0.5) * 8;
+                    const vy = -Math.random() * 8 - 3.5;
                     this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
                 }
             } else if (this.jumpsLeft > 0) {
@@ -446,13 +446,13 @@ export default class Player {
                 if (!wasOnGround && this.vy > 5) {
                     this.game.audioManager.playSound('land');
                     // Spawn frosting particles for landing
-                    const numParticles = 9 + Math.floor(Math.random() * 8 * (this.vy / 20));
+                    const numParticles = 2 + Math.floor(Math.random() * 6 * (this.vy / 5) + (this.vx / 22));
                     for (let i = 0; i < numParticles; i++) {
                         const radius = Math.random() * 4 + 2;
                         const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                         const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
-                        const vx = (Math.random() - 0.5) * 8 * (this.vy / 10);
-                        const vy = -Math.random() * 10 * (this.vy / 10);
+                        const vx = (Math.random() + (this.vx / 19) - 0.5) * 6 * (this.vy / 20);
+                        const vy = -Math.random() * 8 * (this.vy / 17);
                         this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
                     }
 
@@ -470,7 +470,7 @@ export default class Player {
                             y: this.y + this.height,
                             maxRadius: shockwaveRange,
                             timer: 0,
-                            maxTimer: 30, // half a second
+                            maxTimer: 38, // half a second
                             rings: [
                                 { progress: 0, speed: 1 },
                                 { progress: -0.2, speed: 1 },
@@ -525,13 +525,14 @@ export default class Player {
                 this.scaleX -= bounce;
 
                 // Spawn frosting particles for movement
-                const numParticles = Math.random() > 0.5 ? 3 : 2;
+                const speedFactor = Math.floor(Math.abs(this.vx) / 5); 
+                const numParticles = .3 + Math.min(speedFactor, 2);
                 for (let i = 0; i < numParticles; i++) {
-                    const radius = Math.random() * 4 + 2;
+                    const radius = Math.random() * 4 + 1;
                     const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                     const lifespan = 30 + Math.random() * 20;
-                    const vx = -this.vx * 0.5 + (Math.random() - 0.5) * 2;
-                    const vy = -Math.random() * 3;
+                    const vx = -this.vx * 0.7 + (Math.random() - 0.5) * 1.7;
+                    const vy = -Math.random() * 2 - .5 - (Math.abs(this.vx / 7));
                     this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
                 }
             }

@@ -73,7 +73,7 @@ class Game {
         this.tagCrownImage = new Image();
         this.tagCrownImage.src = 'assets/Images/tagcrown.png';
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
-        this.FROSTING_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6d9', '#ffb3de'];
+        this.FROSTING_COLORS = ['#ffadc8c9', '#ffd8cc83', '#ffb6c3a8', '#ffb2bcc4', '#fccef4a6', '#ffa6c8c7', '#fca4e6d5', '#ff81aba1', '#ffb3de', '#f4acb7'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
         this.LICK_DAMAGE_TIERS = [13, 17, 22, 28, 35, 43, 52, 62, 72, 83, 95, 110, 125];
