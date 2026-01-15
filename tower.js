@@ -191,22 +191,28 @@ export default class Tower extends BaseStructure {
         if (this.game.player.isControlling === this && this.game.player.sugarRushTimer > 0) {
             ctx.save();
             
-            // 1. BOUNDARY LOCK: Keeps waves from bleeding out of character bounds
+            const animWidth = this.width * this.scale;
+            const animHeight = this.height * this.scale;
+            const animX = (this.x + this.width / 2) - (animWidth / 2);
+            const animY = (this.y + this.height / 2) - (animHeight / 2);
+
+            const towerAnimHeight = animHeight * 0.77;
+            const towerAnimStartY = animY + (animHeight * 0.13);
+            
             ctx.beginPath();
-            ctx.rect(this.x, this.y + (this.height * 0.33), this.width, this.height * 0.67);
+            ctx.rect(animX, towerAnimStartY, animWidth, towerAnimHeight);
             ctx.clip();
         
             const waveCount = 3;
             const slowSpeed = 0.025; 
             const colorSpeed = 2; 
-            const arcHeight = 10; // Controls how much the wave "curves"
+            const arcHeight = -10;
             
             for (let i = 0; i < waveCount; i++) {
-                // 2. REVERSED DIRECTION: subtracted from 1 to move bottom-to-top
                 const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
                 
-                const minY = this.y + (this.height * 0.33);
-                const maxY = this.y + this.height;
+                const minY = towerAnimStartY;
+                const maxY = animY + animHeight;
                 const yPos = minY + ((maxY - minY) * progress);
                 
                 const alpha = Math.sin(progress * Math.PI);
@@ -215,14 +221,11 @@ export default class Tower extends BaseStructure {
                 ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
                 ctx.lineWidth = 11;
         
-                // 3. ARCHED WAVE LOGIC: Using Quadratic Curve
                 ctx.beginPath();
-                // Start point (left side)
-                ctx.moveTo(this.x, yPos);
-                // Arched path: control point is at center width but raised/lowered by arcHeight
+                ctx.moveTo(animX, yPos);
                 ctx.quadraticCurveTo(
-                    this.x + this.width / 2, yPos - arcHeight, 
-                    this.x + this.width, yPos
+                    animX + animWidth / 2, yPos - arcHeight, 
+                    animX + animWidth, yPos
                 );
                 ctx.stroke();
             }

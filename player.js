@@ -461,7 +461,7 @@ export default class Player {
                         const radius = Math.random() * 4 + 2;
                         const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                         const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
-                        const vx = (Math.random() + (this.vx / 19) - 0.5) * 6 * (this.vy / 20);
+                        const vx = (Math.random() + (this.vx / 22) - 0.5) * 6 * (this.vy / 20);
                         const vy = -Math.random() * 8 * (this.vy / 17);
                                             const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
                     if (Math.random() < 0.2) {
@@ -797,7 +797,7 @@ export default class Player {
     const waveCount = 3;
     const slowSpeed = 0.025; 
     const colorSpeed = 2; 
-    const arcHeight = 10; // Controls how much the wave "curves"
+    const arcHeight = -10; // Controls how much the wave "curves"
     
     for (let i = 0; i < waveCount; i++) {
         // 2. REVERSED DIRECTION: subtracted from 1 to move bottom-to-top
