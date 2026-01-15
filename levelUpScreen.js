@@ -138,7 +138,7 @@ export default class LevelUpScreen {
 
         ctx.fillStyle = 'white';
         ctx.font = '21px "Nunito"';
-        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 210, card.width - 30, 24);
+        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 180, card.width - 30, 24);
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = color;

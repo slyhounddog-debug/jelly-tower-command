@@ -44,7 +44,7 @@ export default class LevelingManager {
 
         
 
-                                            { name: "Sweet Aura", description: "Enemies near you take 10% more damage.", icon: "💖", rarity: "normal" },
+                                            { name: "Sweet Aura", description: "Enemies within tongue range take 10% more damage.", icon: "💖", rarity: "normal" },
 
         
 

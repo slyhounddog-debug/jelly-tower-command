@@ -4,6 +4,7 @@ export default class LevelUpManagerScreen {
         this.isOpen = false;
         this.cards = [];
         this.titleY = -100;
+        this.hoveredCard = null;
         this.rarityColors = {
             normal: '#2ecc71',
             rare: '#9b59b6',
@@ -20,6 +21,7 @@ export default class LevelUpManagerScreen {
     hide() {
         this.isOpen = false;
         this.game.isPaused = false;
+        this.hoveredCard = null;
     }
 
     toggle() {
@@ -96,6 +98,15 @@ export default class LevelUpManagerScreen {
     update(tsf) {
         if (!this.isOpen) return;
         this.titleY += (150 - this.titleY) * 0.1 * tsf;
+
+        this.hoveredCard = null;
+        for (const card of this.cards) {
+            if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
+                this.game.mouse.y > card.y && this.game.mouse.y < card.y + card.height) {
+                this.hoveredCard = card;
+                break;
+            }
+        }
     }
 
     draw(ctx) {
@@ -128,26 +139,37 @@ export default class LevelUpManagerScreen {
         this.cards.forEach(card => {
             this.drawCard(ctx, card);
         });
+
+        if (this.hoveredCard) {
+            const hoverScale = 2.23;
+            const width = this.hoveredCard.width * hoverScale;
+            const height = this.hoveredCard.height * hoverScale;
+            const x = this.game.width / 2 - width / 2;
+            const y = this.game.height / 2 - height / 2;
+            
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 10;
+            ctx.shadowOffsetY = 10;
+            this.drawCard(ctx, { ...this.hoveredCard, x, y, width, height });
+            ctx.restore();
+        }
     }
 
     drawCard(ctx, card) {
         ctx.save();
         
+        const scale = card.width / 180; // Base card width is 180
+
         const hasUpgrade = this.game.player.upgrades[card.choice.name] > 0;
         const upgradeCount = this.game.player.upgrades[card.choice.name];
-
-        const rarityGlows = {
-            normal: 'rgba(46, 204, 113, 0.5)',
-            rare: 'rgba(155, 89, 182, 0.5)',
-            legendary: 'rgba(241, 196, 15, 0.7)'
-        };
 
         const rarity = card.choice.rarity;
         let color = this.rarityColors[rarity] || '#ffffff';
 
         if (!hasUpgrade) {
             ctx.filter = 'grayscale(1)';
-            color = '#888';
         }
 
         if (hasUpgrade) {
@@ -163,43 +185,55 @@ export default class LevelUpManagerScreen {
         }
 
         ctx.strokeStyle = hasUpgrade ? '#ba9bdaff' : '#444444ff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3 * scale;
 
         ctx.beginPath();
-        ctx.roundRect(card.x, card.y, card.width, card.height, 20);
+        ctx.roundRect(card.x, card.y, card.width, card.height, 20 * scale);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = hasUpgrade ? 'white' : color;
-        ctx.font = '20px "Fredoka One"';
+        ctx.fillStyle = this.rarityColors[rarity] || '#ffffff';
+        if (!hasUpgrade) {
+            ctx.filter = 'grayscale(0)'; // Reset filter for text
+        }
+        ctx.font = `${20 * scale}px "Fredoka One"`;
         ctx.textAlign = 'center';
         
         const title = card.choice.name.toUpperCase();
-        ctx.fillText(title, card.x + card.width / 2, card.y + 25);
+        ctx.fillText(title, card.x + card.width / 2, card.y + 25 * scale);
+        if (!hasUpgrade) {
+            ctx.filter = 'grayscale(1)';
+        }
 
-        ctx.font = '40px "Fredoka One"';
-        ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 70);
+        ctx.font = `${40 * scale}px "Fredoka One"`;
+        ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 70 * scale);
 
         ctx.fillStyle = hasUpgrade ? 'white' : '#aaa';
-        ctx.font = '14px "Nunito"';
-        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 110, card.width - 20, 16);
+        ctx.font = `${14 * scale}px "Nunito"`;
+        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 120 * scale, card.width - 20 * scale, 16 * scale);
 
-        ctx.fillStyle = hasUpgrade ? 'white' : color;
-        ctx.font = '16px "Fredoka One"';
-        ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - 15);
+        ctx.fillStyle = this.rarityColors[rarity] || '#ffffff';
+        if (!hasUpgrade) {
+            ctx.filter = 'grayscale(0)';
+        }
+        ctx.font = `${16 * scale}px "Fredoka One"`;
+        ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - (15 * scale));
+        if (!hasUpgrade) {
+            ctx.filter = 'grayscale(1)';
+        }
 
         if (hasUpgrade && rarity === 'normal' && upgradeCount > 0) {
-            const circleRadius = 12;
+            const circleRadius = 12 * scale;
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.beginPath();
-            ctx.arc(card.x + circleRadius + 5, card.y + circleRadius + 5, circleRadius, 0, Math.PI * 2);
+            ctx.arc(card.x + circleRadius + (5 * scale), card.y + circleRadius + (5 * scale), circleRadius, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = 'white';
-            ctx.font = '14px "Fredoka One"';
+            ctx.font = `${14 * scale}px "Fredoka One"`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(upgradeCount, card.x + circleRadius + 5, card.y + circleRadius + 5);
+            ctx.fillText(upgradeCount, card.x + circleRadius + (5 * scale), card.y + circleRadius + (5 * scale));
         }
         
         ctx.restore();
