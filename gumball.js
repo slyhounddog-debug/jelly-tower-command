@@ -17,7 +17,7 @@ export default class Gumball {
         this.dead = false;
         this.hitEnemyIds = new Set(); // To prevent hitting the same enemy multiple times
         this.spawner = spawner; // The enemy that spawned this gumball
-        this.knockback = this.game.stats.lickKnockback * 0.33;
+        this.knockback = this.game.stats.lickKnockback * 0.1;
         this.collisionDelay = 5; // 5 frames delay before collision is active
     }
 

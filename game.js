@@ -72,12 +72,39 @@ class Game {
         this.lootImage.src = 'assets/Images/loot.png';
         this.tagCrownImage = new Image();
         this.tagCrownImage.src = 'assets/Images/tagcrown.png';
+
+        // Preload shop and emporium images
+        this.shopOverlayImage = new Image();
+        this.shopOverlayImage.src = 'assets/Images/shopoverlay.png';
+        this.modalImage = new Image();
+        this.modalImage.src = 'assets/Images/modal.png';
+        this.upgradeSlotImage = new Image();
+        this.upgradeSlotImage.src = 'assets/Images/upgradeslot.png';
+        this.shopUpgradeDownImage = new Image();
+        this.shopUpgradeDownImage.src = 'assets/Images/shopupgradedown.png';
+        this.disabledButtonImage = new Image();
+        this.disabledButtonImage.src = 'assets/Images/disabledbutton.png';
+        this.sellButtonUpImage = new Image();
+        this.sellButtonUpImage.src = 'assets/Images/sellbuttonup.png';
+        this.sellButtonDownImage = new Image();
+        this.sellButtonDownImage.src = 'assets/Images/sellbuttondown.png';
+        this.restartButtonImage = new Image();
+        this.restartButtonImage.src = 'assets/Images/restartbutton.png';
+        this.emporiumButtonImage = new Image();
+        this.emporiumButtonImage.src = 'assets/Images/emporiumbutton.png';
+        this.resetButtonImage = new Image();
+        this.resetButtonImage.src = 'assets/Images/resetbutton.png';
+        this.modalConfirmUpImage = new Image();
+        this.modalConfirmUpImage.src = 'assets/Images/modalconfirmup.png';
+        this.modalConfirmDownImage = new Image();
+        this.modalConfirmDownImage.src = 'assets/Images/modalconfirmdown.png';
+
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.FROSTING_COLORS = ['#ffadc8c9', '#ffd8cc83', '#ffb6c3a8', '#ffb2bcc4', '#fccef4a6', '#ffa6c8c7', '#fca4e6d5', '#ff81aba1', '#ffb3de', '#f4acb7'];
         this.DAMAGE_TIERS = [16, 23, 30, 38, 48, 58, 68, 80, 95, 110, 125, 140, 160, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800];
         this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
         this.LICK_DAMAGE_TIERS = [13, 17, 22, 28, 35, 43, 52, 62, 72, 83, 95, 110, 125];
-        this.LICK_KNOCKBACK_TIERS = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100];
+        this.LICK_KNOCKBACK_TIERS = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 45];
         this.CRITICAL_CHANCE_TIERS = [1, 4, 7, 10, 14, 18, 22, 26, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
         this.PIGGY_TIERS = [
             { bonus: 0.08, mult: 2 },
@@ -344,6 +371,18 @@ class Game {
             new Promise(r => this.settingButtonImage.onload = r),
             new Promise(r => this.lootImage.onload = r),
             new Promise(r => this.tagCrownImage.onload = r),
+            new Promise(r => this.shopOverlayImage.onload = r),
+            new Promise(r => this.modalImage.onload = r),
+            new Promise(r => this.upgradeSlotImage.onload = r),
+            new Promise(r => this.shopUpgradeDownImage.onload = r),
+            new Promise(r => this.disabledButtonImage.onload = r),
+            new Promise(r => this.sellButtonUpImage.onload = r),
+            new Promise(r => this.sellButtonDownImage.onload = r),
+            new Promise(r => this.restartButtonImage.onload = r),
+            new Promise(r => this.emporiumButtonImage.onload = r),
+            new Promise(r => this.resetButtonImage.onload = r),
+            new Promise(r => this.modalConfirmUpImage.onload = r),
+            new Promise(r => this.modalConfirmDownImage.onload = r),
         ]).then(() => {
             startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
             startButton.style.pointerEvents = 'all'; // Enable click
@@ -483,8 +522,11 @@ class Game {
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'flex');
         document.getElementById('stats-btn').addEventListener('click', () => {
             this.updateStatsWindow();
-            document.getElementById('stats-modal').style.display = 'flex';
+            const modal = document.getElementById('stats-modal');
+            const isVisible = modal.style.display === 'flex';
+            modal.style.display = isVisible ? 'none' : 'flex';
         });
+        document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
 
                                 
 
@@ -783,7 +825,6 @@ class Game {
                     document.getElementById('emporium-buttons').style.display = 'none';
                     this.isPaused = true;
                     this.lastShopOpenTime = this.gameTime;
-                    document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
                 } else {
                     this.requestUnpause('#shop-overlay');
                 }
