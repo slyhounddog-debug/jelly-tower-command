@@ -11,6 +11,11 @@ export default class GameLoop {
     }
 
     loop(currentTime) {
+        if (this.game.hitStopFrames > 0) {
+            this.game.hitStopFrames--;
+            requestAnimationFrame((t) => this.loop(t));
+            return;
+        }
         if (!this.game.lastTime) this.game.lastTime = currentTime;
         const deltaTime = currentTime - this.game.lastTime;
         this.game.lastTime = currentTime;
@@ -72,6 +77,7 @@ export default class GameLoop {
                     }
                     this.game.castleHealthBar.triggerHit();
                     m.dead = true;
+                    this.game.hitStopFrames = 5;
                     this.game.screenShake.trigger(5, 10);
                     for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
                     
@@ -127,7 +133,7 @@ export default class GameLoop {
                         if (p.freezeStacks > 0) {
                             m.applySlow(300, 0.1 * p.freezeStacks);
                         }
-                        if (m.takeDamage(dmg, isCrit)) m.kill(j);
+                        if (m.takeDamage(dmg, isCrit)) m.kill(p);
                         m.kbVy = -2;
                         this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                         if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }

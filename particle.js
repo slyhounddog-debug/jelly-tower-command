@@ -75,7 +75,8 @@ export default class Particle {
                 const speed = Math.random() * 1 + 0.5;
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
-                this.game.particles.push(new Particle(this.game, this.x, this.y, 'rgba(255,255,255,0.7)', 'spark', 0.5, vx, vy));
+                const color = Math.random() < 0.5 ? 'rgba(255,255,255,0.7)' : 'rgba(173, 216, 230, 0.7)';
+                this.game.particles.push(new Particle(this.game, this.x, this.y, color, 'spark', 0.5, vx, vy));
             }
         }
     }
@@ -93,8 +94,8 @@ export default class Particle {
             ctx.fill();
         } else if (this.type === 'soul') { // Draw glowing white ball
             ctx.save();
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(255, 255, 255, 1)';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#add8e6';
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();

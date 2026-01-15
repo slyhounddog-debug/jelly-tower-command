@@ -14,12 +14,12 @@ export default class ThreatManager {
     }
     update(tsf) {
         this.diffTimer += tsf;
-        if (this.diffTimer >= 70) { // Lower increases threatRPM more quickly
+        if (this.diffTimer >= 65) { // Lower increases threatRPM more quickly
             this.game.currentRPM += 0.1;
             this.diffTimer = 0;
         }
 
-        this.threatRPM = Math.min(240, 5.5 + this.game.gameTime / 240);
+        this.threatRPM = Math.min(240, 7.5 + this.game.gameTime / 240);
 
         // Check if it's time to spawn the boss
         if (!this.game.boss && !this.bossWarningActive && this.game.killsSinceLastBoss >= this.game.killsForNextBoss) {
@@ -52,7 +52,7 @@ export default class ThreatManager {
         this.spawnTimer += tsf;
         if (this.spawnTimer >= 3600 / this.game.currentRPM) {
             this.spawnTimer = 0;
-            const spawnX = Math.random() * (this.game.width - 250) + 125;
+            const spawnX = Math.random() * (this.game.width - 350) + 175;
 
             // Marshmallow spawn logic
             if (this.game.currentRPM >= this.game.marshmallowSpawnThreshold && Math.random() < 0.10) {

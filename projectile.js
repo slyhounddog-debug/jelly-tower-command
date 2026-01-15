@@ -6,6 +6,7 @@ export default class Projectile {
         this.game = game;
         this.x = x; this.y = y; this.damage = damage; this.range = range; this.origin = origin;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+        this.angle = angle;
         this.hp = damage; this.dead = false; this.hasHit = false;
         this.rotation = Math.random() * Math.PI * 2; // Start with random rotation
         this.radius = radius;

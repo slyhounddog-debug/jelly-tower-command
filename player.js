@@ -170,7 +170,7 @@ export default class Player {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
                     if(m.takeDamage(this.game.stats.lickDamage * 0.1, false)) {
-                        m.kill('tongue');
+                        m.kill({type: 'lick', angle: this.whirlwindAngle});
                     }
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
@@ -242,12 +242,13 @@ export default class Player {
                 }
 
                 if (hit && !this.hitEnemies.includes(m.id)) {
+                    this.game.hitStopFrames = 1;
                     this.hitEnemies.push(m.id);
                     if (this.upgrades['Jelly Tag'] > 0) {
                         m.isJellyTagged = true;
                     }
                     if (m.takeDamage(this.game.stats.lickDamage, false)) {
-                        m.kill('tongue');
+                        m.kill({type: 'lick', angle: this.lickAngle});
                     }
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue');
@@ -283,6 +284,7 @@ export default class Player {
                 }
 
                 if (hit && !this.hitEnemies.includes(boss.id)) {
+                    this.game.hitStopFrames = 1;
                     this.hitEnemies.push(boss.id);
                     boss.takeDamage(this.game.stats.lickDamage, false);
                     this.game.screenShake.trigger(4, 10);

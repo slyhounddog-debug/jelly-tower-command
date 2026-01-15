@@ -63,8 +63,7 @@ export default class Tower extends BaseStructure {
     shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
-        this.game.audioManager.playSound('fire');
-        const cx = this.x + 23; const cy = this.y + 12;
+        const cx = this.x + 23; const cy = this.y - 8;
         
         const splitShotCount = this.game.player.getEquippedComponentCount('Split Shot');
         const numShots = 1 + splitShotCount;
