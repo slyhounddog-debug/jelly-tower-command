@@ -381,7 +381,12 @@ export default class Player {
                     const lifespan = 50 + Math.random() * 20;
                     const vx = (Math.random() - 0.5) * 8;
                     const vy = -Math.random() * 8 - 3.5;
-                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
+                    if (Math.random() < 0.2) {
+                        this.game.particlesInFront.push(p);
+                    } else {
+                        this.game.particlesBehind.push(p);
+                    }
                 }
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
@@ -396,7 +401,12 @@ export default class Player {
                     const lifespan = 50 + Math.random() * 20;
                     const vx = (Math.random() - 0.5) * 4;
                     const vy = -Math.random() * 5 - 2;
-                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
+                    if (Math.random() < 0.2) {
+                        this.game.particlesInFront.push(p);
+                    } else {
+                        this.game.particlesBehind.push(p);
+                    }
                 }
             }
         }
@@ -453,7 +463,12 @@ export default class Player {
                         const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
                         const vx = (Math.random() + (this.vx / 19) - 0.5) * 6 * (this.vy / 20);
                         const vy = -Math.random() * 8 * (this.vy / 17);
-                        this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                                            const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
+                    if (Math.random() < 0.2) {
+                        this.game.particlesInFront.push(p);
+                    } else {
+                        this.game.particlesBehind.push(p);
+                    }
                     }
 
                     if (this.upgrades['Squishy Butt'] > 0) {
@@ -533,7 +548,12 @@ export default class Player {
                     const lifespan = 30 + Math.random() * 20;
                     const vx = -this.vx * 0.7 + (Math.random() - 0.5) * 1.7;
                     const vy = -Math.random() * 2 - .5 - (Math.abs(this.vx / 7));
-                    this.game.frostingParticles.push(new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan));
+                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
+                    if (Math.random() < 0.2) {
+                        this.game.particlesInFront.push(p);
+                    } else {
+                        this.game.particlesBehind.push(p);
+                    }
                 }
             }
         } else {

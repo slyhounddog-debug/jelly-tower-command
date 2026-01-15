@@ -250,7 +250,8 @@ class Game {
         this.currentRPM = 5.5;
         this.currentId = 0;
         this.gumballs = [];
-        this.frostingParticles = [];
+        this.particlesBehind = [];
+        this.particlesInFront = [];
 
         this.player = new Player(this);
         this.levelingManager = new LevelingManager(this);
@@ -753,7 +754,9 @@ class Game {
         this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = []; this.frostingParticles = [];
+        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
+        this.particlesBehind = [];
+        this.particlesInFront = [];
         this.player.reset();
         this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);

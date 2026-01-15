@@ -4,8 +4,8 @@ import Particle from './particle.js';
 
 export default class Tower extends BaseStructure {
     constructor(game, x, y, isAuto = false) {
-        const size = isAuto ? 46 : 55.2;
-        super(x, y, size, size);
+        const size = isAuto ? 46 : 56;
+        super(x, y, size - 20, size);
         this.game = game;
         this.isAuto = isAuto;
         this.cooldown = 0;
@@ -160,12 +160,12 @@ export default class Tower extends BaseStructure {
         // --- NEW: Draw Tower or Auto-Turret Image ---
         const towerBodyImage = this.isAuto ? this.game.autoTurretImage : this.game.towerImage;
         if (towerBodyImage && towerBodyImage.complete) {
-            ctx.drawImage(towerBodyImage, -halfWidth, -halfHeight, this.width, this.height);
+            ctx.drawImage(towerBodyImage, -halfWidth, -halfHeight - 12, this.width, this.height);
         }
         // --- END NEW ---
 
         ctx.save();
-        ctx.translate(0, -11); // Barrel pivot point relative to tower center
+        ctx.translate(0, -24); // Barrel pivot point relative to tower center
         ctx.rotate(this.barrelAngle);
 
         // Apply barrel recoil
@@ -187,5 +187,47 @@ export default class Tower extends BaseStructure {
         ctx.restore();
 
         ctx.restore();
+
+        if (this.game.player.isControlling === this && this.game.player.sugarRushTimer > 0) {
+            ctx.save();
+            
+            // 1. BOUNDARY LOCK: Keeps waves from bleeding out of character bounds
+            ctx.beginPath();
+            ctx.rect(this.x, this.y + (this.height * 0.33), this.width, this.height * 0.67);
+            ctx.clip();
+        
+            const waveCount = 3;
+            const slowSpeed = 0.025; 
+            const colorSpeed = 2; 
+            const arcHeight = 10; // Controls how much the wave "curves"
+            
+            for (let i = 0; i < waveCount; i++) {
+                // 2. REVERSED DIRECTION: subtracted from 1 to move bottom-to-top
+                const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
+                
+                const minY = this.y + (this.height * 0.33);
+                const maxY = this.y + this.height;
+                const yPos = minY + ((maxY - minY) * progress);
+                
+                const alpha = Math.sin(progress * Math.PI);
+                const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
+                
+                ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
+                ctx.lineWidth = 11;
+        
+                // 3. ARCHED WAVE LOGIC: Using Quadratic Curve
+                ctx.beginPath();
+                // Start point (left side)
+                ctx.moveTo(this.x, yPos);
+                // Arched path: control point is at center width but raised/lowered by arcHeight
+                ctx.quadraticCurveTo(
+                    this.x + this.width / 2, yPos - arcHeight, 
+                    this.x + this.width, yPos
+                );
+                ctx.stroke();
+            }
+        
+            ctx.restore();
+        }
     }
 }
