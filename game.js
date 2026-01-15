@@ -151,7 +151,7 @@ class Game {
             baseFireRate: 45,
             baseRange: 375,
             turretsBought: 0,
-            maxTurrets: 3,
+            maxTurrets: 5,
             critLvl: 0,
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
@@ -226,10 +226,10 @@ class Game {
               action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
-              getCost: () => { const costs = [7500, 75000, 750000]; return this.stats.turretsBought < 3 ? costs[this.stats.turretsBought] : 'MAX'; },
-              getValue: () => `${this.stats.turretsBought}/3`,
+              getCost: () => { const costs = [4500, 15000, 50000, 150000, 500000]; return this.stats.turretsBought < 5 ? costs[this.stats.turretsBought] : 'MAX'; },
+              getValue: () => `${this.stats.turretsBought}/5`,
               getNext: () => `Place on a cloud.`,
-              getLevel: () => `${this.stats.turretsBought}/3`,
+              getLevel: () => `${this.stats.turretsBought}/5`,
               action: () => {}
             }
         ];
@@ -402,18 +402,13 @@ class Game {
             if (k === 'shift') {
                 this.player.tryDash(this.lastMoveDirection);
             }
-            if (k === 'tab') {
-                e.preventDefault();
-                this.levelUpManagerScreen.show();
+            if (k === 'q') {
+                this.levelUpManagerScreen.toggle();
             }
         });
         document.addEventListener('keyup', (e) => {
             const k = e.key.toLowerCase();
             this.keys[k] = false;
-            if (k === 'tab') {
-                e.preventDefault();
-                this.levelUpManagerScreen.hide();
-            }
         });
 
         this.canvas.addEventListener('mousemove', (e) => {
@@ -446,9 +441,9 @@ class Game {
                     if (this.mouse.x > t.x && this.mouse.x < t.x + t.width &&
                         this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
 
-                        const costs = [5000, 50000, 500000];
+                        const costs = [4500, 15000, 50000, 150000, 500000];
                         const lastTurretCost = this.stats.turretsBought > 0 ? costs[this.stats.turretsBought - 1] : 0;
-                        const sellPrice = lastTurretCost / 2;
+                        const sellPrice = lastTurretCost;
 
                         this.money += sellPrice;
                         this.towers.splice(i, 1);

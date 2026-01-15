@@ -22,34 +22,51 @@ export default class LevelUpManagerScreen {
         this.game.isPaused = false;
     }
 
+    toggle() {
+        if (this.isOpen) {
+            this.hide();
+        } else {
+            this.show();
+        }
+    }
+
     organizeCards() {
         this.cards = [];
         const upgrades = this.game.levelingManager.upgrades;
-        const cardWidth = 150;
-        const cardHeight = 220;
-        const gap = 20;
-        const topMargin = 200;
+        const cardWidth = 180;
+        const cardHeight = 264;
+        const gap = 15;
+        const topMargin = 250;
 
         let yOffset = topMargin;
 
-        // Normal Upgrades
+        // Normal Upgrades in two rows
         const normalUpgrades = upgrades.normal;
-        let xOffset = (this.game.width - (normalUpgrades.length * (cardWidth + gap))) / 2;
-        normalUpgrades.forEach((upgrade, index) => {
+        const cardsPerRow = Math.ceil(normalUpgrades.length / 2);
+        const totalWidth = (cardsPerRow * (cardWidth + gap)) - gap;
+
+
+        for (let i = 0; i < normalUpgrades.length; i++) {
+            const rowIndex = Math.floor(i / cardsPerRow);
+            const colIndex = i % cardsPerRow;
+            const rowUpgrades = normalUpgrades.slice(rowIndex * cardsPerRow, (rowIndex + 1) * cardsPerRow);
+            const rowWidth = (rowUpgrades.length * (cardWidth + gap)) - gap;
+            const xOffset = (this.game.width - rowWidth) / 2;
+
             this.cards.push({
-                x: xOffset + index * (cardWidth + gap),
-                y: yOffset,
+                x: xOffset + colIndex * (cardWidth + gap),
+                y: yOffset + rowIndex * (cardHeight + gap),
                 width: cardWidth,
                 height: cardHeight,
-                choice: upgrade,
+                choice: normalUpgrades[i],
             });
-        });
+        }
 
-        yOffset += cardHeight + 80;
+        yOffset += (cardHeight + gap) * 2 + 70;
 
         // Rare Upgrades
         const rareUpgrades = upgrades.rare;
-        xOffset = (this.game.width - (rareUpgrades.length * (cardWidth + gap))) / 2;
+        let xOffset = (this.game.width - (rareUpgrades.length * (cardWidth + gap))) / 2;
         rareUpgrades.forEach((upgrade, index) => {
             this.cards.push({
                 x: xOffset + index * (cardWidth + gap),
@@ -60,7 +77,7 @@ export default class LevelUpManagerScreen {
             });
         });
 
-        yOffset += cardHeight + 80;
+        yOffset += cardHeight + 70;
 
         // Legendary Upgrades
         const legendaryUpgrades = upgrades.legendary;
@@ -78,7 +95,7 @@ export default class LevelUpManagerScreen {
 
     update(tsf) {
         if (!this.isOpen) return;
-        this.titleY += (100 - this.titleY) * 0.1 * tsf;
+        this.titleY += (150 - this.titleY) * 0.1 * tsf;
     }
 
     draw(ctx) {
@@ -101,11 +118,11 @@ export default class LevelUpManagerScreen {
         ctx.font = '40px "Titan One"';
         ctx.textAlign = 'center';
         ctx.fillStyle = this.rarityColors.normal;
-        ctx.fillText('Normal', this.game.width / 2, 180);
+        ctx.fillText('Normal', this.game.width / 2, 220);
         ctx.fillStyle = this.rarityColors.rare;
-        ctx.fillText('Rare', this.game.width / 2, 480);
+        ctx.fillText('Rare', this.game.width / 2, 850);
         ctx.fillStyle = this.rarityColors.legendary;
-        ctx.fillText('Legendary', this.game.width / 2, 780);
+        ctx.fillText('Legendary', this.game.width / 2, 960 + 220);
         ctx.restore();
 
         this.cards.forEach(card => {
@@ -127,21 +144,25 @@ export default class LevelUpManagerScreen {
 
         const rarity = card.choice.rarity;
         let color = this.rarityColors[rarity] || '#ffffff';
-        let glow = rarityGlows[rarity] || 'rgba(255, 255, 255, 0.5)';
-        let cardBg = `linear-gradient(0deg, ${color}, ${glow})`;
 
         if (!hasUpgrade) {
             ctx.filter = 'grayscale(1)';
             color = '#888';
-            cardBg = '#333';
         }
 
-        const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
-        gradient.addColorStop(0, '#444');
-        gradient.addColorStop(1, '#222');
+        if (hasUpgrade) {
+            const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
+            gradient.addColorStop(0, '#3af8f8ff'); // Purple
+            gradient.addColorStop(1, '#FF69B4'); // Pink
+            ctx.fillStyle = gradient;
+        } else {
+            const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
+            gradient.addColorStop(0, '#444');
+            gradient.addColorStop(1, '#222');
+            ctx.fillStyle = gradient;
+        }
 
-        ctx.fillStyle = hasUpgrade ? gradient : '#333';
-        ctx.strokeStyle = hasUpgrade ? 'white' : '#555';
+        ctx.strokeStyle = hasUpgrade ? '#ba9bdaff' : '#444444ff';
         ctx.lineWidth = 3;
 
         ctx.beginPath();
@@ -149,7 +170,7 @@ export default class LevelUpManagerScreen {
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = color;
+        ctx.fillStyle = hasUpgrade ? 'white' : color;
         ctx.font = '20px "Fredoka One"';
         ctx.textAlign = 'center';
         
@@ -163,7 +184,7 @@ export default class LevelUpManagerScreen {
         ctx.font = '14px "Nunito"';
         this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 110, card.width - 20, 16);
 
-        ctx.fillStyle = color;
+        ctx.fillStyle = hasUpgrade ? 'white' : color;
         ctx.font = '16px "Fredoka One"';
         ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - 15);
 
