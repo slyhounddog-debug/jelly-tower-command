@@ -673,12 +673,18 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         
         let lootMultiplier = 1;
         let luckMultiplier = 1;
-        if (this.isJellyTagged && source && source.type !== 'lick') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
-            lootMultiplier = 2;
-            luckMultiplier = 2;
+        let piggyBonus = 0;
+
+        if (this.isJellyTagged) {
+            if (this.type === 'piggy') {
+                piggyBonus = 1;
+            } else {
+                lootMultiplier = 2;
+                luckMultiplier = 2;
+            }
         }
 
-        for (let c = 0; c < ((this.type === 'piggy' ? pStats.mult : 1) * lootMultiplier); c++) {
+        for (let c = 0; c < ((this.type === 'piggy' ? pStats.mult : 1) * lootMultiplier) + piggyBonus; c++) {
             dropsToCreate.push({ type: 'coin', value: 25 });
             
             let xpValue;

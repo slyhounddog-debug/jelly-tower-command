@@ -279,7 +279,7 @@ class Game {
         this.floatingTexts = [];
         this.damageSpots = [];
         this.waveAttacks = [];
-        this.currentRPM = 7.5;
+        this.currentRPM = 12.25;
         this.currentId = 0;
         this.gumballs = [];
         this.particlesBehind = [];
@@ -786,7 +786,7 @@ class Game {
         
         
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.gameTime = 0; this.isGameOver = false; this.isPaused = true; this.currentRPM = 7.5;
+        this.gameTime = 0; this.isGameOver = false; this.isPaused = true; this.currentRPM = 12.25;
         this.hitStopFrames = 0;
         this.piggyTimer = 0; this.piggyBankSeen = false;
 

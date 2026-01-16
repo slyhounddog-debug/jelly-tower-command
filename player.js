@@ -123,6 +123,11 @@ export default class Player {
                     }
                 });
 
+                if (this.game.boss && hitboxX < this.game.boss.x + this.game.boss.width && hitboxX + hitboxWidth > this.game.boss.x &&
+                    hitboxY < this.game.boss.y + this.game.boss.height && hitboxY + hitboxHeight > this.game.boss.y) {
+                    this.game.boss.takeDamage(this.game.stats.lickDamage * 2, false, this);
+                }
+
                 const angle = Math.atan2(this.vy, this.vx);
                 this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2, this.vx));
             }
@@ -177,6 +182,13 @@ export default class Player {
                     }
                 }
             });
+
+            if (this.game.boss) {
+                const dist = Math.hypot(this.x - this.game.boss.x, this.y - this.game.boss.y);
+                if (dist < whirlwindRange) {
+                    this.game.boss.takeDamage(this.game.stats.lickDamage * 0.1, false, this);
+                }
+            }
         }
 
         if (this.lickAnim > 0) {
@@ -476,7 +488,7 @@ export default class Player {
                     }
 
                     if (this.upgrades['Squishy Butt'] > 0) {
-                        const shockwaveRange = this.lickRange * 0.76;
+                        const shockwaveRange = this.lickRange * .87;
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
@@ -491,9 +503,10 @@ export default class Player {
                             timer: 0,
                             maxTimer: 38, // half a second
                             rings: [
-                                { progress: 0, speed: 1 },
-                                { progress: -0.2, speed: 1 },
-                                { progress: -0.4, speed: 1 }
+                                { progress: 0, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: -0.2, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: -0.4, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: -0.6, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' }
                             ]
                         });
                     }
@@ -757,8 +770,8 @@ export default class Player {
         }
         const ang = Math.atan2(this.game.mouse.y - eyeY, mouseXForAngle - mouthX);
         const pupilDist = 3.5;
-        const eyeRadius = 7.5;
-        const pupilRadius = 3.5;
+        const eyeRadius = 11.5;
+        const pupilRadius = 7.5;
         const eyeXOffset = -(this.width * 0.05);
         const relativeEyeY = -this.height/2 + this.height * 0.55;
 
@@ -894,8 +907,8 @@ export default class Player {
                 if (ring.progress > 0 && ring.progress < 1) {
                     const radius = anim.maxRadius * ring.progress;
                     const alpha = 1 - ring.progress;
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = ring.color ? `${ring.color.slice(0, 7)}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : `rgba(255, 255, 255, ${alpha})`;
+                    ctx.lineWidth = 5;
                     ctx.beginPath();
                     ctx.arc(anim.x, anim.y, radius, 0, Math.PI * 2);
                     ctx.stroke();

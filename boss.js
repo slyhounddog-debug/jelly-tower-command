@@ -204,10 +204,10 @@ export class GummyBear {
             ctx.globalAlpha = 1 - alpha * 0.5;
             if (alpha > 0.5) {
                 ctx.fillStyle = `rgba(255, 105, 180, 0.2)`;
-                ctx.fillRect(this.x, this.y + 100, this.width, this.height);
+                ctx.fillRect(this.x, this.y, this.width, this.height);
             }
         }
-        ctx.translate(this.x, this.y + 100);
+        ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
         if (this.image && this.image.complete) {
             ctx.drawImage(this.image, 0, 0, this.width, this.height);
@@ -337,9 +337,7 @@ export default class GummyCluster {
     }
 
     applySlow(duration, amount, source = 'generic') {
-        if (!this.slowEffects.some(e => e.source === source)) {
-            this.slowEffects.push({ timer: duration, amount, source });
-        }
+        // Gummy Cluster is immune to slows
     }
 
     takeDamage(amount, isCritical = false) {
@@ -511,7 +509,7 @@ export default class GummyCluster {
                 ctx.fillRect(this.x, this.y + 100, this.width, this.height);
             }
         }
-        ctx.translate(this.x, this.y + 100);
+        ctx.translate(this.x, this.y);
 
         if (this.hitTimer > 0 && Math.floor(this.hitTimer / 2) % 2 === 0) {
             ctx.globalAlpha = 0.5;

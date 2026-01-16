@@ -22,19 +22,20 @@ export default class Particle {
         this.homingStrength = 0;
         this.recoils = false;
         this.emissionTimer = 0;
-        this.gracePeriod = 10; // A short period where the particle cannot collide with its target
+        this.gracePeriod = 10; 
 
         if (this.type === 'explosion') {
             this.startRadius = startRadius;
             this.endRadius = endRadius;
             this.currentRadius = startRadius;
-        } else if (this.type === 'soul') { // For the new 'soul' particle
-            this.size = (Math.random() * 4 + 8) * 1.25; // 25% larger
-            this.emissionTimer = Math.random() * 2; // More frequent emission (was 5)
+        } else if (this.type === 'soul') {
+            this.size = Math.random() * 2 + 16; 
+            this.emissionTimer = Math.random() * 2;
         } else {
             this.size = Math.random() * 5 + 2;
         }
     }
+
     update(tsf) {
         if (this.gracePeriod > 0) this.gracePeriod -= tsf;
 
@@ -48,7 +49,7 @@ export default class Particle {
 
             const dist = Math.hypot(this.targetX - this.x, this.targetY - this.y);
             if (this.gracePeriod <= 0 && dist < 20) {
-                this.life = 0; // "die"
+                this.life = 0; 
                 if (this.type === 'soul') {
                     this.game.thermometer.triggerRecoil();
                     this.game.killsSinceLastBoss++;
@@ -64,13 +65,12 @@ export default class Particle {
         else if (this.type === 'drip') { this.vy += 0.1 * tsf; this.vx *= 0.9; this.size *= 0.95; }
         else if (this.type === 'heal') { this.y -= 1 * tsf; this.size *= 0.98; }
         else if (this.type === 'explosion') {
-            const progress = 1 - (this.life / this.maxLife); // 0 to 1
+            const progress = 1 - (this.life / this.maxLife);
             this.currentRadius = this.startRadius + (this.endRadius - this.startRadius) * progress;
-        } else if (this.type === 'soul') { // Emit smaller particles
+        } else if (this.type === 'soul') { 
             this.emissionTimer += tsf;
-            if (this.emissionTimer >= 0.5) { // Emit every ~0.5 frames (was 2)
+            if (this.emissionTimer >= 0.5) { 
                 this.emissionTimer = 0;
-                // Emit a small white spark particle from the soul
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 1 + 0.5;
                 const vx = Math.cos(angle) * speed;
@@ -80,28 +80,74 @@ export default class Particle {
             }
         }
     }
+
     draw(ctx) {
+        ctx.save(); // Save once at the start
         ctx.globalAlpha = Math.max(0, this.life);
-        ctx.fillStyle = this.color;
+
         if (this.type === 'spark') {
+            ctx.fillStyle = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
-        }
-        else if (this.type === 'explosion') {
+        } else if (this.type === 'explosion') {
+            ctx.fillStyle = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
             ctx.fill();
-        } else if (this.type === 'soul') { // Draw glowing white ball
-            ctx.save();
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = '#add8e6';
+        } else if (this.type === 'soul') {
+            // Volumetric Gradient Orb
+            const gradient = ctx.createRadialGradient(
+                this.x, this.y, 0, 
+                this.x, this.y, this.size * 1.5
+            );
+            gradient.addColorStop(0, 'white'); 
+            gradient.addColorStop(0.4, 'rgba(27, 146, 185, 0.8)'); 
+            gradient.addColorStop(1, 'rgba(27, 146, 185, 0)'); 
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner Core
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Light Shafts
+            const shafts = 8; 
+            const radius = 35;
+            const pulse = (Math.sin(this.game.gameTime * 0.1) + 1) / 2;
+            
+            ctx.save(); // Inner save for translation
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.game.gameTime * 0.02); 
+
+            for (let i = 0; i < shafts; i++) {
+                ctx.rotate((Math.PI * 2 / shafts));
+                const shaftGradient = ctx.createLinearGradient(0, 0, radius, 0);
+                const color = i % 2 === 0 ? '255, 255, 255' : '173, 216, 230';
+                
+                shaftGradient.addColorStop(0, `rgba(${color}, ${0.4 * pulse})`);
+                shaftGradient.addColorStop(1, `rgba(${color}, 0)`);
+                
+                ctx.fillStyle = shaftGradient;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(radius, 2);
+                ctx.lineTo(radius, -2);
+                ctx.fill();
+            }
+            ctx.restore(); // Restore translation
+        } else {
+            ctx.fillStyle = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore(); // Restore to remove shadow for other drawings
         }
-        else { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
-        ctx.globalAlpha = 1.0;
+
+        ctx.restore(); // Final restore
     }
 }
