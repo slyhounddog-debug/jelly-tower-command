@@ -64,4 +64,28 @@ export default class Drawing {
         ctx.fillStyle = '#eb9cbeff'; // Match UI bar color to 'cut out' the center
         ctx.fill();
     }
+
+    drawTitleScreen(ctx) {
+        if (this.game.titlescreenImage && this.game.titlescreenImage.complete) {
+            ctx.drawImage(this.game.titlescreenImage, 0, 0, this.width, this.height);
+        }
+
+        const btn = this.game.ui.readyButton;
+        if (!btn) return;
+
+        let buttonImage;
+        if (this.game.assetsReady) {
+            buttonImage = this.game.readybuttonImage;
+        } else {
+            buttonImage = this.game.loadingbuttonImage;
+        }
+
+        if (buttonImage && buttonImage.complete) {
+            btn.width = buttonImage.naturalWidth * 1.2;
+            btn.height = buttonImage.naturalHeight * 1.2;
+            btn.x = (this.width - btn.width) / 2;
+            btn.y = this.height - (this.height * 0.045) - btn.height;
+            ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
+        }
+    }
 }

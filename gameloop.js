@@ -11,6 +11,12 @@ export default class GameLoop {
     }
 
     loop(currentTime) {
+        if (!this.game.gameStarted) {
+            this.game.drawing.drawTitleScreen(this.game.ctx);
+            requestAnimationFrame((t) => this.loop(t));
+            return;
+        }
+
         if (this.game.hitStopFrames > 0) {
             this.game.hitStopFrames--;
             requestAnimationFrame((t) => this.loop(t));

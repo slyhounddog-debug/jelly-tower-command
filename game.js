@@ -74,6 +74,12 @@ class Game {
         this.lootImage.src = 'assets/Images/loot.png';
         this.tagCrownImage = new Image();
         this.tagCrownImage.src = 'assets/Images/tagcrown.png';
+        this.titlescreenImage = new Image();
+        this.titlescreenImage.src = 'assets/Images/titlescreen.png';
+        this.readybuttonImage = new Image();
+        this.readybuttonImage.src = 'assets/Images/readybutton.png';
+        this.loadingbuttonImage = new Image();
+        this.loadingbuttonImage.src = 'assets/Images/loadingbutton.png';
 
         // Preload shop and emporium images
         this.shopOverlayImage = new Image();
@@ -168,6 +174,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.isShopOpen = false;
         this.isGameOver = false;
+        this.gameStarted = false;
+        this.assetsReady = false;
         this.shopState = 'shop';
         this.gameTime = 0;
         this.placementMode = null;
@@ -341,6 +349,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             },
             settingsButton: {
                 x: 0, y: 0, height: 80
+            },
+            readyButton: {
+                x: 0, y: 0, width: 0, height: 0
             }
         };
 
@@ -392,8 +403,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.resizeModals();
         window.addEventListener('resize', () => this.resizeModals());
 
-        const startButton = document.getElementById('start-game-btn');
-
         Promise.all([
             this.audioManager.loadingPromise,
             this.background.load(),
@@ -422,9 +431,11 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => this.resetButtonImage.onload = r),
             new Promise(r => this.modalConfirmUpImage.onload = r),
             new Promise(r => this.modalConfirmDownImage.onload = r),
+            new Promise(r => this.titlescreenImage.onload = r),
+            new Promise(r => this.readybuttonImage.onload = r),
+            new Promise(r => this.loadingbuttonImage.onload = r),
         ]).then(() => {
-            startButton.src = 'assets/Images/modalconfirmup.png'; // Set to normal image
-            startButton.style.pointerEvents = 'all'; // Enable click
+            this.assetsReady = true;
             const btn = this.ui.shopButton;
             btn.width = (btn.img.width / btn.img.height) * btn.height;
             btn.x = (this.width - btn.width) / 2;
@@ -495,21 +506,37 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = ((e.clientY - rect.top) * scaleY) + 100;
+            this.mouse.y = (e.clientY - rect.top) * scaleY;
         });
-        this.canvas.addEventListener('mousedown', () => {
-          this.mouse.isDown = true;
+        this.canvas.addEventListener('mousedown', (e) => {
+            if (!this.gameStarted && this.assetsReady) {
+                const btn = this.ui.readyButton;
+                if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
+                    this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
+                    
+                    this.gameStarted = true;
+                    this.isPaused = false;
+                    this.lastTime = 0;
+                    if (this.audioManager) {
+                        this.audioManager.playMusic('music');
+                    }
+                    return;
+                }
+            }
+
+            this.mouse.isDown = true;
+            const gameMouseY = this.mouse.y + 100;
 
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-                this.mouse.y - 100 > shopBtn.y && this.mouse.y - 100 < shopBtn.y + shopBtn.height) {
+                gameMouseY - 100 > shopBtn.y && gameMouseY - 100 < shopBtn.y + shopBtn.height) {
                 this.toggleShop();
                 return; 
             }
 
             const settingsBtn = this.ui.settingsButton;
             if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width &&
-                this.mouse.y - 100 > settingsBtn.y && this.mouse.y - 100 < settingsBtn.y + settingsBtn.height) {
+                gameMouseY - 100 > settingsBtn.y && gameMouseY - 100 < settingsBtn.y + settingsBtn.height) {
                 this.toggleSettings();
                 return;
             }
@@ -518,7 +545,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 for (let i = this.towers.length - 1; i >= 0; i--) {
                     const t = this.towers[i];
                     if (this.mouse.x > t.x && this.mouse.x < t.x + t.width &&
-                        this.mouse.y > t.y && this.mouse.y < t.y + t.height) {
+                        gameMouseY > t.y && gameMouseY < t.y + t.height) {
 
                         const costs = [4500, 15000, 50000, 150000, 500000];
                         const lastTurretCost = this.stats.turretsBought > 0 ? costs[this.stats.turretsBought - 1] : 0;
@@ -531,7 +558,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         this.audioManager.playSound('purchase');
                         showNotification(`Turret sold for +$${sellPrice}!`);
                         this.toggleShop();
-                        return; // Exit after selling one turret
+                        return;
                     }
                 }
             } else if (this.placementMode) {
@@ -541,18 +568,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
         });
         this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
-        document.getElementById('start-game-btn').addEventListener('click', () => {
-    document.getElementById('start-game-modal').style.display = 'none';
-    setTimeout(() => {
-        this.isPaused = false;
-        this.lastTime = 0;
-    }, 0);
-
-    // Start the persistent music when the user clicks Start
-    if (this.audioManager) {
-        this.audioManager.playMusic('music');
-    }
-});
 
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         

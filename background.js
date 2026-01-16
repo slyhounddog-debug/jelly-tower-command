@@ -105,8 +105,8 @@ export default class Background {
     }
 
     drawBossOverlay(ctx) {
-        const pulse = (Math.sin(this.game.gameTime * 0.02) + 1) / 2; // Slow pulse
-        const opacity = pulse * 0.15; // Less vibrant
+        const pulse = (Math.sin(this.game.gameTime * 0.03) + 1) / 2; // Slow pulse
+        const opacity = pulse * 0.20; // Less vibrant
         ctx.save();
         ctx.fillStyle = `rgba(255, 0, 255, ${opacity})`;
         ctx.fillRect(0, 0, this.game.width, this.game.height);

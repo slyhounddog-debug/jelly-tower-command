@@ -37,7 +37,7 @@ export default class ThreatManager {
             this.bossWarningTimer -= tsf;
             this.game.thermometer.pulse = true;
             if (Math.floor(this.bossWarningTimer / 20) % 2 === 0) {
-                this.game.ctx.fillStyle = 'rgba(255, 0, 255, 0.1)';
+                this.game.ctx.fillStyle = 'rgba(255, 0, 255, 0.25)';
                 this.game.ctx.fillRect(0, 0, this.game.width, this.game.height);
             }
 
