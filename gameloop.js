@@ -133,7 +133,7 @@ export default class GameLoop {
                         if (p.freezeStacks > 0) {
                             m.applySlow(300, 0.1 * p.freezeStacks);
                         }
-                        if (m.takeDamage(dmg, isCrit)) m.kill(p);
+                        if (m.takeDamage(dmg, isCrit, p)) m.kill();
                         m.kbVy = -2;
                         this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                         if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }

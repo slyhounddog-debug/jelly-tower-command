@@ -5,6 +5,7 @@ import DamageSpot from './damageSpot.js';
 import FloatingText from './floatingText.js';
 import SpriteAnimation from './SpriteAnimation.js';
 import FrostingParticle from './frostingParticle.js';
+import Player from './player.js';
 
 export default class Missile {
     constructor(game, x, type = 'missile', y = -60) {
@@ -92,6 +93,7 @@ export default class Missile {
         this.slowParticleTimer = 0; // Timer for emitting slow particles
         this.isJellyTagged = false;
         this.id = this.game.getNewId(); // Unique ID for each missile
+        this.lastDamageSource = null;
     }
 
     applyFire(damage, stacks) {
@@ -110,7 +112,10 @@ export default class Missile {
         }
     }
 
-    takeDamage(amount, isCritical = false) {
+    takeDamage(amount, isCritical = false, source = null) {
+        if (source) {
+            this.lastDamageSource = source;
+        }
         this.game.hitStopFrames = 1;
         const player = this.game.player;
         if (player.upgrades['Sweet Aura'] > 0) {
@@ -161,7 +166,7 @@ export default class Missile {
                 this.fireStacks.splice(i, 1);
             } else {
                 if (Math.floor(stack.timer) % 60 === 0) { // Every second
-                    this.takeDamage(stack.damage, false);
+                    this.takeDamage(stack.damage, false, this.lastDamageSource);
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
                     this.fireFlashTimer = 10;
                 }
@@ -538,35 +543,53 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         }
     }
     
-       kill(source) { // Changed to accept source directly
+       kill() { 
         if (this.dead) return;
         this.dead = true;
         
         const numParticles = 10 + Math.floor(this.maxHealth / 15);
-
-        // 1. Calculate direction based on game coordinates (Foolproof)
-        // Use source's x position. If shooter is at x: 500 and enemy is at x: 400, push is to the Left (-1)
-        const shooterX = source?.x || (this.x - 100); // Fallback if source is missing
-        const pushDirection = (shooterX > this.x + this.width / 2) ? -1 : 1;
+        const source = this.lastDamageSource;
 
         for (let i = 0; i < numParticles; i++) {
             const radius = Math.random() * 4 + 2;
             const color = this.game.ENEMY_FROSTING_COLORS[Math.floor(Math.random() * this.game.ENEMY_FROSTING_COLORS.length)];
             const lifespan = 60 + Math.random() * 30;
 
-            // 2. Create a spray angle (80 degrees) that respects the push direction
-            const spread = Math.PI / 2.25; 
-            const baseAngle = (pushDirection === 1) ? 0 : Math.PI; 
-            const angle = baseAngle + (Math.random() - 0.5) * spread;
-
-            const speed = Math.random() * 10 + 4;
-
-            // 3. VELOCITY 
-            // Horizontal: Use pushDirection to ensure it never goes the wrong way
-            const vx = Math.abs(Math.cos(angle) * speed) * pushDirection;
+            let vx = 0;
+            let vy = 0;
             
-            // Vertical: Use -Math.abs to ensure it always pops UP
-            const vy = -Math.abs(Math.sin(angle) * speed) - 5; 
+            const particleSpeed = Math.random() * 10 + 6;
+            const spread = 0.4;
+
+            if (source instanceof Player) {
+                // Case 1: Source is the Player.
+                if (source.lickAnim > 0 && source.lickAngle !== undefined) {
+                     const angle = source.lickAngle;
+                     vx = Math.cos(angle) * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
+                     vy = Math.sin(angle) * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
+                } else {
+                    // It's another player AOE attack (dash, stomp). Radiate outwards from enemy.
+                    const angle = Math.random() * Math.PI * 2;
+                    vx = Math.cos(angle) * particleSpeed;
+                    vy = Math.sin(angle) * particleSpeed;
+                }
+            } else if (source && source.vx !== undefined && source.vy !== undefined) {
+                // Case 2: Source is a projectile or wave attack.
+                const baseSpeed = Math.hypot(source.vx, source.vy);
+                if (baseSpeed > 0) {
+                    const directionX = source.vx / baseSpeed;
+                    const directionY = source.vy / baseSpeed;
+                    vx = directionX * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
+                    vy = directionY * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
+                }
+            }
+
+            // Fallback for any other case (DOT kill, no source)
+            if (vx === 0 && vy === 0) {
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 2); // Upward cone
+                vx = Math.cos(angle) * particleSpeed;
+                vy = Math.sin(angle) * particleSpeed;
+            }
 
             const p = new FrostingParticle(
                 this.game, 
@@ -576,7 +599,8 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 vy, 
                 radius, 
                 color, 
-                lifespan
+                lifespan,
+                0.3 // Use a medium "sprinkle" gravity
             );
             
             if (Math.random() < 0.6) {
@@ -631,7 +655,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         
         this.game.enemiesKilled++;
 
-        if (source && source.type === 'lick' && this.game.player.upgrades['Sugar Rush'] > 0) {
+        if (this.game.wasLickKill && this.game.player.upgrades['Sugar Rush'] > 0) {
             this.game.player.sugarRushTimer = 600; // 10 seconds
         }
 

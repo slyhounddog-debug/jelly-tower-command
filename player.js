@@ -118,7 +118,7 @@ export default class Player {
                 this.game.missiles.forEach(m => {
                     if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
                         hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
-                        m.takeDamage(this.game.stats.lickDamage * 2, false);
+                        m.takeDamage(this.game.stats.lickDamage * 2, false, this);
                         m.kbVy = -this.game.stats.lickKnockback * .3;
                     }
                 });
@@ -169,8 +169,8 @@ export default class Player {
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                 if (dist < whirlwindRange) {
-                    if(m.takeDamage(this.game.stats.lickDamage * 0.1, false)) {
-                        m.kill({type: 'lick', angle: this.whirlwindAngle});
+                    if(m.takeDamage(this.game.stats.lickDamage * 0.1, false, this)) {
+                        m.kill();
                     }
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
@@ -247,9 +247,11 @@ export default class Player {
                     if (this.upgrades['Jelly Tag'] > 0) {
                         m.isJellyTagged = true;
                     }
-                    if (m.takeDamage(this.game.stats.lickDamage, false)) {
-                        m.kill({type: 'lick', angle: this.lickAngle});
+                    this.game.wasLickKill = true;
+                    if (m.takeDamage(this.game.stats.lickDamage, false, this)) {
+                        m.kill();
                     }
+                    this.game.wasLickKill = false;
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue');
                     }
@@ -478,7 +480,7 @@ export default class Player {
                         this.game.missiles.forEach(m => {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
-                                m.takeDamage(this.game.stats.lickDamage, false);
+                                m.takeDamage(this.game.stats.lickDamage, false, this);
                                 m.kbVy = -this.game.stats.lickKnockback * .3;
                             }
                         });
@@ -797,7 +799,7 @@ export default class Player {
     ctx.clip();
 
     const waveCount = 3;
-    const slowSpeed = 0.025; 
+    const slowSpeed = 0.05; 
     const colorSpeed = 2; 
     const arcHeight = -10; // Controls how much the wave "curves"
     

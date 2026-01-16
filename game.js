@@ -162,6 +162,7 @@ class Game {
         this.killsSinceLastBoss = 0;
         this.killsForNextBoss = 50;
         this.groundProximityThreshold = 400;
+        this.wasLickKill = false;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);

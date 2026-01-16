@@ -60,7 +60,7 @@ export default class Projectile {
                 if (this.freezeStacks > 0) m.applySlow(5 * 60, 0.1 * this.freezeStacks, 'freeze');
                 
                 if (this.popRockStacks <= 0) {
-                    if (m.takeDamage(damage, false)) {}
+                    if (m.takeDamage(damage, false, this)) {}
                 }
                 this.hitEnemies.push(m);
                 this.hasHit = true;
@@ -155,7 +155,7 @@ export default class Projectile {
             if (m.dead) return;
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < explosionRadius + m.width / 2) {
-                if (m.takeDamage(explosionDamage, false)) {
+                if (m.takeDamage(explosionDamage, false, this)) {
                     m.kill();
                 }
             }

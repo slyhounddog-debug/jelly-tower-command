@@ -1,5 +1,5 @@
 export default class FrostingParticle {
-    constructor(game, x, y, vx, vy, radius, color, lifespan) {
+    constructor(game, x, y, vx, vy, radius, color, lifespan, gravity = 0.15) {
         this.game = game;
         this.x = x;
         this.y = y;
@@ -12,7 +12,7 @@ export default class FrostingParticle {
         this.color = color;
         this.lifespan = lifespan;
         this.initialLifespan = lifespan;
-        this.gravity = 0.15; // Lowered gravity for a "lighter" cream feel
+        this.gravity = gravity; // Use the provided gravity
         this.dragY = 0.95;
 
         // 2. Track history for the trail

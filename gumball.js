@@ -59,8 +59,8 @@ export default class Gumball {
                 
                 this.hitEnemyIds.add(m.id); // Mark enemy as hit by this gumball
                 
-                if (m.takeDamage(this.damage, false)) {
-                    m.kill('gumball');
+                if (m.takeDamage(this.damage, false, this)) {
+                    m.kill();
                 }
                 m.kbVy = -this.knockback;
                 this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
