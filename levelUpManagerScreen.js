@@ -22,6 +22,7 @@ export default class LevelUpManagerScreen {
         this.isOpen = false;
         this.game.isPaused = false;
         this.hoveredCard = null;
+        this.game.lastTime = 0;
     }
 
     toggle() {
@@ -42,57 +43,39 @@ export default class LevelUpManagerScreen {
 
         let yOffset = topMargin;
 
-        // Normal Upgrades in two rows
-        const normalUpgrades = upgrades.normal;
-        const cardsPerRow = Math.ceil(normalUpgrades.length / 2);
-        const totalWidth = (cardsPerRow * (cardWidth + gap)) - gap;
+        const processUpgrades = (upgradeList, y, cardsPerRowOverride = 0) => {
+            const cardsPerRow = cardsPerRowOverride > 0 ? cardsPerRowOverride : Math.ceil(upgradeList.length / (cardsPerRowOverride || 2));
+            for (let i = 0; i < upgradeList.length; i++) {
+                const rowIndex = Math.floor(i / cardsPerRow);
+                const colIndex = i % cardsPerRow;
+                const rowUpgrades = upgradeList.slice(rowIndex * cardsPerRow, (rowIndex + 1) * cardsPerRow);
+                const rowWidth = (rowUpgrades.length * (cardWidth + gap)) - gap;
+                const xOffset = (this.game.width - rowWidth) / 2;
 
-
-        for (let i = 0; i < normalUpgrades.length; i++) {
-            const rowIndex = Math.floor(i / cardsPerRow);
-            const colIndex = i % cardsPerRow;
-            const rowUpgrades = normalUpgrades.slice(rowIndex * cardsPerRow, (rowIndex + 1) * cardsPerRow);
-            const rowWidth = (rowUpgrades.length * (cardWidth + gap)) - gap;
-            const xOffset = (this.game.width - rowWidth) / 2;
-
-            this.cards.push({
-                x: xOffset + colIndex * (cardWidth + gap),
-                y: yOffset + rowIndex * (cardHeight + gap),
-                width: cardWidth,
-                height: cardHeight,
-                choice: normalUpgrades[i],
-            });
-        }
-
-        yOffset += (cardHeight + gap) * 2 + 70;
-
-        // Rare Upgrades
-        const rareUpgrades = upgrades.rare;
-        let xOffset = (this.game.width - (rareUpgrades.length * (cardWidth + gap))) / 2;
-        rareUpgrades.forEach((upgrade, index) => {
-            this.cards.push({
-                x: xOffset + index * (cardWidth + gap),
-                y: yOffset,
-                width: cardWidth,
-                height: cardHeight,
-                choice: upgrade,
-            });
-        });
-
-        yOffset += cardHeight + 70;
-
-        // Legendary Upgrades
-        const legendaryUpgrades = upgrades.legendary;
-        xOffset = (this.game.width - (legendaryUpgrades.length * (cardWidth + gap))) / 2;
-        legendaryUpgrades.forEach((upgrade, index) => {
-            this.cards.push({
-                x: xOffset + index * (cardWidth + gap),
-                y: yOffset,
-                width: cardWidth,
-                height: cardHeight,
-                choice: upgrade,
-            });
-        });
+                const card = {
+                    x: xOffset + colIndex * (cardWidth + gap),
+                    y: y + rowIndex * (cardHeight + gap),
+                    width: cardWidth,
+                    height: cardHeight,
+                    choice: upgradeList[i],
+                };
+                
+                // Pre-render the card
+                const offscreenCanvas = document.createElement('canvas');
+                offscreenCanvas.width = cardWidth;
+                offscreenCanvas.height = cardHeight;
+                const offscreenCtx = offscreenCanvas.getContext('2d');
+                this.drawCard(offscreenCtx, { ...card, x: 0, y: 0 });
+                card.preRenderedCanvas = offscreenCanvas;
+                
+                this.cards.push(card);
+            }
+            return (Math.ceil(upgradeList.length / cardsPerRow)) * (cardHeight + gap);
+        };
+        
+        yOffset += processUpgrades(upgrades.normal, yOffset, Math.ceil(upgrades.normal.length / 2)) + 70;
+        yOffset += processUpgrades(upgrades.rare, yOffset, upgrades.rare.length) + 70;
+        processUpgrades(upgrades.legendary, yOffset, upgrades.legendary.length);
     }
 
     update(tsf) {
@@ -137,10 +120,14 @@ export default class LevelUpManagerScreen {
         ctx.restore();
 
         this.cards.forEach(card => {
-            this.drawCard(ctx, card);
+            if (card.preRenderedCanvas) {
+                ctx.drawImage(card.preRenderedCanvas, card.x, card.y);
+            } else {
+                this.drawCard(ctx, card);
+            }
         });
 
-        if (this.hoveredCard) {
+        if (this.hoveredCard && this.hoveredCard.preRenderedCanvas) {
             const hoverScale = 2.23;
             const width = this.hoveredCard.width * hoverScale;
             const height = this.hoveredCard.height * hoverScale;
@@ -152,7 +139,7 @@ export default class LevelUpManagerScreen {
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 10;
             ctx.shadowOffsetY = 10;
-            this.drawCard(ctx, { ...this.hoveredCard, x, y, width, height });
+            ctx.drawImage(this.hoveredCard.preRenderedCanvas, x, y, width, height);
             ctx.restore();
         }
     }

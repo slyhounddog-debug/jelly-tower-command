@@ -726,7 +726,7 @@ export default class Player {
                 }
                 ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, shadowY + 2, (this.width * this.scaleX * 0.5 / 1.2) * shadowFactor, (this.width * 0.12 / 1.2) * shadowFactor, 0, 0, Math.PI * 2);
+                ctx.ellipse(this.x + this.width / 2, shadowY -2, (this.width * this.scaleX * 0.5 / 1.2) * shadowFactor, (this.width * 0.12 / 1.2) * shadowFactor, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
