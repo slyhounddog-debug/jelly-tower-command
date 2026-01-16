@@ -1,793 +1,154 @@
-
 import Drop from './drop.js';
+
 export default class LevelingManager {
-
     constructor(game) {
-
         this.game = game;
-
         this.isLevelingUp = false;
-
         this.upgradeChoices = [];
 
-        this.xpLevels = [
-
-            30, 40, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
-
-            850, 900, 950, 1000, 1075, 1150, 1225, 1300, 1375, 1450, 1525, 1600, 1700, 1800, 1900,
-
-            2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 
-
-            5200, 5400, 5600, 5800, 6000, 6300, 6600, 6900, 7200, 7500, 8000, 8500, 9000, 9500, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000,
-
-            20000, 22000, 24000, 26000, 28000, 31000, 34000, 37000, 40000, 45000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 140000, 160000, 180000, 200000
-
+        // --- ADJUST THESE THREE NUMBERS TO CHANGE BALANCING ---
+        const totalLevels = 125; 
+        const startXP = 50;      // XP needed for Level 2
+        const endXP = 400000;    // XP needed for the final level
+        const curve = 2.1;       // 1.0 = linear, 2.0 = normal, 3.0+ = very slow start/fast end
         
-
-        ];
-
-        
-
-                this.upgrades = {
-
-        
-
-                            
-
-        
-
-                                        normal: [
-
-        
-
-                            
-
-        
-
-                                            { name: "Sweet Aura", description: "Enemies within tongue range take 10% more damage.", icon: "💖", rarity: "normal" },
-
-        
-
-                            
-
-        
-
-                                            { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
-
-        
-
-                            
-
-        
-
-                                            { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
-
-        
-
-                            
-
-        
-
-                                            { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
-
-        
-
-                            
-
-        
-
-                                            { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
-
-        
-
-                            
-
-        
-
-                                            { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" }
-
-        
-
-                            
-
-        
-
-                                        ],
-
-        
-
-                    rare: [
-
-        
-
-                        { name: "Winged Boots", description: "Glide while holding space in air.", icon: "🕊️", rarity: "rare" },
-
-        
-
-                                                { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
-
-        
-
-                                
-
-        
-
-                                                { name: "Jelly Tag", description: "Licked enemies drop another loot and have +10% luck.", icon: "🎯", rarity: "rare" },
-
-        
-
-                        
-
-        
-
-                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave (AOE affected by tongue range)", icon: "💥", rarity: "rare" },
-
-        
-
-                        { name: "Sugar Rush", description: "+20% tower dmg & fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
-
-        
-
-                    ],
-
-        
-
-                    legendary: [
-
-        
-
-                        { name: "Dash Flash", description: "Ouchie dash wave dealing 200% lick damage.", icon: "🛡️", rarity: "legendary" },
-
-        
-
-                                                { name: "Twin Scoop", description: "50% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
-
-        
-
-                                
-
-        
-
-                                                { name: "Gumball Volley", description: "Licked enemies spawn 3 gumballs that shoot in random directions.", icon: "🍬", rarity: "legendary" },
-
-        
-
-                        
-
-        
-
-                                                { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
-
-        
-
-                    ]
-
-        
-
-                };
-
-        
-
-            }
-
-        
-
-        
-
-        
-
-            initializePlayer(player) {
-
-        
-
-                player.level = 1;
-
-        
-
-                player.xp = 0;
-
-        
-
-                player.xpForNextLevel = this.xpLevels[0];
-
-        
-
-                        player.totalMoneyEarned = 0;
-
-        
-
-                        player.upgrades = {};
-
-        
-
-                Object.values(this.upgrades).flat().forEach(u => player.upgrades[u.name] = 0);
-
-        
-
-            }
-
-        
-
-        
-
-        
-
-            grantXpToPlayer(amount) {
-
-        
-
-                if (this.isLevelingUp) return;
-
-        
-
-                const player = this.game.player;
-
-        
-
-                player.xp += amount;
-
-        
-
-                while (player.xp >= player.xpForNextLevel) {
-
-        
-
-                    player.level++;
-
-        
-
-                    player.xp -= player.xpForNextLevel;
-
-        
-
-                    if (player.level - 1 < this.xpLevels.length) {
-
-        
-
-                        player.xpForNextLevel = this.xpLevels[player.level - 1];
-
-        
-
-                    } else {
-
-        
-
-                        player.xpForNextLevel += 200;
-
-        
-
-                    }
-
-        
-
-                                this.isLevelingUp = true;
-
-        
-
-                               if (this.audio) {
-        this.audio.setMuffled(true); // Muffle the main music
-        this.audio.playSound('levelUp'); // Play a quick jingle on top
+        this.xpLevels = this.generateXPLevels(totalLevels, startXP, endXP, curve);
+
+        this.upgrades = {
+            normal: [
+                { name: "Sweet Aura", description: "Enemies within tongue range take 10% more damage.", icon: "💖", rarity: "normal" },
+                { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
+                { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
+                { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
+                { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
+                { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" }
+            ],
+            rare: [
+                { name: "Winged Boots", description: "Glide while holding space in air.", icon: "🕊️", rarity: "rare" },
+                { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
+                { name: "Jelly Tag", description: "Licked enemies drop another loot and have +10% luck.", icon: "🎯", rarity: "rare" },
+                { name: "Squishy Butt", description: "Landing creates a damaging shockwave (AOE affected by tongue range)", icon: "💥", rarity: "rare" },
+                { name: "Sugar Rush", description: "+20% tower dmg & fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
+            ],
+            legendary: [
+                { name: "Dash Flash", description: "Ouchie dash wave dealing 200% lick damage.", icon: "🛡️", rarity: "legendary" },
+                { name: "Twin Scoop", description: "50% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
+                { name: "Gumball Volley", description: "Licked enemies spawn 3 gumballs that shoot in random directions.", icon: "🍬", rarity: "legendary" },
+                { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
+            ]
+        };
     }
-                               
 
-        
+    // THE GENERATOR: This creates the numbers for you automatically
+    generateXPLevels(num, min, max, exponent) {
+        let levels = [];
+        for (let i = 0; i < num; i++) {
+            let progress = i / (num - 1);
+            let curvedProgress = Math.pow(progress, exponent);
+            let xp = min + (max - min) * curvedProgress;
+            // Rounding to keep the UI clean
+            levels.push(Math.round(xp / 10) * 10);
+        }
+        return levels;
+    }
 
-                                this.getUpgradeChoices();
+    initializePlayer(player) {
+        player.level = 1;
+        player.xp = 0;
+        player.xpForNextLevel = this.xpLevels[0];
+        player.totalMoneyEarned = 0;
+        player.upgrades = {};
+        Object.values(this.upgrades).flat().forEach(u => player.upgrades[u.name] = 0);
+    }
 
-        
+    grantXpToPlayer(amount) {
+        if (this.isLevelingUp) return;
+        const player = this.game.player;
+        player.xp += amount;
 
-                                this.game.levelUpScreen.startLevelUp(this.upgradeChoices);
-
-        
-
-                }
-
-        
-
+        while (player.xp >= player.xpForNextLevel) {
+            player.level++;
+            player.xp -= player.xpForNextLevel;
+            
+            if (player.level - 1 < this.xpLevels.length) {
+                player.xpForNextLevel = this.xpLevels[player.level - 1];
+            } else {
+                player.xpForNextLevel += 1000; // Infinite level scaling
             }
 
-        
-
-        
-
-        
-
-            getUpgradeChoices() {
-
-        
-
-                const choices = [];
-
-        
-
-                const allUpgrades = [...this.upgrades.normal, ...this.upgrades.rare, ...this.upgrades.legendary];
-
-        
-
-                const playerUpgrades = this.game.player.upgrades;
-
-        
-
-        
-
-        
-
-                // Filter out upgrades that have unmet requirements or are non-stackable and already acquired
-
-        
-
-                const availableUpgrades = allUpgrades.filter(upgrade => {
-
-        
-
-                    const hasRequirements = !upgrade.requires || playerUpgrades[upgrade.requires] > 0;
-
-        
-
-                    if (!hasRequirements) return false;
-
-        
-
-        
-
-        
-
-                    const isRareOrLegendary = upgrade.rarity === 'rare' || upgrade.rarity === 'legendary';
-
-        
-
-                    const alreadyAcquired = playerUpgrades[upgrade.name] > 0;
-
-        
-
-        
-
-        
-
-                    if (isRareOrLegendary && alreadyAcquired) {
-
-        
-
-                        return false; // Exclude if rare/legendary and already have it
-
-        
-
-                    }
-
-        
-
-        
-
-        
-
-                    return true;
-
-        
-
-                });
-
-        
-
-        
-
-        
-
-                for (let i = 0; i < 3; i++) {
-
-        
-
-                    let chosen;
-
-        
-
-                    let attempts = 0;
-
-        
-
-                    do {
-
-        
-
-                        const rand = Math.random();
-
-        
-
-                        let rarityPool;
-
-        
-
-        
-
-        
-
-                        if (rand < 0.05) { // 5% chance for Legendary
-
-        
-
-                            rarityPool = availableUpgrades.filter(u => u.rarity === 'legendary' && !choices.includes(u));
-
-        
-
-                        } else if (rand < 0.25) { // 20% chance for Rare (0.25 - 0.05)
-
-        
-
-                            rarityPool = availableUpgrades.filter(u => u.rarity === 'rare' && !choices.includes(u));
-
-        
-
-                        } else { // 75% chance for Normal
-
-        
-
-                            rarityPool = availableUpgrades.filter(u => u.rarity === 'normal' && !choices.includes(u));
-
-        
-
-                        }
-
-        
-
-        
-
-        
-
-                        if (rarityPool.length > 0) {
-
-        
-
-                            chosen = rarityPool[Math.floor(Math.random() * rarityPool.length)];
-
-        
-
-                        } else {
-
-        
-
-                            // Fallback to any available upgrade if a specific rarity pool is empty
-
-        
-
-                            const fallbackPool = availableUpgrades.filter(u => !choices.includes(u));
-
-        
-
-                            if (fallbackPool.length > 0) {
-
-        
-
-                                chosen = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
-
-        
-
-                            }
-
-        
-
-                        }
-
-        
-
-                        attempts++;
-
-        
-
-                    } while (choices.includes(chosen) && attempts < 50); // Prevent infinite loops
-
-        
-
-                    
-
-        
-
-                    if (chosen && !choices.includes(chosen)) {
-
-        
-
-                        choices.push(chosen);
-
-        
-
-                    }
-
-        
-
-                }
-
-        
-
-                
-
-        
-
-                // Ensure we have 3 choices, even if we have to add duplicates (should be rare)
-
-        
-
-                while (choices.length < 3 && availableUpgrades.length > 0) {
-
-        
-
+            this.isLevelingUp = true;
+            if (this.game.audioManager) {
+                this.game.audioManager.setMuffled(true);
+                this.game.audioManager.playSound('levelUp');
+            }
+            this.getUpgradeChoices();
+            this.game.levelUpScreen.startLevelUp(this.upgradeChoices);
+        }
+    }
+
+    getUpgradeChoices() {
+        const allUpgrades = [...this.upgrades.normal, ...this.upgrades.rare, ...this.upgrades.legendary];
+        const playerUpgrades = this.game.player.upgrades;
+        const availableUpgrades = allUpgrades.filter(upgrade => {
+            const hasRequirements = !upgrade.requires || playerUpgrades[upgrade.requires] > 0;
+            if (!hasRequirements) return false;
+            const isUnique = upgrade.rarity === 'rare' || upgrade.rarity === 'legendary';
+            if (isUnique && playerUpgrades[upgrade.name] > 0) return false;
+            return true;
+        });
+
+        const choices = [];
+        for (let i = 0; i < 3; i++) {
+            let chosen;
+            let attempts = 0;
+            do {
+                const rand = Math.random();
+                let rarityPool;
+                if (rand < 0.05) rarityPool = availableUpgrades.filter(u => u.rarity === 'legendary');
+                else if (rand < 0.25) rarityPool = availableUpgrades.filter(u => u.rarity === 'rare');
+                else rarityPool = availableUpgrades.filter(u => u.rarity === 'normal');
+
+                rarityPool = rarityPool.filter(u => !choices.includes(u));
+
+                if (rarityPool.length > 0) {
+                    chosen = rarityPool[Math.floor(Math.random() * rarityPool.length)];
+                } else {
                     const fallback = availableUpgrades.filter(u => !choices.includes(u));
-
-        
-
-                    if(fallback.length > 0) {
-
-        
-
-                        choices.push(fallback[Math.floor(Math.random() * fallback.length)]);
-
-        
-
-                    } else {
-
-        
-
-                        // If there are truly no more unique options, we might have to stop
-
-        
-
-                        break;
-
-        
-
-                    }
-
-        
-
+                    if (fallback.length > 0) chosen = fallback[Math.floor(Math.random() * fallback.length)];
                 }
-
-        
-
-        
-
-        
-
-                this.upgradeChoices = choices;
-
-        
-
-            }
-
-        
-
-        
-
-        
-
-                addXp(x, y, amount) {
-
-        
-
-        
-
-        
-
-                    // This method is now for creating XP orbs
-
-        
-
-        
-
-        
-
-                    const drop = new Drop(this.game, x, y, 'xp_orb');
-
-        
-
-        
-
-        
-
-                    drop.xpValue = amount;
-
-        
-
-        
-
-        
-
-                    this.game.drops.push(drop);
-
-        
-
-                }
-
-        
-
-        
-
-        
-
-                applyUpgrade(upgrade) {
-
-        
-
-        
-
-        
-
-                    const player = this.game.player;
-
-        
-
-        
-
-        
-
-                    player.upgrades[upgrade.name]++;
-
-        
-
-        
-
-        
-
-                    switch (upgrade.name) {
-
-        
-
-                        
-
-        
-
-                        
-
-        
-
-                                        case 'Tinkerer':
-
-        
-
-                                            player.maxComponentPoints += 2; // two points per upgrade
-
-        
-
-                                            break;
-
-        
-
-                                                                                                case 'Greed':
-
-        
-
-                                                                                                    const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
-
-        
-
-                                                                                                    this.game.money += bonus;
-
-        
-
-                                                                                                    this.game.totalMoneyEarned += bonus;
-
-        
-
-                                                                                                    break;
-
-        
-
-
-
-        
-
-                        case 'Extra Jump':
-
-        
-
-                            player.maxJumps++;
-
-        
-
-                            break;
-
-        
-
-                        case 'Winged Boots':
-
-        
-
-                            // Logic is in player.js update method
-
-        
-
-                            break;
-
-        
-
-                        case 'Ice Tongue':
-
-        
-
-                            // Logic is in player.js tryLick and draw, and missile.js update
-
-        
-
-                            break;
-
-        
-
-                        case 'Sticky Paw':
-
-        
-
-                            player.pickupRange = player.basePickupRange * (1 + player.upgrades['Sticky Paw'] * 0.25);
-
-        
-
-                            break;
-
-        
-
-                        case 'Squishy Butt':
-
-        
-
-                            // Logic is in player.js update method
-
-        
-
-                            break;
-
-        
-
-                        case 'Sugar Rush':
-
-        
-
-                            // Logic is in player.js update method
-
-        
-
-                            break;
-
-        
-
-                        case 'Dash Flash':
-
-        
-
-                            // Logic is in player.js tryDash method
-
-        
-
-                            break;
-
-        
-
-                        case 'Twin Scoop':
-
-        
-
-                            // Logic is in missile.js kill method
-
-        
-
-                            break;
-
-        
-
-                        case 'Lick Mania':
-
-        
-
-                            // Logic is in player.js tryLick, update, and draw methods
-
-        
-
-                            break;
-
-        
-
-                    }
-
-        
-
-                }
-
-        
-
-            }
-
-
+                attempts++;
+            } while (choices.includes(chosen) && attempts < 50);
+
+            if (chosen) choices.push(chosen);
+        }
+        this.upgradeChoices = choices;
+    }
+
+    addXp(x, y, amount) {
+        const drop = new Drop(this.game, x, y, 'xp_orb');
+        drop.xpValue = amount;
+        this.game.drops.push(drop);
+    }
+
+    applyUpgrade(upgrade) {
+        const player = this.game.player;
+        player.upgrades[upgrade.name]++;
+
+        switch (upgrade.name) {
+            case 'Tinkerer':
+                player.maxComponentPoints += 2;
+                break;
+            case 'Greed':
+                const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
+                this.game.money += bonus;
+                this.game.totalMoneyEarned += bonus;
+                break;
+            case 'Extra Jump':
+                player.maxJumps++;
+                break;
+            case 'Sticky Paw':
+                player.pickupRange = player.basePickupRange * (1 + player.upgrades['Sticky Paw'] * 0.25);
+                break;
+        }
+    }
+}

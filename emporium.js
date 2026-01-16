@@ -1,4 +1,4 @@
-const EMPORIUM_UPGRADE_COSTS = [1, 3, 6, 10, 15, 22, 30, 40, 50, 75];
+const EMPORIUM_UPGRADE_COSTS = [1, 3, 6, 10, 15, 22, 30, 40, 50, 70];
 
 export default class Emporium {
     constructor(game) {
@@ -108,7 +108,7 @@ export default class Emporium {
             castle_health: { level: 0, values: [100, 110, 120, 130, 140, 160, 180, 200, 220, 250, 300] },
             heart_heal: { level: 0, values: [6, 8, 9, 10, 11, 12, 14, 16, 18, 19, 20] },
             big_coin_value: { level: 0, values: [75, 85, 100, 120, 140, 160, 180, 200, 220, 240, 250] },
-            ice_cream_chance: { level: 0, values: [[1, 3], [1.5, 5], [2, 7], [2.5, 9], [3, 11], [3.5, 13], [4, 15], [4.5, 17], [5, 19], [5.5, 21], [6, 23]] },
+            ice_cream_chance: { level: 0, values: [[1.5, 5], [1.75, 6], [2, 7], [2.25, 8], [2.5, 9], [2.75, 10], [3, 11], [3.25, 12], [3.5, 13], [3.75, 14], [4, 15]] },
             enemy_xp: { level: 0, values: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] },
             starting_component_points: { level: 0, values: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] },
         };

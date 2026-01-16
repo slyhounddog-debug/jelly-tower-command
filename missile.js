@@ -11,7 +11,7 @@ export default class Missile {
     constructor(game, x, type = 'missile', y = -60) {
         this.game = game;
         this.x = x; 
-        this.y = y;
+        this.y = y + 90;
         this.baseSpeed = (type === 'piggy') ? 0.4 : .8;
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.type = type;

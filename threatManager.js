@@ -21,6 +21,10 @@ export default class ThreatManager {
 
         this.threatRPM = Math.min(240, 12.25 + this.game.gameTime / 240);
 
+       if (Math.floor(this.game.gameTime) % 480 === 0) {
+    console.log("Current Threat RPM:", this.threatRPM);
+}
+
         // Check if it's time to spawn the boss
         if (!this.game.boss && !this.bossWarningActive && this.game.killsSinceLastBoss >= this.game.killsForNextBoss) {
             this.bossWarningActive = true;

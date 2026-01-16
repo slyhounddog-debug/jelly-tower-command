@@ -311,7 +311,7 @@ export default class GummyCluster {
         this.width = 450;
         this.height = 450;
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5;
-        this.health = 150 + (this.game.currentRPM * 100);
+        this.health = 150 + (this.game.currentRPM * 90);
         this.maxHealth = this.health;
         this.type = 'gummy_cluster_boss';
         this.hitTimer = 0;
@@ -379,8 +379,8 @@ export default class GummyCluster {
             if (healthPercentage <= this.healthThresholds[i]) {
                 this.healthThresholds.splice(i, 1);
                 this.spawnGummyBear();
-                this.width *= 0.995;
-                this.height *= 0.995;
+                this.width *= 0.99999;
+                this.height *= 0.99999;
                 break;
             }
         }
