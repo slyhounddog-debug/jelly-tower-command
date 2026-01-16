@@ -112,7 +112,7 @@ export default class LevelingManager {
 
         
 
-                                                { name: "Jelly Tag", description: "Licked enemies drop double loot if killed by a tower.", icon: "🎯", rarity: "rare" },
+                                                { name: "Jelly Tag", description: "Licked enemies drop another loot and have +10% luck.", icon: "🎯", rarity: "rare" },
 
         
 
@@ -120,11 +120,11 @@ export default class LevelingManager {
 
         
 
-                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave (radius affected by tongue range)", icon: "💥", rarity: "rare" },
+                                                { name: "Squishy Butt", description: "Landing creates a damaging shockwave (AOE affected by tongue range)", icon: "💥", rarity: "rare" },
 
         
 
-                        { name: "Sugar Rush", description: "+20% tower damage and fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
+                        { name: "Sugar Rush", description: "+20% tower dmg & fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
 
         
 
@@ -140,7 +140,7 @@ export default class LevelingManager {
 
         
 
-                                                { name: "Twin Scoop", description: "33% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
+                                                { name: "Twin Scoop", description: "50% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
 
         
 

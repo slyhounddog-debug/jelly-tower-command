@@ -706,7 +706,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                     dropsToCreate.push({ type: 'ice_cream_scoop' });
                 }
                 if (this.game.player.upgrades['Twin Scoop'] > 0) {
-                    if (Math.random() < 0.33) {
+                    if (Math.random() < 0.5) {
                         dropsToCreate.push({ type: 'ice_cream_scoop' });
                     }
                 }
