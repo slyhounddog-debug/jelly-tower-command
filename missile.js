@@ -680,7 +680,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 piggyBonus = 1;
             } else {
                 lootMultiplier = 2;
-                luckMultiplier = 2;
+                luckMultiplier = 1.1;
             }
         }
 

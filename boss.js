@@ -107,7 +107,7 @@ export class GummyBear {
         let luckMultiplier = 1;
         if (this.isJellyTagged && killedBy !== 'tongue') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
             lootMultiplier = 2;
-            luckMultiplier = 2;
+            luckMultiplier = 1.1;
         }
 
         for (let c = 0; c < lootMultiplier; c++) {
@@ -399,7 +399,7 @@ export default class GummyCluster {
         let luckMultiplier = 1;
         if (this.isJellyTagged && killedBy !== 'tongue') {
             lootMultiplier = 2;
-            luckMultiplier = 2;
+            luckMultiplier = 1.1;
         }
 
         const lootCount = (3 + (this.game.bossesKilled * 2)) * lootMultiplier;
