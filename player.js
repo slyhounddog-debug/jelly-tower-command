@@ -770,10 +770,10 @@ export default class Player {
         }
         const ang = Math.atan2(this.game.mouse.y - eyeY, mouseXForAngle - mouthX);
         const pupilDist = 3.5;
-        const eyeRadius = 11.5;
-        const pupilRadius = 7.5;
+        const eyeRadius = 10.5;
+        const pupilRadius = 7;
         const eyeXOffset = -(this.width * 0.05);
-        const relativeEyeY = -this.height/2 + this.height * 0.55;
+        const relativeEyeY = -this.height/2 + this.height * 0.58;
 
         ctx.fillStyle = 'white';
         ctx.beginPath();
@@ -787,11 +787,11 @@ export default class Player {
 
         if (this.lickAnim <= 0) {
             const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
-            const relativeMouthY = mouthY - cy;
+            const relativeMouthY = mouthY + 6 - cy;
             
             ctx.fillStyle = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
             ctx.beginPath();
-            ctx.roundRect(eyeXOffset - 6, relativeMouthY - 2, 12, 6 + idleBounce, 6);
+            ctx.roundRect(eyeXOffset - 6, relativeMouthY, 12, 6 + idleBounce, 6);
             ctx.fill();
 
             ctx.fillStyle = '#3a0014';
@@ -897,7 +897,7 @@ export default class Player {
             ctx.fillStyle = '#3a0014';
             ctx.beginPath();
             const mouthSize = 8;
-            ctx.arc(mouthX, mouthY, mouthSize, 0, Math.PI * 2);
+            ctx.arc(mouthX, mouthY + 6, mouthSize, 0, Math.PI * 2);
             ctx.fill();
         }
 
