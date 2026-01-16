@@ -600,7 +600,8 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 radius, 
                 color, 
                 lifespan,
-                0.3 // Use a medium "sprinkle" gravity
+                0.3, // Use a medium "sprinkle" gravity
+                'enemy'
             );
             
             if (Math.random() < 0.6) {

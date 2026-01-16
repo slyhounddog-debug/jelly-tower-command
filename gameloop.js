@@ -172,6 +172,7 @@ export default class GameLoop {
             for (let i = this.game.particlesBehind.length - 1; i >= 0; i--) { this.game.particlesBehind[i].update(tsf); if (this.game.particlesBehind[i].lifespan <= 0) this.game.particlesBehind.splice(i, 1); }
             for (let i = this.game.particlesInFront.length - 1; i >= 0; i--) { this.game.particlesInFront[i].update(tsf); if (this.game.particlesInFront[i].lifespan <= 0) this.game.particlesInFront.splice(i, 1); }
 
+            this.game.decalManager.update(tsf);
             this.game.lootPopupManager.update(deltaTime);
 
             if (this.game.castleHealth <= 0) {
@@ -266,6 +267,9 @@ export default class GameLoop {
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
         this.game.particlesBehind.forEach(p => p.draw(this.game.ctx));
+        
+        this.game.decalManager.draw(this.game.ctx);
+
         this.game.player.draw(this.game.ctx);
         this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));

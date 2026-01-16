@@ -19,6 +19,12 @@ export const ScreenShake = {
 export function darkenColor(hex, percent) {
     if (!hex) return '#000000';
     hex = hex.replace(/^#/, '');
+
+    // Handle 8-digit hex codes (with alpha) by ignoring the alpha channel
+    if (hex.length === 8) {
+        hex = hex.substring(0, 6);
+    }
+
     if (hex.length !== 6) return '#000000'; // Invalid hex
 
     let r = parseInt(hex.substring(0, 2), 16);
