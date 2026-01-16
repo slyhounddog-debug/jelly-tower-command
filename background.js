@@ -99,6 +99,18 @@ export default class Background {
         });
         this.drawSunlight(ctx);
         this.drawSugarSnow(ctx, 1);
+        if (this.game.boss) {
+            this.drawBossOverlay(ctx);
+        }
+    }
+
+    drawBossOverlay(ctx) {
+        const pulse = (Math.sin(this.game.gameTime * 0.02) + 1) / 2; // Slow pulse
+        const opacity = pulse * 0.15; // Less vibrant
+        ctx.save();
+        ctx.fillStyle = `rgba(255, 0, 255, ${opacity})`;
+        ctx.fillRect(0, 0, this.game.width, this.game.height);
+        ctx.restore();
     }
 
     drawSunlight(ctx) {

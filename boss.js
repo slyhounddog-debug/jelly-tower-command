@@ -16,6 +16,7 @@ export class GummyBear {
         this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
         this.maxHealth = this.health;
         this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
+        this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
         this.vy = -5;
         this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
@@ -232,13 +233,16 @@ export class GummyBear {
         for (const spot of this.damageSpots) {
             spot.draw(ctx);
         }
+        ctx.restore();
 
         if (this.health < this.maxHealth) {
             const pct = Math.max(0, this.health / this.maxHealth);
             const isLow = pct < 0.25;
             
+            // Calculate size based on enemy type
             let sizeMult = 1.0;
             
+            // Pulsing effect for low health (under 25%)
             const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
             const finalMult = sizeMult * pulse;
             
@@ -250,7 +254,7 @@ export class GummyBear {
             const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
             const barY = this.y - 22 + offsetY;
 
-            const frameColor = darkenColor('#FF0000', 20);
+            const frameColor = darkenColor(this.color, 10);
 
             // Glass Tube Background
             ctx.fillStyle = frameColor + '66'; 
@@ -295,8 +299,6 @@ export class GummyBear {
                 ctx.restore();
             }
         }
-
-        ctx.restore();
     }
 }
 

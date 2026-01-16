@@ -201,37 +201,39 @@ export default class Player {
             const lickLength = this.lickRange;
 
             // --- Drop Collision ---
-            this.game.drops.forEach(d => {
-                if (d.isBeingLicked || (this.game.gameTime - d.spawnTime < 30)) return; // Already being licked or too new
+            if (!this.isControlling && this.transitionState !== 'entering') {
+                this.game.drops.forEach(d => {
+                    if (d.isBeingLicked || (this.game.gameTime - d.spawnTime < 30)) return; // Already being licked or too new
 
-                let hit = false;
-                for (let i = 1; i <= lickSegments; i++) {
-                    const progress = i / lickSegments;
-                    const drag = 2.5;
-                    const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
-                    const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
-                    const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
-                    const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+                    let hit = false;
+                    for (let i = 1; i <= lickSegments; i++) {
+                        const progress = i / lickSegments;
+                        const drag = 2.5;
+                        const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                        const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                        const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                        const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
 
-                    const dropCenterX = d.x + d.width / 2;
-                    const dropCenterY = d.y + d.width / 2;
-                    const dropRadius = d.width / 2;
+                        const dropCenterX = d.x + d.width / 2;
+                        const dropCenterY = d.y + d.width / 2;
+                        const dropRadius = d.width / 2;
 
-                    if (Math.hypot(checkX - dropCenterX, checkY - dropCenterY) < dropRadius + 10) { // 10 is a small tolerance
-                        hit = true;
-                        break;
+                        if (Math.hypot(checkX - dropCenterX, checkY - dropCenterY) < dropRadius + 10) { // 10 is a small tolerance
+                            hit = true;
+                            break;
+                        }
                     }
-                }
 
-                if (hit) {
-                    d.isBeingLicked = true;
-                    d.lickedByPlayer = this;
-                    d.vx = 0; // Disable drop's physics
-                    d.vy = 0;
-                    d.gravity = 0;
-                    d.life = 600; // Give it a longer life to be brought back
-                }
-            });
+                    if (hit) {
+                        d.isBeingLicked = true;
+                        d.lickedByPlayer = this;
+                        d.vx = 0; // Disable drop's physics
+                        d.vy = 0;
+                        d.gravity = 0;
+                        d.life = 600; // Give it a longer life to be brought back
+                    }
+                });
+            }
 
             // --- Missile Collision ---
             this.game.missiles.forEach(m => {
@@ -503,9 +505,9 @@ export default class Player {
                             timer: 0,
                             maxTimer: 38, // half a second
                             rings: [
-                                { progress: 0, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
-                                { progress: -0.2, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
-                                { progress: -0.4, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: 0, speed: 1.5, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: -0.2, speed: 1.4, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
+                                { progress: -0.4, speed: 1.2, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' },
                                 { progress: -0.6, speed: 1, color: Math.random() < 0.5 ? '#FFFFFF' : '#FF69B4' }
                             ]
                         });
@@ -908,7 +910,7 @@ export default class Player {
                     const radius = anim.maxRadius * ring.progress;
                     const alpha = 1 - ring.progress;
                     ctx.strokeStyle = ring.color ? `${ring.color.slice(0, 7)}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : `rgba(255, 255, 255, ${alpha})`;
-                    ctx.lineWidth = 5;
+                    ctx.lineWidth = 7;
                     ctx.beginPath();
                     ctx.arc(anim.x, anim.y, radius, 0, Math.PI * 2);
                     ctx.stroke();

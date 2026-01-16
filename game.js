@@ -131,6 +131,40 @@ class Game {
         // Initialize currency from localStorage or 0
         this.iceCreamScoops = parseInt(localStorage.getItem('iceCreamScoops')) || 0;
         this.isPaused = true;
+        this.glowSprite = document.createElement('canvas');
+this.glowSprite.width = 128;
+this.glowSprite.height = 128;
+const gCtx = this.glowSprite.getContext('2d');
+
+const gradient = gCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)'); // Bright white center
+gradient.addColorStop(0.3, 'rgba(255, 215, 0, 0.4)'); // Golden inner aura
+gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');    // Fades to transparent
+gCtx.fillStyle = gradient;
+gCtx.fillRect(0, 0, 128, 128);
+// Add this to your Game class (where you init sprites)
+this.glowSprites = {};
+const colors = {
+    yellow: '255, 215, 0',
+    purple: '180, 0, 255',
+    red: '255, 0, 0',
+    pink: '255, 105, 180',
+    blue: '0, 150, 255'
+};
+
+Object.entries(colors).forEach(([name, rgb]) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    const gCtx = canvas.getContext('2d');
+    const grad = gCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, `rgba(255, 255, 255, 0.9)`); 
+    grad.addColorStop(0.3, `rgba(${rgb}, 0.5)`); 
+    grad.addColorStop(1, `rgba(${rgb}, 0)`);
+    gCtx.fillStyle = grad;
+    gCtx.fillRect(0, 0, 128, 128);
+    this.glowSprites[name] = canvas;
+});
+
 
         this.isShopOpen = false;
         this.isGameOver = false;
@@ -156,9 +190,9 @@ class Game {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 16;
+        this.gummyWormSpawnThreshold = 22;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 36;
+        this.marshmallowSpawnThreshold = 46;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;

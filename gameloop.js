@@ -259,6 +259,7 @@ export default class GameLoop {
 
         this.game.damageSpots.forEach(s => s.draw(this.game.ctx));
         this.game.towers.forEach(t => t.draw(this.game.ctx));
+        this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
         this.game.projectiles.forEach(p => p.draw(this.game.ctx));
@@ -267,8 +268,6 @@ export default class GameLoop {
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
         this.game.particlesBehind.forEach(p => p.draw(this.game.ctx));
-        
-        this.game.decalManager.draw(this.game.ctx);
 
         this.game.player.draw(this.game.ctx);
         this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
