@@ -9,8 +9,8 @@ export default class LevelingManager {
         // --- ADJUST THESE THREE NUMBERS TO CHANGE BALANCING ---
         const totalLevels = 125; 
         const startXP = 50;      // XP needed for Level 2
-        const endXP = 400000;    // XP needed for the final level
-        const curve = 2.1;       // 1.0 = linear, 2.0 = normal, 3.0+ = very slow start/fast end
+        const endXP = 200000;    // XP needed for the final level
+        const curve = 2;       // 1.0 = linear, 2.0 = normal, 3.0+ = very slow start/fast end
         
         this.xpLevels = this.generateXPLevels(totalLevels, startXP, endXP, curve);
 
@@ -26,7 +26,7 @@ export default class LevelingManager {
             rare: [
                 { name: "Winged Boots", description: "Glide while holding space in air.", icon: "🕊️", rarity: "rare" },
                 { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
-                { name: "Jelly Tag", description: "Licked enemies drop another loot and have +10% luck.", icon: "🎯", rarity: "rare" },
+                { name: "Jelly Tag", description: "Licked enemies drop another instance of loot.", icon: "🎯", rarity: "rare" },
                 { name: "Squishy Butt", description: "Landing creates a damaging shockwave (AOE affected by tongue range)", icon: "💥", rarity: "rare" },
                 { name: "Sugar Rush", description: "+20% tower dmg & fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
             ],

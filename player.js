@@ -118,8 +118,8 @@ export default class Player {
                 this.game.missiles.forEach(m => {
                     if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
                         hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
-                        m.takeDamage(this.game.stats.lickDamage * 2, false, this);
-                        m.kbVy = -this.game.stats.lickKnockback * .3;
+                        m.takeDamage(this.game.stats.lickDamage, false, this);
+                        
                     }
                 });
 
@@ -269,7 +269,7 @@ export default class Player {
                     if (this.upgrades['Ice Tongue'] > 0) {
                         m.applySlow(180, 0.5, 'tongue');
                     }
-                    m.kbVy = -this.game.stats.lickKnockback * 0.3;
+                    m.kbVy = -this.game.stats.lickKnockback * 0.2;
                     this.game.screenShake.trigger(4, 10);
                     for (let i = 0; i < 15; i++) {
                         this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
@@ -495,7 +495,7 @@ export default class Player {
                             const dist = Math.hypot(this.x - m.x, this.y - m.y);
                             if (dist < shockwaveRange) {
                                 m.takeDamage(this.game.stats.lickDamage, false, this);
-                                m.kbVy = -this.game.stats.lickKnockback * .3;
+                                m.kbVy = -this.game.stats.lickKnockback * .1;
                             }
                         });
                         this.shockwaveAnimations.push({
@@ -603,7 +603,7 @@ export default class Player {
           return this.equippedComponents.filter(c => c.name === componentName).length;
       }
 
-    spawnGumballs(x, y, spawner, count = 2) {
+    spawnGumballs(x, y, spawner, count = 2, canSpawn = true) {
         if (this.upgrades['Gumball Volley'] > 0) {
             for (let i = 0; i < count; i++) {
                 const angle = Math.random() * Math.PI * 2;
@@ -611,7 +611,7 @@ export default class Player {
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
                 const randomColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage * 0.5, randomColor, spawner));
+                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage * 0.5, randomColor, spawner, canSpawn));
             }
         }
     }

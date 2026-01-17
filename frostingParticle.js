@@ -16,7 +16,7 @@ export default class FrostingParticle {
         this.type = type;
 
         this.history = [];
-        this.maxHistory = 10;
+        this.maxHistory = 7;
         this.isSplatting = false; // New state for when particle is about to become a decal
     }
 

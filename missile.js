@@ -21,7 +21,7 @@ export default class Missile {
        if (type === 'missile') {
             this.width = 64; 
             this.height = 64;
-            this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.1));
+            this.health = (40 + (this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1));
             
             const variantIndex = Math.floor(Math.random() * 8);
             
@@ -42,20 +42,20 @@ export default class Missile {
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
-            this.health = 15 + (((this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1)) * 0.5);
+            this.health = 15 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 1; 
         } else if (type === 'marshmallow_large') {
             this.width = 76.5;
             this.height = 76.5;
             this.color = '#F8F8FF';
-            this.health = 50 + (((this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1)) * 1.4);
+            this.health = 50 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 1.4);
             this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
         } else if (type === 'marshmallow_medium') {
             this.width = 45;
             this.height = 45;
             this.color = '#F8F8FF';
-            this.health = 25 + (((this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1)) * 0.5);
+            this.health = 25 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 0.5;
         } else if (type === 'marshmallow_small') {
             this.width = 22;
@@ -66,7 +66,7 @@ export default class Missile {
         } else if (type === 'piggy') {
             this.width = 33;
             this.height = 44;
-            this.health = (40 + (this.game.currentRPM * 1.1) + (this.game.enemiesKilled * 0.1)) * 2;
+            this.health = (40 + (this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 2;
             this.baseSpeed = 0.5;
         }
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
@@ -680,7 +680,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 piggyBonus = 1;
             } else {
                 lootMultiplier = 2;
-                luckMultiplier = 1.1;
             }
         }
 

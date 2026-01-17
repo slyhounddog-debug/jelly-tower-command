@@ -2,7 +2,7 @@ import Particle from './particle.js';
 import FloatingText from './floatingText.js';
 
 export default class Gumball {
-    constructor(game, x, y, initialVx, initialVy, damage, color, spawner) {
+    constructor(game, x, y, initialVx, initialVy, damage, color, spawner, canSpawn = true) {
         this.game = game;
         this.x = x;
         this.y = y;
@@ -17,8 +17,9 @@ export default class Gumball {
         this.dead = false;
         this.hitEnemyIds = new Set(); // To prevent hitting the same enemy multiple times
         this.spawner = spawner; // The enemy that spawned this gumball
-        this.knockback = this.game.stats.lickKnockback * 0.1;
+        this.knockback = this.game.stats.lickKnockback * 0.01;
         this.collisionDelay = 5; // 5 frames delay before collision is active
+        this.canSpawn = canSpawn;
     }
 
     update(tsf) {
@@ -76,8 +77,8 @@ export default class Gumball {
                 }
 
                 // If Gumball Volley is active, this hit also spawns gumballs
-                if (this.game.player.upgrades['Gumball Volley'] > 0 && m && !m.dead) {
-                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1);
+                if (this.canSpawn && this.game.player.upgrades['Gumball Volley'] > 0 && m && !m.dead) {
+                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1, false);
                 }
             }
         });
@@ -101,8 +102,8 @@ export default class Gumball {
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
                     this.game.player.sugarRushTimer = 600;
                 }
-                 if (this.game.player.upgrades['Gumball Volley'] > 0 && this.game.boss) {
-                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss, 1);
+                 if (this.canSpawn && this.game.player.upgrades['Gumball Volley'] > 0 && this.game.boss) {
+                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss, 1, false);
                 }
             }
         }
