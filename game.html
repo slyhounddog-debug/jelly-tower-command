@@ -341,7 +341,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 75%;
+    width: 85%;
     height: 80%;
     background-image: url('assets/Images/modal.png');
     background-size: 100% 100%;
@@ -382,6 +382,30 @@
     padding: 15px;
     overflow-y: auto;
     min-height: 200px;
+}
+
+#component-points-hud {
+    background-color: rgba(255, 105, 180, 0.5); /* semi-transparent pink */
+    border-radius: 10px;
+    padding: 10px;
+    margin: 0 15px 15px 15px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid rgba(0,0,0,0.2);
+}
+.component-point-slot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    background-color: #fff; /* Hollow/empty color */
+}
+.component-point-slot.filled {
+    background-color: #00aaff; /* Filled color */
+    border-color: #fff;
+    box-shadow: 0 0 15px #00aaff;
 }
 
 
@@ -635,13 +659,6 @@
             overflow: hidden;
             box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
         }
-        .xp-bar-container.large { /* Larger bar for component points */
-            height: 40px;
-            border-radius: 20px;
-            margin-bottom: 20px; /* Spacing below the bar */
-            background-color: #222; /* Darker gray */
-            border: 2px solid #444;
-        }
 
         .xp-bar {
             height: 100%;
@@ -706,58 +723,6 @@
             text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             font-family: 'VT323', monospace;
-        }
-        .xp-bar-container.large .xp-text {
-            font-size: 22px;
-        }
-
-        /* FORCEFUL Override for component points bar - GLASS TUBE */
-        #component-quarters-overlay #component-points-bar-container.large {
-            display: flex !important;
-            height: 40px !important;
-            background: linear-gradient(to bottom, #222, #000) !important;
-            border: 2px solid #666 !important;
-            border-top-color: #888 !important;
-            border-bottom-color: #444 !important;
-            box-shadow: inset 0 0 12px rgba(0,0,0,0.9), 0 2px 3px rgba(0,0,0,0.6) !important;
-            padding: 5px !important;
-            gap: 4px !important;
-            margin-bottom: 10px !important;
-        }
-
-        #component-quarters-overlay #component-points-text {
-            position: static !important;
-            text-align: center !important;
-            width: 100% !important;
-            height: auto !important;
-            margin-top: 5px !important;
-            color: #fff !important;
-            font-size: 24px !important;
-            font-family: 'VT323', monospace !important;
-            text-shadow: 0 0 5px black !important;
-        }
-
-        #component-quarters-overlay .point-segment {
-            flex-grow: 1 !important;
-            border-radius: 10px !important;
-            background-color: #333 !important;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.7) !important;
-            border: 1px solid #111 !important;
-            display: block !important;
-            transition: all 0.2s ease !important;
-        }
-
-        #component-quarters-overlay .point-segment.used {
-            background: linear-gradient(to bottom, #00aaff, #0066cc) !important;
-            box-shadow: inset 0 0 6px rgba(255,255,255,0.4), 0 0 15px #00aaff !important;
-            border-color: #33bbff !important;
-        }
-
-        /* Hide old, conflicting elements just in case */
-        #component-points-bar-container.large .xp-bar,
-        #component-points-bar-container.large .xp-fill,
-        #component-points-bar-container.large .xp-segments {
-            display: none !important;
         }
 
         #component-grid {
@@ -1127,10 +1092,7 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     <h2 id="component-quarters-header-plate">Component Quarters</h2>
                 </div>
                 <div class="modal-body">
-                    <div id="component-points-bar-container" class="xp-bar-container large">
-                        <!-- Segments are dynamically added here by game.js -->
-                    </div>
-                    <div id="component-points-text" class="xp-text">POINTS: 0 / 3</div>
+                    <div id="component-points-hud"></div>
                     <div id="component-grid"></div>
                 </div>
                 <div class="modal-button-container">

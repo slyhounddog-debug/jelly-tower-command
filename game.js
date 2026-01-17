@@ -632,28 +632,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 const maxPoints = this.player.maxComponentPoints;
                 console.log(`Used points: ${usedPoints}, Max points: ${maxPoints}`);
 
-                const barContainer = document.getElementById('component-points-bar-container');
-                const barText = document.getElementById('component-points-text');
-
-                if (!barContainer || !barText) {
-                    console.error("Component points bar elements not found!");
-                    return;
-                }
-                
-                barContainer.innerHTML = ''; // Clear existing segments
-
-                for (let i = 0; i < maxPoints; i++) {
-                    const segment = document.createElement('div');
-                    segment.classList.add('point-segment');
-                    if (i < usedPoints) {
-                        segment.classList.add('used');
-                    }
-                    barContainer.appendChild(segment);
-                }
-                console.log(`Rendered ${maxPoints} segments, ${usedPoints} of them used.`);
-
-                barText.innerText = `POINTS: ${usedPoints} / ${maxPoints}`;
-
                 // Render component grid
                 const grid = document.getElementById('component-grid');
                 const tooltip = document.getElementById('component-tooltip');
@@ -732,8 +710,25 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 grid.appendChild(leftColumn);
                 grid.appendChild(rightColumn);
 
-
+                this.renderComponentPointsHUD();
             }
+
+            renderComponentPointsHUD() {
+                const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+                const maxPoints = this.player.maxComponentPoints;
+                const hudContainer = document.getElementById('component-points-hud');
+                hudContainer.innerHTML = ''; // Clear previous points
+        
+                for (let i = 0; i < maxPoints; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'component-point-slot';
+                    if (i < usedPoints) {
+                        slot.classList.add('filled');
+                    }
+                    hudContainer.appendChild(slot);
+                }
+            }
+
                                             toggleComponentQuarters() {
                                                 const modal = document.getElementById('component-quarters-overlay');
                                                 const isVisible = modal.style.display === 'block';
@@ -742,10 +737,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
                                                     this.requestUnpause();
                                                 }
                                                 else {
-                                                    this.isPaused = true;
-                                                    this.renderComponentQuarters();
-                                                }
-                                            }
+                                                                        this.isPaused = true;
+                                                                        this.renderComponentQuarters();
+                                                                        this.renderComponentPointsHUD();
+                                                                    }                                            }
     toggleSettings() {
         const modal = document.getElementById('settings-modal');
         const isVisible = modal.style.display === 'block';
