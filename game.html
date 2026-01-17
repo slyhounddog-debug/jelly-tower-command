@@ -489,10 +489,11 @@
             top: 15%;
         }
         #component-quarters-overlay .modal-body {
+            display: flex !important;
+            flex-direction: column !important;
             top: 33%;
             height: 60%;
-        }
-        #component-quarters-overlay .modal-button-container {
+        }        #component-quarters-overlay .modal-button-container {
             bottom: 9%;
         }
 
@@ -710,15 +711,53 @@
             font-size: 22px;
         }
 
-        /* Component Quarters Styles - NEW */
-        #component-quarters-header-plate {
-            text-align: center; 
-            font-size: 28px; 
-            color: #87266f; /* dark-raspberry */
-            margin-bottom: 20px;
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-            font-family: 'Titan One', cursive;
+        /* FORCEFUL Override for component points bar - GLASS TUBE */
+        #component-quarters-overlay #component-points-bar-container.large {
+            display: flex !important;
+            height: 40px !important;
+            background: linear-gradient(to bottom, #222, #000) !important;
+            border: 2px solid #666 !important;
+            border-top-color: #888 !important;
+            border-bottom-color: #444 !important;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.9), 0 2px 3px rgba(0,0,0,0.6) !important;
+            padding: 5px !important;
+            gap: 4px !important;
+            margin-bottom: 10px !important;
+        }
+
+        #component-quarters-overlay #component-points-text {
+            position: static !important;
+            text-align: center !important;
+            width: 100% !important;
+            height: auto !important;
+            margin-top: 5px !important;
+            color: #fff !important;
+            font-size: 24px !important;
+            font-family: 'VT323', monospace !important;
+            text-shadow: 0 0 5px black !important;
+        }
+
+        #component-quarters-overlay .point-segment {
+            flex-grow: 1 !important;
+            border-radius: 10px !important;
+            background-color: #333 !important;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.7) !important;
+            border: 1px solid #111 !important;
+            display: block !important;
+            transition: all 0.2s ease !important;
+        }
+
+        #component-quarters-overlay .point-segment.used {
+            background: linear-gradient(to bottom, #00aaff, #0066cc) !important;
+            box-shadow: inset 0 0 6px rgba(255,255,255,0.4), 0 0 15px #00aaff !important;
+            border-color: #33bbff !important;
+        }
+
+        /* Hide old, conflicting elements just in case */
+        #component-points-bar-container.large .xp-bar,
+        #component-points-bar-container.large .xp-fill,
+        #component-points-bar-container.large .xp-segments {
+            display: none !important;
         }
 
         #component-grid {
@@ -774,38 +813,6 @@
             font-size: 14px;
             font-weight: bold;
             font-family: 'VT323', monospace;
-        }
-
-        /* Override xp-bar for component points - GLASS TUBE */
-        #component-points-bar-container.large {
-            background: linear-gradient(to right, #888, #ddd, #888);
-            border: 1px solid #777;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.4);
-        }
-        #component-points-bar-container.large .xp-bar {
-            width: 100%;
-            background: transparent;
-            padding: 2px; /* Add padding to contain the segments */
-            gap: 2px; /* Add gap between segments */
-        }
-        #component-points-bar-container .xp-fill {
-            display: none; /* We are not using the single fill bar anymore */
-        }
-        #component-points-bar-container .xp-segments {
-            justify-content: stretch; /* Segments will fill the space */
-            gap: 2px;
-        }
-        .point-segment {
-            flex-grow: 1; /* Each segment takes equal space */
-            height: 100%;
-            border-radius: 15px; /* Rounded segments */
-            background-color: #555; /* Default unused color (gray) */
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
-            transition: background-color 0.3s;
-        }
-        .point-segment.used {
-            background-color: #008cff; /* Used color (blue) */
-            box-shadow: inset 0 0 5px rgba(255,255,255,0.4), 0 0 10px #008cff;
         }
         
                 .slider.round:before {
@@ -1121,12 +1128,9 @@ body #shop-info .shop-buttons #detail-buy-cost {
                 </div>
                 <div class="modal-body">
                     <div id="component-points-bar-container" class="xp-bar-container large">
-                        <div id="component-points-bar" class="xp-bar">
-                            <div class="xp-fill"></div>
-                            <div class="xp-segments"></div>
-                        </div>
-                        <div class="xp-text"></div>
+                        <!-- Segments are dynamically added here by game.js -->
                     </div>
+                    <div id="component-points-text" class="xp-text">POINTS: 0 / 3</div>
                     <div id="component-grid"></div>
                 </div>
                 <div class="modal-button-container">

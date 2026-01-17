@@ -404,9 +404,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         window.addEventListener('resize', () => this.resizeModals());
 
         Promise.all([
-            new Promise(r => this.titlescreenImage.onload = r),
-            new Promise(r => this.readybuttonImage.onload = r),
-            new Promise(r => this.loadingbuttonImage.onload = r),
             this.audioManager.loadingPromise,
             this.background.load(),
             new Promise(r => this.platformImage.onload = r),
@@ -434,15 +431,11 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => this.resetButtonImage.onload = r),
             new Promise(r => this.modalConfirmUpImage.onload = r),
             new Promise(r => this.modalConfirmDownImage.onload = r),
+            new Promise(r => this.titlescreenImage.onload = r),
+            new Promise(r => this.readybuttonImage.onload = r),
+            new Promise(r => this.loadingbuttonImage.onload = r),
         ]).then(() => {
             this.assetsReady = true;
-            const btn = this.ui.shopButton;
-            btn.width = (btn.img.width / btn.img.height) * btn.height;
-            btn.x = (this.width - btn.width) / 2;
-            btn.y = this.height - this.ui.barHeight + (this.ui.barHeight - btn.height) / 2;
-
-            const settingsBtn = this.ui.settingsButton;
-            settingsBtn.width = (this.settingButtonImage.width / this.settingButtonImage.height) * settingsBtn.height;
         }).catch(error => {
             console.error("Failed to load assets:", error);
         });
@@ -634,15 +627,20 @@ Object.entries(colors).forEach(([name, rgb]) => {
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }                
                         renderComponentQuarters() {
+                console.log("Rendering component quarters...");
                 const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
                 const maxPoints = this.player.maxComponentPoints;
+                console.log(`Used points: ${usedPoints}, Max points: ${maxPoints}`);
 
-                // Render component points bar
-                const bar = document.getElementById('component-points-bar');
-                const barSegmentsContainer = bar.querySelector('.xp-segments');
-                const barText = bar.parentElement.querySelector('.xp-text');
+                const barContainer = document.getElementById('component-points-bar-container');
+                const barText = document.getElementById('component-points-text');
+
+                if (!barContainer || !barText) {
+                    console.error("Component points bar elements not found!");
+                    return;
+                }
                 
-                barSegmentsContainer.innerHTML = ''; // Clear existing segments
+                barContainer.innerHTML = ''; // Clear existing segments
 
                 for (let i = 0; i < maxPoints; i++) {
                     const segment = document.createElement('div');
@@ -650,8 +648,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     if (i < usedPoints) {
                         segment.classList.add('used');
                     }
-                    barSegmentsContainer.appendChild(segment);
+                    barContainer.appendChild(segment);
                 }
+                console.log(`Rendered ${maxPoints} segments, ${usedPoints} of them used.`);
 
                 barText.innerText = `POINTS: ${usedPoints} / ${maxPoints}`;
 
