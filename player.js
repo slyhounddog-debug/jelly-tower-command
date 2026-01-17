@@ -152,7 +152,7 @@ export default class Player {
         this.game.audioManager.playSound('mlem');
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
-        this.lickAngle = Math.atan2(this.game.mouse.y - cy, this.game.mouse.x - cx);
+        this.lickAngle = Math.atan2(this.game.mouse.aimY - cy, this.game.mouse.x - cx);
         this.lickAnim = 15;
         this.lickCooldown = 20;
         this.hitEnemies = [];
@@ -770,7 +770,7 @@ export default class Player {
         if (isMirrored) {
             mouseXForAngle = mouthX - (this.game.mouse.x - mouthX);
         }
-        const ang = Math.atan2(this.game.mouse.y - eyeY, mouseXForAngle - mouthX);
+        const ang = Math.atan2(this.game.mouse.aimY - eyeY, mouseXForAngle - mouthX);
         const pupilDist = 3.5;
         const eyeRadius = 10.5;
         const pupilRadius = 7;
@@ -851,7 +851,7 @@ export default class Player {
         if (!this.isControlling && this.lickAnim > 0) {
             const tongueOriginX = mouthX;
             const tongueOriginY = mouthY;
-            const mouseAngle = Math.atan2(this.game.mouse.y - tongueOriginY, this.game.mouse.x - tongueOriginX);
+            const mouseAngle = Math.atan2(this.game.mouse.aimY - tongueOriginY, this.game.mouse.x - tongueOriginX);
             const animPhase = (15 - this.lickAnim) / 15; 
             const animCurve = Math.sin(animPhase * Math.PI);
             const lickDistance = this.lickRange * animCurve;

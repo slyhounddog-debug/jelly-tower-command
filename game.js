@@ -404,6 +404,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
         window.addEventListener('resize', () => this.resizeModals());
 
         Promise.all([
+            new Promise(r => this.titlescreenImage.onload = r),
+            new Promise(r => this.readybuttonImage.onload = r),
+            new Promise(r => this.loadingbuttonImage.onload = r),
             this.audioManager.loadingPromise,
             this.background.load(),
             new Promise(r => this.platformImage.onload = r),
@@ -431,9 +434,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => this.resetButtonImage.onload = r),
             new Promise(r => this.modalConfirmUpImage.onload = r),
             new Promise(r => this.modalConfirmDownImage.onload = r),
-            new Promise(r => this.titlescreenImage.onload = r),
-            new Promise(r => this.readybuttonImage.onload = r),
-            new Promise(r => this.loadingbuttonImage.onload = r),
         ]).then(() => {
             this.assetsReady = true;
             const btn = this.ui.shopButton;
@@ -507,6 +507,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const scaleY = this.canvas.height / rect.height;
             this.mouse.x = (e.clientX - rect.left) * scaleX;
             this.mouse.y = (e.clientY - rect.top) * scaleY;
+            this.mouse.aimY = this.mouse.y + 100;  // GEMINI DO NOT EVER REMOVE THIS LINE IT MATCHES THE VISUAL OFFSET FOR THE REST OF THE GAME. DO NOT REMOVE.
         });
         this.canvas.addEventListener('mousedown', (e) => {
             if (!this.gameStarted && this.assetsReady) {
@@ -638,16 +639,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
                 // Render component points bar
                 const bar = document.getElementById('component-points-bar');
-                const barFill = bar.querySelector('.xp-fill');
                 const barSegmentsContainer = bar.querySelector('.xp-segments');
                 const barText = bar.parentElement.querySelector('.xp-text');
                 
-                barFill.style.width = `${(usedPoints / maxPoints) * 100}%`;
                 barSegmentsContainer.innerHTML = ''; // Clear existing segments
 
-                for (let i = 0; i < maxPoints - 1; i++) {
+                for (let i = 0; i < maxPoints; i++) {
                     const segment = document.createElement('div');
-                    segment.classList.add('segment-line');
+                    segment.classList.add('point-segment');
+                    if (i < usedPoints) {
+                        segment.classList.add('used');
+                    }
                     barSegmentsContainer.appendChild(segment);
                 }
 

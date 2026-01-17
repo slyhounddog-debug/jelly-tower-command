@@ -381,9 +381,6 @@
     gap: 15px;
     padding: 15px;
     overflow-y: auto;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 10dpx;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
     min-height: 200px;
 }
 
@@ -779,15 +776,36 @@
             font-family: 'VT323', monospace;
         }
 
-        /* Override xp-bar for component points */
-        #component-points-bar-container .xp-bar {
-            background: lightgray;
+        /* Override xp-bar for component points - GLASS TUBE */
+        #component-points-bar-container.large {
+            background: linear-gradient(to right, #888, #ddd, #888);
+            border: 1px solid #777;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.4);
+        }
+        #component-points-bar-container.large .xp-bar {
+            width: 100%;
+            background: transparent;
+            padding: 2px; /* Add padding to contain the segments */
+            gap: 2px; /* Add gap between segments */
         }
         #component-points-bar-container .xp-fill {
-            background: teal;
+            display: none; /* We are not using the single fill bar anymore */
         }
-        #component-points-bar-container .xp-segments .segment-line {
-            background: #222;
+        #component-points-bar-container .xp-segments {
+            justify-content: stretch; /* Segments will fill the space */
+            gap: 2px;
+        }
+        .point-segment {
+            flex-grow: 1; /* Each segment takes equal space */
+            height: 100%;
+            border-radius: 15px; /* Rounded segments */
+            background-color: #555; /* Default unused color (gray) */
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+            transition: background-color 0.3s;
+        }
+        .point-segment.used {
+            background-color: #008cff; /* Used color (blue) */
+            box-shadow: inset 0 0 5px rgba(255,255,255,0.4), 0 0 10px #008cff;
         }
         
                 .slider.round:before {
