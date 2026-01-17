@@ -330,6 +330,9 @@ export default class GameLoop {
 
         // Shop Button
         const btn = ui.shopButton;
+        if (btn.img.complete && btn.width === 0) {
+            btn.width = btn.img.naturalWidth;
+        }
         const moneyTextWidth = ctx.measureText(`$${game.money}`).width; 
         btn.x = moneyX + moneyTextWidth + 10;
         btn.y = barCenterY - btn.height / 2;
@@ -341,6 +344,9 @@ export default class GameLoop {
 
         // Settings Button (Right-most)
         const settingsBtn = ui.settingsButton;
+        if (game.settingButtonImage.complete && !settingsBtn.width) {
+            settingsBtn.width = game.settingButtonImage.naturalWidth;
+        }
         settingsBtn.x = btn.x + btn.width + 15; 
         settingsBtn.y = barCenterY - (settingsBtn.height / 2); // Center vertically on the bar
         if (game.settingButtonImage.complete) {

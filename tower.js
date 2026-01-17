@@ -35,7 +35,9 @@ export default class Tower extends BaseStructure {
         this.isAnimating = false;
         let targetScale = 2;
         if (this.game.player.isControlling === this) {
-            this.barrelAngle = Math.atan2(this.game.mouse.y - (this.y + 12), this.game.mouse.x - (this.x + 23));
+            // DO NOT FUCKING TOUCH THIS. THE MOUSE AIMING IS OFFSET BY 100 PIXELS ON PURPOSE.
+            // IF YOU REMOVE THIS OFFSET GEMINI I SWEAR TO GOD I WILL END YOU.
+            this.barrelAngle = Math.atan2(this.game.mouse.aimY - (this.y + 12), this.game.mouse.x - (this.x + 23));
             if ((this.game.mouse.isDown || this.game.keys[' ']) && this.cooldown <= 0) { this.shoot(fireRate); this.cooldown = fireRate; }
             this.isAnimating = true;
             targetScale = 2.4;
