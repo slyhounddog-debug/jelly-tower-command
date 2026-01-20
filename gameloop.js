@@ -1,6 +1,5 @@
 import Missile from './missile.js';
 import Particle from './particle.js';
-import DamageSpot from './damageSpot.js';
 import { darkenColor } from './utils.js';
 import Gumball from './gumball.js';
 
@@ -88,12 +87,6 @@ export default class GameLoop {
                     for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
                     
                     const castlePlats = this.game.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
-                    for (let j = 0; j < 5; j++) {
-                        const rPlat = castlePlats[Math.floor(Math.random() * castlePlats.length)];
-                        const sX = rPlat.x + Math.random() * rPlat.width;
-                        const sY = rPlat.y + Math.random() * rPlat.height;
-                        this.game.damageSpots.push(new DamageSpot(sX, sY, Math.random() * 5 + 5, darkenColor('#f8c8dc', 20)));
-                    }
                 }
             }
             this.game.missiles = this.game.missiles.filter(m => !m.dead);
@@ -115,7 +108,11 @@ export default class GameLoop {
                     continue;
                 }
                 
-                if (this.game.boss && p.x > this.game.boss.x && p.x < this.game.boss.x + this.game.boss.width && p.y > this.game.boss.y && p.y < this.game.boss.y + this.game.boss.height) {
+                if (this.game.boss &&
+                    p.x > this.game.boss.x + this.game.boss.hitboxOffsetX &&
+                    p.x < this.game.boss.x + this.game.boss.hitboxOffsetX + this.game.boss.hitboxWidth &&
+                    p.y > this.game.boss.y + this.game.boss.hitboxOffsetY &&
+                    p.y < this.game.boss.y + this.game.boss.hitboxOffsetY + this.game.boss.hitboxHeight) {
                     const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                     let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
                     this.game.boss.takeDamage(dmg, isCrit);
@@ -172,7 +169,6 @@ export default class GameLoop {
             for (let i = this.game.drops.length - 1; i >= 0; i--) { this.game.drops[i].update(tsf); if (this.game.drops[i].life <= 0) this.game.drops.splice(i, 1); }
             for (let i = this.game.particles.length - 1; i >= 0; i--) { this.game.particles[i].update(tsf); if (this.game.particles[i].life <= 0) this.game.particles.splice(i, 1); }
             for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
-            for (let i = this.game.damageSpots.length - 1; i >= 0; i--) { this.game.damageSpots[i].update(tsf); if (this.game.damageSpots[i].opacity <= 0) this.game.damageSpots.splice(i, 1); }
             for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
             for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
             for (let i = this.game.particlesBehind.length - 1; i >= 0; i--) { this.game.particlesBehind[i].update(tsf); if (this.game.particlesBehind[i].lifespan <= 0) this.game.particlesBehind.splice(i, 1); }
@@ -263,7 +259,7 @@ export default class GameLoop {
             this.game.ctx.restore();
         }
 
-        this.game.damageSpots.forEach(s => s.draw(this.game.ctx));
+
         this.game.towers.forEach(t => t.draw(this.game.ctx));
         this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);

@@ -1,6 +1,6 @@
 export const COMPONENTS = {
     "Fire Damage": {
-        cost: 1,
+        cost: 2,
         description: "Shots apply a fire DoT for 5s. Each stack adds 10% of shot damage per second."
     },
     "Split Shot": {
@@ -26,6 +26,10 @@ export const COMPONENTS = {
     "Bubble Gum Shots": {
         cost: 2,
         description: "Shots bounce off the tower's range. Each stack adds one bounce."
+    },
+    "Critical Hit": {
+        cost: 1,
+        description: "Adds a 24% chance to deal 200% damage."
     }
 };
 

@@ -85,7 +85,7 @@ export default class LevelUpManagerScreen {
         this.hoveredCard = null;
         for (const card of this.cards) {
             if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
-                this.game.mouse.y > card.y && this.game.mouse.y < card.y + card.height) {
+                this.game.mouse.y > card.y - 100 && this.game.mouse.y < card.y - 100 + card.height) {
                 this.hoveredCard = card;
                 break;
             }

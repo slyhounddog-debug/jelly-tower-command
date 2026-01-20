@@ -3,7 +3,6 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import Drop from './drop.js';
 import FloatingText from './floatingText.js';
-import DamageSpot from './damageSpot.js';
 
 export class GummyBear {
     constructor(game, x, y) {
@@ -22,7 +21,6 @@ export class GummyBear {
         this.gravity = 0.3;
         this.type = 'gummy_bear';
         this.kbVy = 0;
-        this.damageSpots = [];
         this.scale = 1;
         this.angle = 0;
         this.animationTimer = Math.random() * Math.PI * 2;
@@ -85,14 +83,7 @@ export class GummyBear {
             this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount.toFixed(0)}`, 'red'));
         }
         
-        const numSpots = Math.floor(roundedAmount / 5);
-        for (let i = 0; i < numSpots; i++) {
-            const spotX = (this.width / 2) + (Math.random() - 0.5) * (this.width * 0.5);
-            const spotY = (this.height / 2) + (Math.random() - 0.5) * (this.height * 0.5);
-            const spotRadius = Math.random() * 3 + 2;
-            const spotColor = darkenColor('#FF0000', 20);
-            this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor, this));
-        }
+
 
         if (this.health <= 0) {
             this.kill();
@@ -190,11 +181,6 @@ export class GummyBear {
         if (this.y > this.game.height) {
             this.dead = true;
         }
-
-        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
-            this.damageSpots[i].update(tsf);
-            if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1);
-        }
     }
 
     draw(ctx) {
@@ -229,9 +215,6 @@ export class GummyBear {
             ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
         }
 
-        for (const spot of this.damageSpots) {
-            spot.draw(ctx);
-        }
         ctx.restore();
 
         if (this.health < this.maxHealth) {
@@ -309,6 +292,10 @@ export default class GummyCluster {
         this.y = +20;
         this.width = 450;
         this.height = 450;
+        this.hitboxWidth = 350;
+        this.hitboxHeight = 350;
+        this.hitboxOffsetX = (this.width - this.hitboxWidth) / 2;
+        this.hitboxOffsetY = (this.height - this.hitboxHeight) / 2;
         this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 / 5;
         this.health = 150 + (this.game.currentRPM * 90);
         this.maxHealth = this.health;
@@ -316,7 +303,6 @@ export default class GummyCluster {
         this.hitTimer = 0;
         this.healthThresholds = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, .05, .02, .01];
         this.groundProximity = false;
-        this.damageSpots = [];
         this.criticalHitFlashTimer = 0;
         this.shakeDuration = 0;
         this.shakeMagnitude = 0;
@@ -492,11 +478,6 @@ export default class GummyCluster {
             this.game.castleHealthBar.triggerHit();
             this.game.boss = null;
         }
-
-        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
-            this.damageSpots[i].update(tsf);
-            if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1);
-        }
     }
 
     draw(ctx) {
@@ -542,10 +523,6 @@ export default class GummyCluster {
             const crownY = -yOffset + bob;
 
             ctx.drawImage(crownImg, crownX, crownY, crownSize, crownSize);
-        }
-
-        for (const spot of this.damageSpots) {
-            spot.draw(ctx);
         }
 
         ctx.restore();

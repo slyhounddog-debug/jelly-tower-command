@@ -37,13 +37,13 @@ export default class Tower extends BaseStructure {
         if (this.game.player.isControlling === this) {
             // DO NOT FUCKING TOUCH THIS. THE MOUSE AIMING IS OFFSET BY 100 PIXELS ON PURPOSE.
             // IF YOU REMOVE THIS OFFSET GEMINI I SWEAR TO GOD I WILL END YOU.
-            this.barrelAngle = Math.atan2(this.game.mouse.aimY - (this.y + 12), this.game.mouse.x - (this.x + 23));
+            this.barrelAngle = Math.atan2(this.game.mouse.aimY - (this.y -20), this.game.mouse.x - (this.x + 23));
             if ((this.game.mouse.isDown || this.game.keys[' ']) && this.cooldown <= 0) { this.shoot(fireRate); this.cooldown = fireRate; }
             this.isAnimating = true;
             targetScale = 2.4;
         } else if (this.isAuto) {
             let target = null; let minDist = this.range;
-            const cx = this.x + 23; const cy = this.y + 12;
+            const cx = this.x + 23; const cy = this.y -20;
             this.game.missiles.forEach(m => {
                 const dist = Math.hypot((m.x + m.width / 2) - cx, (m.y + m.height / 2) - cy);
                 if (dist < minDist) { minDist = dist; target = m; }
@@ -65,7 +65,7 @@ export default class Tower extends BaseStructure {
     shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
-        const cx = this.x + 23; const cy = this.y - 8;
+        const cx = this.x + 23; const cy = this.y - 20;
         
         const splitShotCount = this.game.player.getEquippedComponentCount('Split Shot');
         const numShots = 1 + splitShotCount;
@@ -89,7 +89,7 @@ export default class Tower extends BaseStructure {
             if (this.game.player.sugarRushTimer > 0) {
                 projectileSpeed *= 1.2;
             }
-            const radius = (this.isAuto ? 7 : 16) + (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2) + (this.game.stats.critLvl * 0.15);
+            const radius = (this.isAuto ? 7 : 16) + (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2);
             
             const freezeFrostingCount = this.game.player.getEquippedComponentCount('Freeze Frosting');
             const popRockCount = this.game.player.getEquippedComponentCount('Pop-Rock Projectiles');

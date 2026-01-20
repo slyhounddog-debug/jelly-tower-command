@@ -3,57 +3,47 @@ export default class Background {
         this.game = game;
         this.loaded = false;
         this.backgroundImage = new Image();
-        this.backgroundImage.src = 'assets/Images/background.png';
         this.cloudImages = [
             new Image(),
             new Image(),
             new Image(),
         ];
-        this.cloudImages[0].src = 'assets/Images/cloud1.png';
-        this.cloudImages[1].src = 'assets/Images/cloud2.png';
-        this.cloudImages[2].src = 'assets/Images/cloud3.png';
         this.clouds = [];
     }
 
     load() {
         console.log('Loading background images...');
-        return new Promise((resolve, reject) => {
-            const promises = [];
+        const allPromises = [];
 
-            const backgroundImagePromise = new Promise((resolve, reject) => {
-                this.backgroundImage.onload = () => {
-                    console.log('Background image loaded.');
-                    resolve();
-                };
-                this.backgroundImage.onerror = () => {
-                    console.error('Failed to load background image.');
-                    reject('Failed to load background image.');
-                };
-            });
-            promises.push(backgroundImagePromise);
+        // Background Image
+        const bgPromise = new Promise((resolve, reject) => {
+            this.backgroundImage.onload = resolve;
+            this.backgroundImage.onerror = reject;
+            this.backgroundImage.src = 'assets/Images/background.png';
+        });
+        allPromises.push(bgPromise);
 
-            this.cloudImages.forEach((img, index) => {
-                const cloudImagePromise = new Promise((resolve, reject) => {
-                    img.onload = () => {
-                        console.log(`Cloud image ${index + 1} loaded.`);
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        console.error(`Failed to load cloud image ${index + 1}.`);
-                        reject(`Failed to load cloud image ${index + 1}.`);
-                    };
-                });
-                promises.push(cloudImagePromise);
+        // Cloud Images
+        const cloudSrcs = [
+            'assets/Images/cloud1.png',
+            'assets/Images/cloud2.png',
+            'assets/Images/cloud3.png',
+        ];
+        this.cloudImages.forEach((img, index) => {
+            const cloudPromise = new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = cloudSrcs[index];
             });
+            allPromises.push(cloudPromise);
+        });
 
-            Promise.all(promises).then(() => {
-                console.log('All background images loaded successfully.');
-                this.loaded = true;
-                resolve();
-            }).catch(error => {
-                console.error('Error loading background images:', error);
-                reject(error);
-            });
+        return Promise.all(allPromises).then(() => {
+            this.loaded = true;
+            console.log('All background images loaded successfully.');
+        }).catch(error => {
+            console.error('Error loading background images:', error);
+            throw error; // Re-throw to make the main Promise.all in game.js fail
         });
     }
 

@@ -17,7 +17,6 @@ export default class LevelingManager {
         this.upgrades = {
             normal: [
                 { name: "Sweet Aura", description: "Enemies within tongue range take 10% more damage.", icon: "💖", rarity: "normal" },
-                { name: "Tinkerer", description: "2 more component point.", icon: "🔧", rarity: "normal" },
                 { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
                 { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
                 { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
@@ -33,7 +32,7 @@ export default class LevelingManager {
             legendary: [
                 { name: "Dash Flash", description: "Ouchie dash wave dealing 200% lick damage.", icon: "🛡️", rarity: "legendary" },
                 { name: "Twin Scoop", description: "50% chance to double ice cream scoop.", icon: "✌️", rarity: "legendary" },
-                { name: "Gumball Volley", description: "Licked enemies spawn 3 gumballs that shoot in random directions.", icon: "🍬", rarity: "legendary" },
+                { name: "Gumball Volley", description: "Licked enemies spawn 2 gumballs that shoot in random directions.", icon: "🍬", rarity: "legendary" },
                 { name: "Lick Mania", description: "Dash then lick for a tongue whirlwind.", icon: "🌪️", rarity: "legendary" }
             ]
         };
@@ -135,9 +134,6 @@ export default class LevelingManager {
         player.upgrades[upgrade.name]++;
 
         switch (upgrade.name) {
-            case 'Tinkerer':
-                player.maxComponentPoints += 2;
-                break;
             case 'Greed':
                 const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
                 this.game.money += bonus;

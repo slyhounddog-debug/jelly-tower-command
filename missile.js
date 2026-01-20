@@ -1,7 +1,6 @@
 import Particle from './particle.js';
 import Drop from './drop.js';
 import { darkenColor, showNotification } from './utils.js?v=25';
-import DamageSpot from './damageSpot.js';
 import FloatingText from './floatingText.js';
 import SpriteAnimation from './SpriteAnimation.js';
 import FrostingParticle from './frostingParticle.js';
@@ -45,24 +44,29 @@ export default class Missile {
             this.health = 15 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 1; 
         } else if (type === 'marshmallow_large') {
-            this.width = 76.5;
-            this.height = 76.5;
+            this.width = 76.5 * 1.2;
+            this.height = 76.5 * 1.2;
             this.color = '#F8F8FF';
             this.health = 50 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 1.4);
             this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            this.image = this.game.marshmallowBigImage;
         } else if (type === 'marshmallow_medium') {
-            this.width = 45;
-            this.height = 45;
+            this.width = 45 * 1.4;
+            this.height = 45 * 1.4;
             this.color = '#F8F8FF';
             this.health = 25 + (((this.game.currentRPM * 1.3) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 0.5;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            this.image = this.game.marshmallowMediumImage;
         } else if (type === 'marshmallow_small') {
-            this.width = 22;
-            this.height = 22;
+            this.width = 22 * 2;
+            this.height = 22 * 2;
             this.color = '#F8F8FF';
             this.health = 9;
             this.baseSpeed = 0.5;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            this.image = this.game.marshmallowSmallImage;
         } else if (type === 'piggy') {
             this.width = 33;
             this.height = 44;
@@ -72,7 +76,6 @@ export default class Missile {
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
         this.kbVy = 0; 
-        this.damageSpots = [];
         this.scale = 1;
         this.angle = 0;
         this.animationTimer = Math.random() * Math.PI * 2;
@@ -140,17 +143,7 @@ export default class Missile {
         }
 
         this.damageText = `${this.health.toFixed(0)}/${this.maxHealth.toFixed(0)}`;
-        this.damageTextTimer = 60; 
-
-        const numSpots = Math.floor(roundedAmount / 5);
-        for (let i = 0; i < numSpots; i++) {
-            const spotX = (this.width / 2) + (Math.random() - 0.5) * (this.width * 0.5);
-            const spotY = (this.height / 2) + (Math.random() - 0.5) * (this.height * 0.5);
-            const spotRadius = Math.random() * 3 + 2;
-            const color = (this.type === 'piggy') ? '#ff69b4' : this.color;
-            const spotColor = darkenColor(color, 20);
-            this.damageSpots.push(new DamageSpot(spotX, spotY, spotRadius, spotColor, this));
-        }
+        this.damageTextTimer = 60;
         return this.health <= 0.5;
     }
 
@@ -231,7 +224,7 @@ export default class Missile {
             this.angle = Math.sin(this.animationTimer * 0.5) * (Math.PI / 18);
         } else if (this.type === 'gummy_worm') {
             this.x += Math.sin(this.y / 30) * 2.5 * tsf;
-        } else if (this.type === 'marshmallow_large') {
+        } else if (this.type.includes('marshmallow')) {
             this.angle += this.rotationSpeed * tsf;
         }
 
@@ -250,11 +243,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             if (Math.random() < 0.3) {
                 this.game.particles.push(new Particle(this.game, this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
             }
-        }
-
-        for (let i = this.damageSpots.length - 1; i >= 0; i--) {
-            this.damageSpots[i].update(tsf);
-            if (this.damageSpots[i].opacity <= 0) this.damageSpots.splice(i, 1);
         }
     }
 
@@ -400,8 +388,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             }
         }
         ctx.restore();
-
-        for (const spot of this.damageSpots) spot.draw(ctx);
     }
 
     drawEnemy(ctx) {
@@ -499,21 +485,17 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.restore();
         } else if (this.type.includes('marshmallow')) {
             ctx.save();
-            ctx.fillStyle = shadowColor;
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + shadowOffset);
-            ctx.rotate(this.angle);
-            ctx.scale(this.squash * 1.1, this.stretch * 1.1);
-            ctx.beginPath(); ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10); ctx.fill();
-            ctx.restore();
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2); // Center for rotation/scaling
+            ctx.rotate(this.angle); // Apply rotation
+            ctx.scale(this.squash, this.stretch); // Apply squish/stretch
 
-            ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-            ctx.rotate(this.angle);
-            ctx.scale(this.squash, this.stretch);
-            ctx.fillStyle = (this.hitTimer > 0) ? 'white' : this.color;
-            ctx.beginPath(); ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10); ctx.fill();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.beginPath(); ctx.ellipse(-this.width * 0.2, -this.height * 0.2, this.width * 0.2, this.height * 0.3, -0.8, 0, Math.PI * 2); ctx.fill();
+            // Draw shadow for marshmallow
+
+
+            // Draw the marshmallow image
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+            }
             ctx.restore();
         }
        else {
@@ -639,15 +621,21 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         });
 
         if (this.type === 'marshmallow_large') {
+            const parentHeight = this.height;
+            const childHeight = 45 * 1.33; // current scaled medium marshmallow height
+            const spawnY = this.y + (parentHeight / 2) - (childHeight / 2) - 90; // Adjust for constructor offset
             for (let i = 0; i < 2; i++) {
-                this.game.missiles.push(new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', this.y));
+                this.game.missiles.push(new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', spawnY));
             }
             return;
         }
 
         if (this.type === 'marshmallow_medium') {
+            const parentHeight = this.height;
+            const childHeight = 22 * 1.5; // current scaled small marshmallow height
+            const spawnY = this.y + (parentHeight / 2) - (childHeight / 2) - 90; // Adjust for constructor offset
             for (let i = 0; i < 2; i++) {
-                this.game.missiles.push(new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', this.y));
+                this.game.missiles.push(new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', spawnY));
             }
             return;
         }

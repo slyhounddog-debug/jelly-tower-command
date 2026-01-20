@@ -169,7 +169,6 @@ export default class Emporium {
             document.getElementById('shop-top-bar').style.display = 'none';
             document.getElementById('emporium-top-bar').style.display = 'flex';
             document.getElementById('emporium-buttons').style.display = 'flex';
-            this.game.audioManager.stopMusic('gameOverMusic');
             this.game.audioManager.playMusic('shopMusic');
             this.game.isPaused = true; // Always pause when emporium is open
             gamePausedIndicator.style.display = 'block';
@@ -242,6 +241,10 @@ export default class Emporium {
         }
         
         buyBtn.onclick = () => this.buyItem(item);
+
+        // Add this line to display the cost with the ice cream icon
+        const costDisplay = document.getElementById('detail-buy-cost');
+        costDisplay.innerText = typeof cost === 'number' ? `🍦${cost}` : '';
 
         let nextValue = item.getNext();
         if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;

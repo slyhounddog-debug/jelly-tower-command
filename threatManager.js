@@ -19,7 +19,7 @@ export default class ThreatManager {
             this.diffTimer = 0;
         }
 
-        this.threatRPM = Math.min(240, 12.25 + this.game.gameTime / 240);
+        this.threatRPM = Math.min(240, 9.25 + this.game.gameTime / 240);
 
        if (Math.floor(this.game.gameTime) % 480 === 0) {
     console.log("Current Threat RPM:", this.threatRPM);

@@ -3,6 +3,9 @@ import FloatingText from './floatingText.js';
 import { lightenColor, darkenColor } from './utils.js';
 import { getRandomComponent } from './components.js';
 
+const NORMAL_LOOT_LIFESPAN = 600; // 10 seconds at 60 FPS
+const SPECIAL_LOOT_LIFESPAN = 1200; // 20 seconds at 60 FPS
+
 export default class Drop {
     constructor(game, x, y, type, value = 0) {
         this.game = game;
@@ -12,7 +15,8 @@ export default class Drop {
         this.vy = -6 + (Math.random() - 0.5) * 4;
         this.vx = (Math.random() - 0.5) * 6;
         this.gravity = 0.3;
-        this.life = 1200; 
+        this.life = (type === 'ice_cream_scoop' || type === 'component') ? SPECIAL_LOOT_LIFESPAN : NORMAL_LOOT_LIFESPAN;
+        this.maxLife = this.life; // Store max life for blinking calculations
         this.width = 70; 
         this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
         this.xpValue = (type === 'xp_orb') ? value : 0;
@@ -166,6 +170,19 @@ export default class Drop {
                 glowSize
             );
             ctx.restore();
+        }
+
+        // Blinking logic
+        const BLINK_START_FRAME_FAST = 75; // 1.25 seconds
+        const BLINK_START_FRAME_NORMAL = 180; // 3 seconds
+
+        if (this.life < BLINK_START_FRAME_NORMAL) {
+            let blinkSpeed = 0.1; // Default slow blink
+            if (this.life < BLINK_START_FRAME_FAST) {
+                blinkSpeed = 0.3; // Faster blink
+            }
+            // Use sine wave for blinking effect, applying it to globalAlpha before drawing the sprite
+            ctx.globalAlpha *= (Math.sin(this.game.gameTime * blinkSpeed) + 1) / 2;
         }
 
         // --- LOOT SPRITE ---

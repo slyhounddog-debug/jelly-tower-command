@@ -80,7 +80,12 @@ class Game {
         this.readybuttonImage.src = 'assets/Images/readybutton.png';
         this.loadingbuttonImage = new Image();
         this.loadingbuttonImage.src = 'assets/Images/loadingbutton.png';
-
+        this.marshmallowBigImage = new Image();
+        this.marshmallowBigImage.src = 'assets/Images/marshmallowbig.png';
+        this.marshmallowMediumImage = new Image();
+        this.marshmallowMediumImage.src = 'assets/Images/marshmallowmedium.png';
+        this.marshmallowSmallImage = new Image();
+        this.marshmallowSmallImage.src = 'assets/Images/marshmallowsmall.png';
         // Preload shop and emporium images
         this.shopOverlayImage = new Image();
         this.shopOverlayImage.src = 'assets/Images/shopoverlay.png';
@@ -198,9 +203,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
 
-        this.gummyWormSpawnThreshold = 22;
+        this.gummyWormSpawnThreshold = 24;
         this.gummyWormSeen = false;
-        this.marshmallowSpawnThreshold = 46;
+        this.marshmallowSpawnThreshold = 53;
         this.marshmallowSeen = false;
 
         this.killsSinceLastBoss = 0;
@@ -226,7 +231,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             baseRange: 375,
             turretsBought: 0,
             maxTurrets: 5,
-            critLvl: 0,
+            componentPointsLvl: 0, // New: Component Points Level for shop upgrade
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
             getNextDamage() { return (this.damageLvl >= this.game.DAMAGE_TIERS.length - 1) ? "MAX" : this.game.DAMAGE_TIERS[this.damageLvl + 1]; },
@@ -238,7 +243,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
             get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
             get lickKnockback() { return this.game.LICK_KNOCKBACK_TIERS[Math.min(this.lickLvl, this.game.LICK_KNOCKBACK_TIERS.length - 1)]; },
-            get criticalHitChance() { return this.game.CRITICAL_CHANCE_TIERS[Math.min(this.critLvl, this.game.CRITICAL_CHANCE_TIERS.length - 1)]; },
+            get criticalHitChance() { // Reworked for Critical Hit component
+                let chance = 1; // Base 1%
+                const critComponents = this.game.player.equippedComponents.filter(c => c.name === 'Critical Hit');
+                chance += critComponents.length * 24;
+                return chance;
+            },
             get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; }
         };
 
@@ -291,13 +301,18 @@ Object.entries(colors).forEach(([name, rgb]) => {
               getLevel: () => `${this.stats.piggyLvl}/${this.PIGGY_TIERS.length - 1}`,
               action: () => { if (this.stats.piggyLvl < this.PIGGY_TIERS.length - 1) this.stats.piggyLvl++; }
             },
-            { id: 'crit_chance', name: 'Critical Hit Chance', icon: '🎯', 
-              desc: 'Chance for tower shot to deal 200% damage.', type: 'upgrade',
-              getCost: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.critLvl],
-              getValue: () => `${this.stats.criticalHitChance}%`,
-              getNext: () => (this.stats.critLvl >= this.CRITICAL_CHANCE_TIERS.length - 1) ? "MAX" : `${this.CRITICAL_CHANCE_TIERS[this.stats.critLvl + 1]}%`,
-              getLevel: () => `${this.stats.critLvl}/${this.CRITICAL_CHANCE_TIERS.length - 1}`,
-              action: () => { if (this.stats.critLvl < this.CRITICAL_CHANCE_TIERS.length - 1) this.stats.critLvl++; }
+            { id: 'component_points', name: 'Component Capacity', icon: '🧩', 
+              desc: 'Increases maximum component points.', type: 'upgrade',
+              getCost: () => (this.stats.componentPointsLvl >= 10) ? 'MAX' : this.UPGRADE_COSTS[this.stats.componentPointsLvl],
+              getValue: () => `${this.player.maxComponentPoints}`,
+              getNext: () => (this.stats.componentPointsLvl >= 10) ? "MAX" : `${this.player.maxComponentPoints + 1}`,
+              getLevel: () => `${this.stats.componentPointsLvl}/10`,
+              action: () => { 
+                if (this.stats.componentPointsLvl < 10) {
+                    this.stats.componentPointsLvl++; 
+                    this.player.maxComponentPoints++; 
+                }
+              }
             },
             { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
               getCost: () => { const costs = [4500, 15000, 50000, 150000, 500000]; return this.stats.turretsBought < 5 ? costs[this.stats.turretsBought] : 'MAX'; },
@@ -321,7 +336,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.floatingTexts = [];
         this.damageSpots = [];
         this.waveAttacks = [];
-        this.currentRPM = 12.25;
+        this.currentRPM = 9.25;
         this.currentId = 0;
         this.gumballs = [];
         this.particlesBehind = [];
@@ -357,7 +372,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.initListeners();
         this.loadSettings();
-        this.resetGame();
     }
 
     loadSettings() {
@@ -434,6 +448,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => this.titlescreenImage.onload = r),
             new Promise(r => this.readybuttonImage.onload = r),
             new Promise(r => this.loadingbuttonImage.onload = r),
+            new Promise(r => this.marshmallowBigImage.onload = r),
+            new Promise(r => this.marshmallowMediumImage.onload = r),
+            new Promise(r => this.marshmallowSmallImage.onload = r),
         ]).then(() => {
             this.assetsReady = true;
         }).catch(error => {
@@ -508,11 +525,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
                     this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
                     
-                    this.gameStarted = true;
-                    this.isPaused = false;
-                    this.lastTime = 0;
+                    this.resetGame(); // Initialize game state
+                    this.gameStarted = true; // Mark game as started
+                    this.isPaused = false;   // Unpause the game
+                    this.lastTime = 0;       // Reset lastTime for proper deltaTime calculation
                     if (this.audioManager) {
-                        this.audioManager.playMusic('music');
+                        this.audioManager.playMusic('music'); // Start game music
                     }
                     return;
                 }
@@ -667,7 +685,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         tooltip.style.display = 'none';
                     });
                     div.addEventListener('mousemove', (e) => {
-                        tooltip.style.left = `${e.clientX + 15}px`;
+                        tooltip.style.left = `${e.clientX}px`;
                         tooltip.style.top = `${e.clientY}px`;
                     });
 
@@ -683,6 +701,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
                             this.audioManager.playSound('reset'); // Sound for unequipping
                         } else {
                             // Equip
+                            // --- NEW CRITICAL HIT STACKING LIMIT LOGIC ---
+                            if (component.name === "Critical Hit") {
+                                const equippedCritComponents = this.player.equippedComponents.filter(c => c.name === 'Critical Hit');
+                                if (equippedCritComponents.length >= 4) { // Max 4 stacks
+                                    this.audioManager.playSound('pop'); // Error sound
+                                    showNotification('Maximum 4 Critical Hit components can be equipped.', 'error');
+                                    return;
+                                }
+                            }
+                            // --- END NEW LOGIC ---
+
                             const newUsedPoints = currentUsedPoints + componentData.cost;
                             if (newUsedPoints <= this.player.maxComponentPoints) {
                                 this.player.equippedComponents.push(component);
@@ -719,12 +748,21 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 const hudContainer = document.getElementById('component-points-hud');
                 hudContainer.innerHTML = ''; // Clear previous points
         
+                const baseSize = 20; 
+                // --- NEW DYNAMIC SIZE LOGIC FOR ALL SLOTS ---
+                const dynamicSize = Math.max(5, baseSize - ((maxPoints - 1) * 0.63)); // Apply shrinkage based on total points
+                // --- END NEW DYNAMIC SIZE LOGIC ---
+
                 for (let i = 0; i < maxPoints; i++) {
                     const slot = document.createElement('div');
                     slot.className = 'component-point-slot';
                     if (i < usedPoints) {
                         slot.classList.add('filled');
                     }
+                    // --- APPLY DYNAMIC SIZE TO ALL SLOTS ---
+                    slot.style.width = `${dynamicSize}px`;
+                    slot.style.height = `${dynamicSize}px`;
+                    // --- END APPLY DYNAMIC SIZE ---
                     hudContainer.appendChild(slot);
                 }
             }
@@ -831,7 +869,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
         
         
         this.totalMoneyEarned = 0; this.enemiesKilled = 0; this.currentScore = 0; this.shotsFired = 0; this.shotsHit = 0;
-        this.gameTime = 0; this.isGameOver = false; this.isPaused = true; this.currentRPM = 12.25;
+        this.gameTime = 0; this.isGameOver = false; this.isPaused = false; this.currentRPM = 9.25;
+        this.audioManager.playMusic('music');
         this.hitStopFrames = 0;
         this.piggyTimer = 0; this.piggyBankSeen = false;
 
@@ -844,7 +883,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
         this.stats.luckLvl = 0;
-        this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.critLvl = 0;
+        this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.componentPointsLvl = 0;
         this.stats.turretsBought = 0;
 
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.damageSpots = []; this.floatingTexts = []; this.waveAttacks = [];
