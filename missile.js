@@ -118,6 +118,9 @@ export default class Missile {
     takeDamage(amount, isCritical = false, source = null) {
         if (source) {
             this.lastDamageSource = source;
+            if (source.gummyImpactStacks > 0) {
+                this.kbVy -= this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
+            }
         }
         this.game.hitStopFrames = 1;
         const player = this.game.player;

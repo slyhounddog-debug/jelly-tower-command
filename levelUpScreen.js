@@ -140,6 +140,45 @@ export default class LevelUpScreen {
         ctx.font = '21px "Nunito"';
         this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 180, card.width - 30, 24);
 
+        // --- NEW SECTION FOR CURRENT/TOTAL STATS ---
+        let currentStatText = '';
+        let showStat = false;
+        let isTotal = false;
+
+        switch (card.choice.name) {
+            case 'Sticky Paw':
+                currentStatText = `Currently: ${this.game.player.pickupRange.toFixed(0)}px`;
+                showStat = true;
+                break;
+            case 'Long Tongue':
+                currentStatText = `Currently: ${this.game.player.lickRange.toFixed(0)}px`;
+                showStat = true;
+                break;
+            case 'Extra Jump':
+                currentStatText = `Currently: ${this.game.player.maxJumps}`;
+                showStat = true;
+                break;
+            case 'Sugar Shove':
+                currentStatText = `Currently: ${this.game.stats.lickKnockback.toFixed(0)} KB`;
+                showStat = true;
+                break;
+            case 'Greed':
+                const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
+                currentStatText = `Total: $${bonus}`;
+                showStat = true;
+                isTotal = true;
+                break;
+        }
+
+        if (showStat) {
+            ctx.fillStyle = 'white'; // Always white for choice cards
+            ctx.font = `18px "Nunito"`; // Slightly larger font than manager screen
+            ctx.textAlign = 'center';
+            const statY = card.y + 220 + (isTotal ? 5 : 0); // Adjust Y position
+            ctx.fillText(currentStatText, card.x + card.width / 2, statY);
+        }
+        // --- END NEW SECTION ---
+
         ctx.shadowBlur = 0;
         ctx.fillStyle = color;
         ctx.font = '24px "Fredoka One"';

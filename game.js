@@ -242,7 +242,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             get luckCoin() { return Math.min(55, 7 + this.luckLvl * 3); },
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
             get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
-            get lickKnockback() { return this.game.LICK_KNOCKBACK_TIERS[Math.min(this.lickLvl, this.game.LICK_KNOCKBACK_TIERS.length - 1)]; },
+            get lickKnockback() { return 10 + (this.game.player.upgrades['Sugar Shove'] * 5); },
             get criticalHitChance() { // Reworked for Critical Hit component
                 let chance = 1; // Base 1%
                 const critComponents = this.game.player.equippedComponents.filter(c => c.name === 'Critical Hit');
@@ -282,10 +282,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
               action: () => this.stats.luckLvl++ 
             },
             { id: 'slap_dmg', name: 'Tongue Strength', icon: '👅', 
-              desc: `Increases tongue damage and knockback.`, type: 'upgrade', 
+              desc: `Increases tongue damage.`, type: 'upgrade', 
               getCost: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.lickLvl], 
-              getValue: () => `D:${this.stats.lickDamage} K:${this.stats.lickKnockback}`, 
-              getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]} K:${this.LICK_KNOCKBACK_TIERS[this.stats.lickLvl+1]}`,
+              getValue: () => `D:${this.stats.lickDamage}`, 
+              getNext: () => (this.stats.lickLvl >= this.LICK_DAMAGE_TIERS.length - 1) ? "MAX" : `D:${this.LICK_DAMAGE_TIERS[this.stats.lickLvl+1]}`,
               getLevel: () => `${this.stats.lickLvl}/${this.LICK_DAMAGE_TIERS.length - 1}`,
               action: () => { if (this.stats.lickLvl < this.LICK_DAMAGE_TIERS.length - 1) this.stats.lickLvl++; } 
             },
@@ -685,7 +685,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         tooltip.style.display = 'none';
                     });
                     div.addEventListener('mousemove', (e) => {
-                        tooltip.style.left = `${e.clientX}px`;
+                        tooltip.style.left = `${e.clientX - 440}px`;
                         tooltip.style.top = `${e.clientY}px`;
                     });
 

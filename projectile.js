@@ -2,7 +2,7 @@ import Particle from './particle.js';
 import { calculateChainBounceDamage } from './utils.js';
 
 export default class Projectile {
-    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, freezeFrostingCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0, isAutoTurret = false) {
+    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, gummyImpactCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0, isAutoTurret = false) {
         this.game = game;
         this.x = x; this.y = y; this.damage = damage; this.range = range; this.origin = origin;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
@@ -10,7 +10,7 @@ export default class Projectile {
         this.hp = damage; this.dead = false; this.hasHit = false;
         this.rotation = Math.random() * Math.PI * 2; // Start with random rotation
         this.radius = radius;
-        this.freezeStacks = freezeFrostingCount;
+        this.gummyImpactStacks = gummyImpactCount;
         this.popRockStacks = popRockCount;
         this.bouncesLeft = bubbleGumCount;
         this.fireDamageCount = fireDamageCount;
@@ -57,7 +57,9 @@ export default class Projectile {
 
                 if (this.popRockStacks > 0) this.createExplosion();
                 if (this.fireDamageCount > 0) m.applyFire(damage, this.fireDamageCount);
-                if (this.freezeStacks > 0) m.applySlow(5 * 60, 0.1 * this.freezeStacks, 'freeze');
+                if (this.gummyImpactStacks > 0) {
+                    m.kbVy -= this.game.stats.lickKnockback * 0.1 * this.gummyImpactStacks;
+                }
                 
                 if (this.popRockStacks <= 0) {
                     if (m.takeDamage(damage, false, this)) {}

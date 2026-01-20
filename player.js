@@ -68,20 +68,21 @@ export default class Player {
         this.upgrades = {
             // Normals
             'Sweet Aura': 0,
-            'Tinkerer': 0,
             'Greed': 0,
             'Long Tongue': 0,
             'Sticky Paw': 0,
+            'Extra Jump': 0,
+            'Sugar Shove': 0,
             // Rares
             'Winged Boots': 0,
-            'Air Tricks': 0,
             'Ice Tongue': 0,
-            
+            'Jelly Tag': 0,
             'Squishy Butt': 0,
             'Sugar Rush': 0,
             // Legendaries
             'Dash Flash': 0,
             'Twin Scoop': 0,
+            'Gumball Volley': 0,
             'Lick Mania': 0,
         };
 

@@ -20,7 +20,8 @@ export default class LevelingManager {
                 { name: "Greed", description: "Cash injection bonus ($500 + 2.5% total money earned).", icon: "💰", rarity: "normal" },
                 { name: "Sticky Paw", description: "25% increase in loot pickup range.", icon: "👐", rarity: "normal" },
                 { name: "Long Tongue", description: "20% increase in tongue length.", icon: "👅", rarity: "normal" },
-                { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" }
+                { name: "Extra Jump", description: "Adds 1 extra jump.", icon: "🤸", rarity: "normal" },
+                { name: "Sugar Shove", description: "Increases knockback by 5.", icon: "👊", rarity: "normal" }
             ],
             rare: [
                 { name: "Winged Boots", description: "Glide while holding space in air.", icon: "🕊️", rarity: "rare" },

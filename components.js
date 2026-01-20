@@ -19,9 +19,9 @@ export const COMPONENTS = {
         cost: 2,
         description: "Shots explode on impact. Each stack increases explosion area by 50%."
     },
-    "Freeze Frosting": {
+    "Gummy Impact": {
         cost: 1,
-        description: "Shots slow enemies for 5s. Each stack adds 10% slow."
+        description: "Tower shots also knock enemies back by 10% of total knockback power."
     },
     "Bubble Gum Shots": {
         cost: 2,
