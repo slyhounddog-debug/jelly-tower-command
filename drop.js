@@ -56,6 +56,8 @@ export default class Drop {
     }
 
     update(tsf) {
+        this.life -= tsf;
+
         if (this.isBeingLicked) {
             this.x = this.lickedByPlayer.tongueTipX - this.width / 2;
             this.y = this.lickedByPlayer.tongueTipY - this.width / 2;

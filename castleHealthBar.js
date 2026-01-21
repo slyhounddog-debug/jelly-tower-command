@@ -10,6 +10,8 @@ export default class CastleHealthBar {
         this.whiteBarCurrentHealth = this.game.castleHealth;
         this.whiteBarTargetHealth = this.game.castleHealth;
         this.whiteBarTimer = 0;
+        this.pulseTimer = 0;
+        this.wobbleTimer = 0;
     }
 
     update(tsf) {
@@ -38,8 +40,25 @@ export default class CastleHealthBar {
             this.whiteBarTargetHealth = this.visualHealth;
         }
 
-        // Particle Effects (remaining as is)
+        // --- NEW PULSE/WOBBLE LOGIC ---
         const healthPct = this.game.castleHealth / this.game.emporium.getCastleMaxHealth();
+        if (healthPct < 0.4) {
+            if (healthPct < 0.2) {
+                // Faster pulse and wobble below 20%
+                this.pulseTimer += 0.15 * tsf;
+                this.wobbleTimer += 0.2 * tsf;
+            } else {
+                // Slower pulse below 40%
+                this.pulseTimer += 0.05 * tsf;
+                this.wobbleTimer = 0; // Reset wobble if not below 20%
+            }
+        } else {
+            this.pulseTimer = 0; // Reset pulse if above 40%
+            this.wobbleTimer = 0;
+        }
+        // --- END NEW LOGIC ---
+
+        // Particle Effects (remaining as is)
         if (healthPct <= 0) return;
 
         let particleRate = 0;
@@ -84,6 +103,21 @@ export default class CastleHealthBar {
         const maxHealth = this.game.emporium.getCastleMaxHealth();
         const pct = Math.max(0, this.game.castleHealth / maxHealth);
 
+        // --- NEW PULSE/WOBBLE DRAW LOGIC ---
+        let scaleEffect = 1.0;
+        let wobbleX = 0;
+        let wobbleY = 0;
+
+        if (pct < 0.4) {
+            scaleEffect = 1.0 + Math.sin(this.pulseTimer) * 0.02; // Pulse 2%
+            if (pct < 0.2) {
+                scaleEffect = 1.0 + Math.sin(this.pulseTimer) * 0.04; // Pulse 4%
+                wobbleX = Math.sin(this.wobbleTimer) * 4;
+                wobbleY = Math.cos(this.wobbleTimer * 1.5) * 2;
+            }
+        }
+        // --- END NEW LOGIC ---
+
         // Shake effect on hit
         let shakeX = 0;
         let shakeY = 0;
@@ -93,7 +127,11 @@ export default class CastleHealthBar {
         }
         
         ctx.save();
-        ctx.translate(shakeX, shakeY);
+        // Apply wobble and shake, then scale
+        ctx.translate(shakeX + wobbleX, shakeY + wobbleY);
+        ctx.translate(barX + barWidth / 2, barY + barHeight / 2);
+        ctx.scale(scaleEffect, scaleEffect);
+        ctx.translate(-(barX + barWidth / 2), -(barY + barHeight / 2));
 
         // Frame (Glass Tube)
         ctx.fillStyle = 'rgba(10, 0, 10, 0.6)';
