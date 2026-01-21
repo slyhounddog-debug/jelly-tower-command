@@ -1,10 +1,9 @@
 export default class LevelUpManagerScreen {
     constructor(game) {
         this.game = game;
-        this.isOpen = false;
         this.cards = [];
-        this.titleY = -100;
-        this.hoveredCard = null;
+        this.titleY = 0;
+        this.magnifiedCard = null;
         this.rarityColors = {
             normal: '#2ecc71',
             rare: '#9b59b6',
@@ -12,45 +11,50 @@ export default class LevelUpManagerScreen {
         };
     }
 
-    show() {
-        this.isOpen = true;
-        this.game.isPaused = true;
-        this.organizeCards();
-    }
+    handleInput() {
+        let cardClicked = false;
+        for (const card of this.cards) {
+            if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
+                this.game.mouse.y > card.y && this.game.mouse.y < card.y + card.height) {
 
-    hide() {
-        this.isOpen = false;
-        this.game.isPaused = false;
-        this.hoveredCard = null;
-        this.game.lastTime = 0;
-    }
+                if (this.magnifiedCard === card) {
+                    this.magnifiedCard = null;
+                } else {
+                    this.magnifiedCard = card;
+                }
+                cardClicked = true;
+                this.game.audioManager.playSound('lick');
+                break;
+            }
+        }
 
-    toggle() {
-        if (this.isOpen) {
-            this.hide();
-        } else {
-            this.show();
+        if (!cardClicked && this.magnifiedCard) {
+            this.magnifiedCard = null;
         }
     }
 
-    organizeCards() {
+    organizeCards(modalConfig) {
+        if (!modalConfig) return;
         this.cards = [];
         const upgrades = this.game.levelingManager.upgrades;
-        const cardWidth = 180;
-        const cardHeight = 264;
+        const cardWidth = 160; // Reduced size
+        const cardHeight = 235; // Reduced size
         const gap = 15;
-        const topMargin = 250;
+        const topMargin = 100 + (modalConfig.height * 0.07); // Move everything down 7%
 
-        let yOffset = topMargin;
+        let yOffset = modalConfig.y + topMargin;
 
         const processUpgrades = (upgradeList, y, cardsPerRowOverride = 0) => {
-            const cardsPerRow = cardsPerRowOverride > 0 ? cardsPerRowOverride : Math.ceil(upgradeList.length / (cardsPerRowOverride || 2));
+            const cardsPerRow = cardsPerRowOverride > 0 ? cardsPerRowOverride : Math.ceil(upgradeList.length / 2);
+            const totalRows = Math.ceil(upgradeList.length / cardsPerRow);
+
             for (let i = 0; i < upgradeList.length; i++) {
                 const rowIndex = Math.floor(i / cardsPerRow);
                 const colIndex = i % cardsPerRow;
-                const rowUpgrades = upgradeList.slice(rowIndex * cardsPerRow, (rowIndex + 1) * cardsPerRow);
-                const rowWidth = (rowUpgrades.length * (cardWidth + gap)) - gap;
-                const xOffset = (this.game.width - rowWidth) / 2;
+
+                const currentRowUpgradeCount = Math.min(cardsPerRow, upgradeList.length - (rowIndex * cardsPerRow));
+                const rowWidth = (currentRowUpgradeCount * (cardWidth + gap)) - gap;
+                const xOffset = modalConfig.x + (modalConfig.width - rowWidth) / 2;
 
                 const card = {
                     x: xOffset + colIndex * (cardWidth + gap),
@@ -59,87 +63,89 @@ export default class LevelUpManagerScreen {
                     height: cardHeight,
                     choice: upgradeList[i],
                 };
-                
-                // Pre-render the card
+
                 const offscreenCanvas = document.createElement('canvas');
                 offscreenCanvas.width = cardWidth;
                 offscreenCanvas.height = cardHeight;
                 const offscreenCtx = offscreenCanvas.getContext('2d');
                 this.drawCard(offscreenCtx, { ...card, x: 0, y: 0 });
                 card.preRenderedCanvas = offscreenCanvas;
-                
+
                 this.cards.push(card);
             }
-            return (Math.ceil(upgradeList.length / cardsPerRow)) * (cardHeight + gap);
+            return totalRows * (cardHeight + gap);
         };
-        
-        yOffset += processUpgrades(upgrades.normal, yOffset, Math.ceil(upgrades.normal.length / 2)) + 70;
-        yOffset += processUpgrades(upgrades.rare, yOffset, upgrades.rare.length) + 70;
+
+        const normalHeight = processUpgrades(upgrades.normal, yOffset, Math.ceil(upgrades.normal.length / 2));
+        yOffset += normalHeight + 50; // Reduced gap
+
+        const rareHeight = processUpgrades(upgrades.rare, yOffset, upgrades.rare.length);
+        yOffset += rareHeight + 50; // Reduced gap
+
         processUpgrades(upgrades.legendary, yOffset, upgrades.legendary.length);
     }
 
     update(tsf) {
-        if (!this.isOpen) return;
-        this.titleY += (150 - this.titleY) * 0.1 * tsf;
-
-        this.hoveredCard = null;
-        for (const card of this.cards) {
-            if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
-                this.game.mouse.y > card.y - 100 && this.game.mouse.y < card.y - 100 + card.height) {
-                this.hoveredCard = card;
-                break;
-            }
-        }
+        // Title animation removed
     }
 
     draw(ctx) {
-        if (!this.isOpen) return;
+        const modalConfig = this.game.modalManager.getModalConfig('player');
+        if (!modalConfig) return;
+
+        // Title text rendering removed
+
+        const topMargin = 100 + (modalConfig.height * 0.07);
+        const rarityY1 = modalConfig.y + topMargin - 20;
+        const normalRows = Math.ceil(this.game.levelingManager.upgrades.normal.length / Math.ceil(this.game.levelingManager.upgrades.normal.length / 2));
+        const rarityY2 = rarityY1 + (normalRows * (235 + 15)) + 45; // Use new cardHeight
+        const rareRows = Math.ceil(this.game.levelingManager.upgrades.rare.length / this.game.levelingManager.upgrades.rare.length);
+        let rarityY3 = rarityY2 + (rareRows * (235 + 15)) + 45; // Use new cardHeight
+        
 
         ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(0, 0, this.game.width, this.game.height);
-
-        ctx.fillStyle = 'white';
-        ctx.font = '80px "Titan One"';
+        ctx.font = '38px "Titan One"'; // Slightly smaller
         ctx.textAlign = 'center';
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 10;
-        ctx.fillText('Level Up Manager', this.game.width / 2, this.titleY);
-        ctx.restore();
-
-        // Draw rarity titles
-        ctx.save();
-        ctx.font = '40px "Titan One"';
-        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#34495e';
+        ctx.lineWidth = 2;
+        
         ctx.fillStyle = this.rarityColors.normal;
-        ctx.fillText('Normal', this.game.width / 2, 220);
+        ctx.fillText('Normal', modalConfig.x + modalConfig.width / 2, rarityY1);
+        ctx.strokeText('Normal', modalConfig.x + modalConfig.width / 2, rarityY1);
+
         ctx.fillStyle = this.rarityColors.rare;
-        ctx.fillText('Rare', this.game.width / 2, 850);
+        ctx.fillText('Rare', modalConfig.x + modalConfig.width / 2, rarityY2);
+        ctx.strokeText('Rare', modalConfig.x + modalConfig.width / 2, rarityY2);
+        
         ctx.fillStyle = this.rarityColors.legendary;
-        ctx.fillText('Legendary', this.game.width / 2, 960 + 220);
+        ctx.fillText('Legendary', modalConfig.x + modalConfig.width / 2, rarityY3);
+        ctx.strokeText('Legendary', modalConfig.x + modalConfig.width / 2, rarityY3);
         ctx.restore();
 
         this.cards.forEach(card => {
-            if (card.preRenderedCanvas) {
-                ctx.drawImage(card.preRenderedCanvas, card.x, card.y);
-            } else {
-                this.drawCard(ctx, card);
+            if (this.magnifiedCard !== card) { // Don't draw the card that's currently magnified
+                if (card.preRenderedCanvas) {
+                    ctx.drawImage(card.preRenderedCanvas, card.x, card.y);
+                } else {
+                    this.drawCard(ctx, card);
+                }
             }
         });
 
-        if (this.hoveredCard && this.hoveredCard.preRenderedCanvas) {
-            const hoverScale = 2.23;
-            const width = this.hoveredCard.width * hoverScale;
-            const height = this.hoveredCard.height * hoverScale;
-            const x = this.game.width / 2 - width / 2;
-            const y = this.game.height / 2 - height / 2;
-            
+        if (this.magnifiedCard && this.magnifiedCard.preRenderedCanvas) {
+            const hoverScale = 2.0;
+            const width = this.magnifiedCard.width * hoverScale;
+            const height = this.magnifiedCard.height * hoverScale;
+            const x = modalConfig.x + (modalConfig.width / 2) - (width / 2);
+            const y = modalConfig.y + (modalConfig.height / 2) - (height / 2);
+
             ctx.save();
+            ctx.globalAlpha = 1.0;
             ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 10;
             ctx.shadowOffsetY = 10;
-            ctx.drawImage(this.hoveredCard.preRenderedCanvas, x, y, width, height);
+            ctx.drawImage(this.magnifiedCard.preRenderedCanvas, x, y, width, height);
             ctx.restore();
         }
     }
@@ -147,120 +153,83 @@ export default class LevelUpManagerScreen {
     drawCard(ctx, card) {
         ctx.save();
         
-        const scale = card.width / 180; // Base card width is 180
+        const scale = card.width / 180;
 
         const hasUpgrade = this.game.player.upgrades[card.choice.name] > 0;
         const upgradeCount = this.game.player.upgrades[card.choice.name];
-
         const rarity = card.choice.rarity;
-        let color = this.rarityColors[rarity] || '#ffffff';
 
         if (!hasUpgrade) {
-            ctx.filter = 'grayscale(1)';
+            ctx.filter = 'saturate(0.2) brightness(0.7)';
         }
-
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, card.height);
         if (hasUpgrade) {
-            const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
-            gradient.addColorStop(0, '#3af8f8ff'); // Purple
-            gradient.addColorStop(1, '#FF69B4'); // Pink
-            ctx.fillStyle = gradient;
+            gradient.addColorStop(0, '#6A11CB');
+            gradient.addColorStop(1, '#2575FC');
         } else {
-            const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.height);
             gradient.addColorStop(0, '#444');
             gradient.addColorStop(1, '#222');
-            ctx.fillStyle = gradient;
         }
+        ctx.fillStyle = gradient;
 
-        ctx.strokeStyle = hasUpgrade ? '#ba9bdaff' : '#444444ff';
-        ctx.lineWidth = 3 * scale;
+        ctx.strokeStyle = this.rarityColors[rarity];
+        ctx.lineWidth = 4 * scale;
 
         ctx.beginPath();
-        ctx.roundRect(card.x, card.y, card.width, card.height, 20 * scale);
+        ctx.roundRect(0, 0, card.width, card.height, 20 * scale);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = this.rarityColors[rarity] || '#ffffff';
-        if (!hasUpgrade) {
-            ctx.filter = 'grayscale(0)'; // Reset filter for text
-        }
-        ctx.font = `${20 * scale}px "Fredoka One"`;
+        
+        ctx.fillStyle = 'white';
+        ctx.font = `${20 * scale}px "Titan One"`;
         ctx.textAlign = 'center';
         
         const title = card.choice.name.toUpperCase();
-        ctx.fillText(title, card.x + card.width / 2, card.y + 25 * scale);
-        if (!hasUpgrade) {
-            ctx.filter = 'grayscale(1)';
-        }
+        ctx.fillText(title, card.width / 2, 30 * scale);
 
         ctx.font = `${40 * scale}px "Fredoka One"`;
-        ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 70 * scale);
+        ctx.fillText(card.choice.icon, card.width / 2, 80 * scale);
 
-        ctx.fillStyle = hasUpgrade ? 'white' : '#aaa';
+        ctx.fillStyle = '#eee';
         ctx.font = `${14 * scale}px "Nunito"`;
-        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 120 * scale, card.width - 20 * scale, 16 * scale);
+        this.wrapText(ctx, card.choice.description, card.width / 2, 130 * scale, card.width - 20 * scale, 16 * scale);
 
-        // --- NEW SECTION FOR CURRENT/TOTAL STATS ---
         let currentStatText = '';
         let showStat = false;
-        let isTotal = false;
 
         switch (card.choice.name) {
-            case 'Sticky Paw':
-                currentStatText = `Currently: ${this.game.player.pickupRange.toFixed(0)}px`;
-                showStat = true;
-                break;
-            case 'Long Tongue':
-                currentStatText = `Currently: ${this.game.player.lickRange.toFixed(0)}px`;
-                showStat = true;
-                break;
-            case 'Extra Jump':
-                currentStatText = `Currently: ${this.game.player.maxJumps}`;
-                showStat = true;
-                break;
-            case 'Sugar Shove':
-                currentStatText = `Currently: ${this.game.stats.lickKnockback.toFixed(0)} KB`;
-                showStat = true;
-                break;
-            case 'Greed':
-                const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025));
-                currentStatText = `Total: $${bonus}`;
-                showStat = true;
-                isTotal = true;
-                break;
+             case 'Sticky Paw': currentStatText = `Current: ${this.game.player.pickupRange.toFixed(0)}px`; showStat = true; break;
+             case 'Long Tongue': currentStatText = `Current: ${this.game.player.lickRange.toFixed(0)}px`; showStat = true; break;
+             case 'Extra Jump': currentStatText = `Current: ${this.game.player.maxJumps}`; showStat = true; break;
+             case 'Sugar Shove': currentStatText = `Current: ${this.game.stats.lickKnockback.toFixed(0)} KB`; showStat = true; break;
+             case 'Greed': const bonus = Math.ceil(500 + (this.game.totalMoneyEarned * 0.025)); currentStatText = `Total: $${bonus}`; showStat = true; break;
         }
 
         if (showStat) {
-            ctx.fillStyle = hasUpgrade ? 'white' : '#aaa';
-            ctx.font = `${12 * scale}px "Nunito"`;
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = `bold ${14 * scale}px "Nunito"`;
             ctx.textAlign = 'center';
-            // Adjust Y position based on whether it's "Currently" or "Total"
-            const statY = card.y + 180 * scale + (isTotal ? 5 * scale : 0); 
-            ctx.fillText(currentStatText, card.x + card.width / 2, statY);
+            ctx.fillText(currentStatText, card.width / 2, 185 * scale);
         }
-        // --- END NEW SECTION ---
 
-        ctx.fillStyle = this.rarityColors[rarity] || '#ffffff';
-        if (!hasUpgrade) {
-            ctx.filter = 'grayscale(0)';
-        }
-        ctx.font = `${16 * scale}px "Fredoka One"`;
-        ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - (15 * scale));
-        if (!hasUpgrade) {
-            ctx.filter = 'grayscale(1)';
-        }
+        ctx.font = `${16 * scale}px "Titan One"`;
+        ctx.fillStyle = this.rarityColors[rarity];
+        ctx.fillText(rarity.toUpperCase(), card.width / 2, card.height - (20 * scale));
 
         if (hasUpgrade && rarity === 'normal' && upgradeCount > 0) {
             const circleRadius = 12 * scale;
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.beginPath();
-            ctx.arc(card.x + circleRadius + (5 * scale), card.y + circleRadius + (5 * scale), circleRadius, 0, Math.PI * 2);
+            ctx.arc(circleRadius + (5 * scale), circleRadius + (5 * scale), circleRadius, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = 'white';
             ctx.font = `${14 * scale}px "Fredoka One"`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(upgradeCount, card.x + circleRadius + (5 * scale), card.y + circleRadius + (5 * scale));
+            ctx.fillText(upgradeCount, circleRadius + (5 * scale), circleRadius + (5 * scale));
         }
         
         ctx.restore();

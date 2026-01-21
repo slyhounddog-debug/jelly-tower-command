@@ -16,6 +16,15 @@ export default class GameLoop {
             return;
         }
 
+        if (this.game.modalManager.isOpen()) {
+            this.game.modalManager.update((currentTime - (this.game.lastTime || currentTime)) / this.game.targetFrameTime);
+            this.game.background.draw(this.game.ctx); // Draw game background behind modal
+            this.game.modalManager.draw(this.game.ctx);
+            requestAnimationFrame((t) => this.loop(t));
+            this.game.lastTime = currentTime;
+            return;
+        }
+
         if (this.game.hitStopFrames > 0) {
             this.game.hitStopFrames--;
             requestAnimationFrame((t) => this.loop(t));
@@ -286,8 +295,8 @@ export default class GameLoop {
             this.game.levelUpScreen.draw(this.game.ctx);
         }
 
-        this.game.levelUpManagerScreen.update(tsf);
-        this.game.levelUpManagerScreen.draw(this.game.ctx);
+        // this.game.levelUpManagerScreen.update(tsf); // Now handled by ModalManager
+        // this.game.levelUpManagerScreen.draw(this.game.ctx); // Now handled by ModalManager
 
         this.game.ctx.restore();
 

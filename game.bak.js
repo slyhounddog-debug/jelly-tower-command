@@ -25,9 +25,6 @@ import { COMPONENTS } from './components.js';
 import GummyCluster from './boss.js';
 import Background from './background.js';
 import DecalManager from './decalManager.js';
-import ModalManager from './modalManager.js';
-import Shop from './shop.js';
-import ComponentQuarters from './componentQuarters.js';
 
 class Game {
     constructor(canvas) {
@@ -43,10 +40,6 @@ class Game {
         this.levelManager = new initLevel(this);
         this.decalManager = new DecalManager(this);
         this.background = new Background(this);
-
-        this.keys = {};
-        this.mouse = { x: 0, y: 0, isDown: false };
-        
         this.platformImage = new Image();
         this.platformImage.src = 'assets/Images/platform.png';
         this.groundImage = new Image();
@@ -226,8 +219,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.emporium.loadEmporiumUpgrades(); // Essential to load upgrade levels
         this.gameLoop = new GameLoop(this);
 
-        this.player = new Player(this);
-
         this.stats = {
             damageLvl: 0,
             fireRateLvl: 0,
@@ -332,10 +323,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
         ];
         this.selectedShopItem = this.shopItems[0];
-        
-        this.modalManager = new ModalManager(this); // ModalManager must be defined first
-        this.shop = new Shop(this);
-        this.levelUpManagerScreen = new LevelUpManagerScreen(this);
+
+        this.keys = {};
+        this.mouse = { x: 0, y: 0, isDown: false };
 
         this.platforms = [];
         this.towers = [];
@@ -352,10 +342,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.particlesBehind = [];
         this.particlesInFront = [];
 
+        this.player = new Player(this);
         this.levelingManager = new LevelingManager(this);
         this.levelingManager.initializePlayer(this.player);
         this.xpBar = new XPBar(this);
         this.levelUpScreen = new LevelUpScreen(this);
+        this.levelUpManagerScreen = new LevelUpManagerScreen(this);
         this.threatManager = new ThreatManager(this);
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
@@ -381,7 +373,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.initListeners();
         this.loadSettings();
     }
-
 
     loadSettings() {
         const soundVolume = localStorage.getItem('soundEffectsVolume');
@@ -470,14 +461,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
             this.keys[k] = true;
-            if (k === 'f') this.modalManager.toggle('shop');
-            if (k === 'q') this.modalManager.toggle('player');
-            if (k === 'c') this.modalManager.toggle('components');
-
+            if (k === 'f') this.toggleShop();
             if (k === 'escape') {
-                if (this.modalManager.isOpen()) {
-                    this.modalManager.close();
-                } else if (document.getElementById('guide-modal').style.display === 'flex') {
+                if (document.getElementById('guide-modal').style.display === 'flex') {
                     document.getElementById('guide-modal').style.display = 'none';
                     this.requestUnpause();
                 } else if (document.getElementById('stats-modal').style.display === 'flex') {
@@ -493,6 +479,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     this.cancelPlacement();
                 } else if (this.sellMode) {
                     this.cancelSell();
+                } else if (this.isShopOpen) {
+                    this.toggleShop();
                 } else if (this.emporium.isEmporiumOpen) {
                     this.emporium.toggle();
                 }
@@ -514,6 +502,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             if (k === 'shift') {
                 this.player.tryDash(this.lastMoveDirection);
             }
+            if (k === 'q') {
+                this.levelUpManagerScreen.toggle();
+            }
         });
         document.addEventListener('keyup', (e) => {
             const k = e.key.toLowerCase();
@@ -529,12 +520,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.mouse.aimY = this.mouse.y + 100;  // GEMINI DO NOT EVER REMOVE THIS LINE IT MATCHES THE VISUAL OFFSET FOR THE REST OF THE GAME. DO NOT REMOVE.
         });
         this.canvas.addEventListener('mousedown', (e) => {
-            this.mouse.isDown = true;
-            if (this.modalManager.isOpen()) {
-                this.modalManager.handleInput();
-                return;
-            }
-
             if (!this.gameStarted && this.assetsReady) {
                 const btn = this.ui.readyButton;
                 if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
@@ -551,12 +536,13 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 }
             }
 
+            this.mouse.isDown = true;
             const gameMouseY = this.mouse.y + 100;
 
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
                 gameMouseY - 100 > shopBtn.y && gameMouseY - 100 < shopBtn.y + shopBtn.height) {
-                this.modalManager.toggle('shop');
+                this.toggleShop();
                 return; 
             }
 
@@ -568,10 +554,28 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
 
             if (this.sellMode) {
-                // This logic will be moved to the modal manager
+                for (let i = this.towers.length - 1; i >= 0; i--) {
+                    const t = this.towers[i];
+                    if (this.mouse.x > t.x && this.mouse.x < t.x + t.width &&
+                        gameMouseY > t.y && gameMouseY < t.y + t.height) {
+
+                        const costs = [4500, 15000, 50000, 150000, 500000];
+                        const lastTurretCost = this.stats.turretsBought > 0 ? costs[this.stats.turretsBought - 1] : 0;
+                        const sellPrice = lastTurretCost;
+
+                        this.money += sellPrice;
+                        this.towers.splice(i, 1);
+                        this.stats.turretsBought--;
+                        this.sellMode = false;
+                        this.audioManager.playSound('purchase');
+                        showNotification(`Turret sold for +$${sellPrice}!`);
+                        this.toggleShop();
+                        return;
+                    }
+                }
             } else if (this.placementMode) {
                 this.tryPlaceItem();
-            } else if (!this.isPaused && !this.isGameOver && !this.player.isControlling) {
+            } else if (!this.isShopOpen && !this.isPaused && !this.isGameOver && !this.player.isControlling) {
                 this.player.tryLick();
             }
         });
@@ -579,6 +583,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
         
+
+
         document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'flex');
         document.getElementById('stats-btn').addEventListener('click', () => {
             this.updateStatsWindow();
@@ -586,7 +592,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const isVisible = modal.style.display === 'flex';
             modal.style.display = isVisible ? 'none' : 'flex';
         });
-        document.getElementById('components-btn').addEventListener('click', () => this.modalManager.toggle('components'));
+        document.getElementById('components-btn').addEventListener('click', () => this.toggleComponentQuarters());
 
                                 
 
@@ -638,7 +644,141 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }                
-                        
+                        renderComponentQuarters() {
+                console.log("Rendering component quarters...");
+                const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+                const maxPoints = this.player.maxComponentPoints;
+                console.log(`Used points: ${usedPoints}, Max points: ${maxPoints}`);
+
+                // Render component grid
+                const grid = document.getElementById('component-grid');
+                const tooltip = document.getElementById('component-tooltip');
+                grid.innerHTML = '';
+
+                const leftColumn = document.createElement('div');
+                leftColumn.className = 'component-column';
+                const rightColumn = document.createElement('div');
+                rightColumn.className = 'component-column';
+                
+                this.player.collectedComponents.forEach((component, index) => {
+                    const componentData = COMPONENTS[component.name];
+                    const div = document.createElement('div');
+                    div.className = 'component-item';
+                    
+                    const isEquipped = this.player.equippedComponents.some(equipped => equipped.id === component.id);
+
+                    if (isEquipped) {
+                        div.classList.add('equipped');
+                        div.style.boxShadow = '0 0 15px #00ff00';
+                    }
+                    div.innerHTML = `
+                        <div class="component-name">${component.name}</div>
+                        <div class="component-cost">${componentData.cost}</div>
+                    `;
+
+                    // Tooltip events
+                    div.addEventListener('mouseover', (e) => {
+                        tooltip.style.display = 'block';
+                        tooltip.innerHTML = `<strong>${component.name}</strong><br>${componentData.description}`;
+                    });
+                    div.addEventListener('mouseout', () => {
+                        tooltip.style.display = 'none';
+                    });
+                    div.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = `${e.clientX - 440}px`;
+                        tooltip.style.top = `${e.clientY}px`;
+                    });
+
+                    div.onclick = () => {
+                        const currentUsedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+
+                        if (isEquipped) {
+                            // Unequip
+                            const equippedIndex = this.player.equippedComponents.findIndex(equipped => equipped.id === component.id);
+                            if (equippedIndex > -1) {
+                                this.player.equippedComponents.splice(equippedIndex, 1);
+                            }
+                            this.audioManager.playSound('reset'); // Sound for unequipping
+                        } else {
+                            // Equip
+                            // --- NEW CRITICAL HIT STACKING LIMIT LOGIC ---
+                            if (component.name === "Critical Hit") {
+                                const equippedCritComponents = this.player.equippedComponents.filter(c => c.name === 'Critical Hit');
+                                if (equippedCritComponents.length >= 4) { // Max 4 stacks
+                                    this.audioManager.playSound('pop'); // Error sound
+                                    showNotification('Maximum 4 Critical Hit components can be equipped.', 'error');
+                                    return;
+                                }
+                            }
+                            // --- END NEW LOGIC ---
+
+                            const newUsedPoints = currentUsedPoints + componentData.cost;
+                            if (newUsedPoints <= this.player.maxComponentPoints) {
+                                this.player.equippedComponents.push(component);
+                                this.audioManager.playSound('purchase'); // Sound for equipping
+                            } else {
+                                // Not enough points
+                                this.audioManager.playSound('pop'); // Error sound
+                                const barContainer = document.getElementById('component-points-bar-container');
+                                if(barContainer) {
+                                    barContainer.style.animation = 'shake 0.5s';
+                                    setTimeout(() => {
+                                        barContainer.style.animation = '';
+                                    }, 500);
+                                }
+                            }
+                        }
+                        this.renderComponentQuarters();
+                    };
+                    if (index % 2 === 0) {
+                        leftColumn.appendChild(div);
+                    } else {
+                        rightColumn.appendChild(div);
+                    }
+                });
+                grid.appendChild(leftColumn);
+                grid.appendChild(rightColumn);
+
+                this.renderComponentPointsHUD();
+            }
+
+            renderComponentPointsHUD() {
+                const usedPoints = this.player.equippedComponents.reduce((sum, c) => sum + (COMPONENTS[c.name] ? COMPONENTS[c.name].cost : 0), 0);
+                const maxPoints = this.player.maxComponentPoints;
+                const hudContainer = document.getElementById('component-points-hud');
+                hudContainer.innerHTML = ''; // Clear previous points
+        
+                const baseSize = 20; 
+                // --- NEW DYNAMIC SIZE LOGIC FOR ALL SLOTS ---
+                const dynamicSize = Math.max(5, baseSize - ((maxPoints - 1) * 0.63)); // Apply shrinkage based on total points
+                // --- END NEW DYNAMIC SIZE LOGIC ---
+
+                for (let i = 0; i < maxPoints; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'component-point-slot';
+                    if (i < usedPoints) {
+                        slot.classList.add('filled');
+                    }
+                    // --- APPLY DYNAMIC SIZE TO ALL SLOTS ---
+                    slot.style.width = `${dynamicSize}px`;
+                    slot.style.height = `${dynamicSize}px`;
+                    // --- END APPLY DYNAMIC SIZE ---
+                    hudContainer.appendChild(slot);
+                }
+            }
+
+                                            toggleComponentQuarters() {
+                                                const modal = document.getElementById('component-quarters-overlay');
+                                                const isVisible = modal.style.display === 'block';
+                                                modal.style.display = isVisible ? 'none' : 'block';
+                                                if (isVisible) {
+                                                    this.requestUnpause();
+                                                }
+                                                else {
+                                                                        this.isPaused = true;
+                                                                        this.renderComponentQuarters();
+                                                                        this.renderComponentPointsHUD();
+                                                                    }                                            }
     toggleSettings() {
         const modal = document.getElementById('settings-modal');
         const isVisible = modal.style.display === 'block';
@@ -652,8 +792,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
     }
 
     isAnyModalOpen(exclude = null) {
-        if (this.modalManager.isOpen()) return true;
-
         const modals = [
             '#start-game-modal', '#component-modal', '#piggy-modal', '#gummy-worm-modal',
             '#marshmallow-modal', '#boss-modal',
@@ -674,10 +812,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
         }
     }
                             
-    closeComponentModal() {
-        document.getElementById('component-modal').style.display = 'none';
-        this.requestUnpause();
-    }
+            closeComponentModal() {
+                document.getElementById('component-modal').style.display = 'none';
+                this.requestUnpause();
+            }
 
     closePiggyModal() {
         document.getElementById('piggy-modal').style.display = 'none';
@@ -764,6 +902,154 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     }
 
 
+            toggleShop() {
+                if (this.placementMode) { this.cancelPlacement(); return; }
+                if (this.isGameOver) return;
+                this.isShopOpen = !this.isShopOpen;
+                document.getElementById('shop-overlay').style.display = this.isShopOpen ? 'flex' : 'none';
+        
+                if (this.isShopOpen) {
+                    this.shopState = 'shop';
+                    document.getElementById('shop-top-bar').style.display = 'flex';
+                    document.getElementById('emporium-top-bar').style.display = 'none';
+                    document.getElementById('emporium-buttons').style.display = 'none';
+                    this.isPaused = true;
+                    this.lastShopOpenTime = this.gameTime;
+                } else {
+                    this.requestUnpause('#shop-overlay');
+                }
+        
+                const gamePausedIndicator = document.getElementById('game-paused-indicator');
+                gamePausedIndicator.style.display = this.isShopOpen ? 'block' : 'none';
+            
+                            if (this.isShopOpen) { 
+                                showNotification('Game Paused');
+                                this.audioManager.playSound('purchase'); // Play sound when shop opens
+                            } else {
+                                this.audioManager.playSound('reset'); // Play sound when shop closes
+                            }
+                            if (this.audioManager) {
+                                this.audioManager.setMuffled(this.isShopOpen);
+                            }
+                            
+                            if (this.isShopOpen) { 
+                                document.getElementById('shop-money-display').innerText = this.money; 
+                                this.renderShopGrid(); 
+                                this.selectShopItem(this.shopItems[0]); 
+                            }
+                }
+    renderShopGrid() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        this.shopItems.forEach(item => {
+            const cost = item.getCost();
+            const slot = document.createElement('div');
+            slot.className = 'upgrade-slot';
+            if (this.selectedShopItem && this.selectedShopItem.id === item.id) {
+                slot.classList.add('selected');
+            }
+
+            const img = document.createElement('img');
+            img.src = 'assets/Images/upgradeslot.png';
+            slot.appendChild(img);
+
+            const content = document.createElement('div');
+            content.className = 'upgrade-slot-content';
+            content.innerHTML = `
+                <div class="upgrade-slot-icon">${item.icon}</div>
+                <div class="upgrade-slot-name">${item.name}</div>
+                <div class="upgrade-slot-cost">${cost === 'MAX' ? 'MAX' : `$${cost}`}</div>
+            `;
+            slot.appendChild(content);
+            
+            slot.onclick = () => this.selectShopItem(item);
+            grid.appendChild(slot);
+        });
+    }
+
+selectShopItem(item) {
+    this.selectedShopItem = item;
+    this.renderShopGrid(); 
+    const cost = item.getCost();
+    const canAfford = typeof cost === 'number' && this.money >= cost;
+    const isMaxLevel = cost === 'MAX';
+
+    // Update text elements safely
+    document.getElementById('detail-icon').innerText = item.icon;
+    document.getElementById('detail-title').innerText = item.name;
+    document.getElementById('detail-desc').innerText = item.desc;
+    document.getElementById('shop-money-display').innerText = '$' + this.money;
+    
+    let nextValue = item.getNext();
+    const statsDiv = document.getElementById('detail-stats');
+    if (nextValue === "MAX") {
+        statsDiv.innerHTML = `<span style="color: red;">${item.getValue()}</span> <span style="color: #3e2e4d;">➜</span> <span>MAX</span>`;
+    } else {
+        statsDiv.innerHTML = `<span style="color: red;">${item.getValue()}</span> <span style="color: #3e2e4d;">➜</span> <span style="color: green;">${nextValue}</span>`;
+    }
+    
+    // This updates ONLY the level text, leaving the button row intact
+    const levelDisplay = document.getElementById('detail-level-display');
+    levelDisplay.innerText = item.getLevel ? `Level: ${item.getLevel()}` : '';
+
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
+    const costDisplay = document.getElementById('detail-buy-cost');
+
+    if (isMaxLevel) {
+        buyBtn.src = 'assets/Images/disabledbutton.png';
+        buyBtn.style.pointerEvents = 'none';
+        costDisplay.innerText = '';
+    } else {
+        buyBtn.src = canAfford ? 'assets/Images/shopupgradeup.png' : 'assets/Images/disabledbutton.png';
+        buyBtn.style.pointerEvents = canAfford ? 'all' : 'none';
+        costDisplay.innerText = typeof cost === 'number' ? `$${cost}` : '';
+    }
+
+    sellBtn.style.display = (item.id === 'buy_turret' && this.stats.turretsBought > 0) ? 'inline' : 'none';
+    
+    buyBtn.onclick = () => { if (canAfford && !isMaxLevel) this.buyItem(item); };
+    sellBtn.onclick = () => this.sellItem();
+}
+
+    buyItem(item) {
+        const cost = item.getCost();
+        if (item.type === 'item' && typeof cost === 'number' && this.money >= cost) {
+            if (item.id === 'buy_turret' && this.stats.turretsBought >= this.stats.maxTurrets) {
+                this.audioManager.playSound('error');
+                return;
+            }
+            this.placementMode = item.id === 'buy_turret' ? 'turret' : 'shield';
+            this.placementItemCost = cost;
+            this.isShopOpen = false;
+            document.getElementById('shop-overlay').style.display = 'none';
+            this.isPaused = true;
+            showNotification('Left click to place | ESC to cancel');
+        } else if (item.type === 'upgrade') {
+            if (typeof cost === 'number' && this.money >= cost) {
+                this.money -= cost;
+                item.action();
+                this.audioManager.playSound('upgrade');
+                this.selectShopItem(item); // Reselect to update UI
+            } else {
+                this.audioManager.playSound('error');
+            }
+        }
+        document.getElementById('shop-money-display').innerText = '$' + this.money;
+    }
+
+    sellItem() {
+        this.sellMode = true;
+        this.isPaused = true; 
+        this.isShopOpen = false; 
+        document.getElementById('shop-overlay').style.display = 'none';
+        showNotification(`Click an item to Sell | ESC to Cancel`);
+    }
+
+
+
+
+
     updateStatsWindow() {
         document.getElementById('stat-shot-damage').innerText = this.stats.damage;
         document.getElementById('stat-fire-rate').innerText = `${(60/this.stats.fireRate).toFixed(1)}/s`;
@@ -785,7 +1071,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
     
     cancelPlacement() { 
         this.placementMode = null; 
-        this.modalManager.toggle('shop');
+        this.toggleShop(); 
     }
     cancelSell() { this.sellMode = null; this.requestUnpause(); }
 
@@ -794,7 +1080,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
         if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
         this.money -= this.placementItemCost; this.placementMode = null;
         showNotification("Turret placed!");
-        this.modalManager.toggle('shop');
+        document.getElementById('shop-money-display').innerText = this.money;
+        this.toggleShop();
     }
 
     handlePiggyDeath(bonus) {
@@ -814,7 +1101,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         window.closeMarshmallowModal = this.closeMarshmallowModal.bind(this);
 
         window.closeComponentModal = this.closeComponentModal.bind(this);
-        window.closeComponentQuarters = () => this.modalManager.close();
+        window.closeComponentQuarters = this.toggleComponentQuarters.bind(this);
         window.closeBossModal = this.closeBossModal.bind(this);
         this.gameLoop.loop(0);
     }

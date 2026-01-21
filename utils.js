@@ -1,3 +1,29 @@
+export function drawNineSlice(ctx, image, x, y, width, height, sliceSize) {
+    if (!image || !image.complete || image.naturalWidth === 0) return;
+
+    const sw = image.naturalWidth;
+    const sh = image.naturalHeight;
+    sliceSize = Math.min(sliceSize, sw / 2, sh / 2);
+
+    const s = sliceSize;
+    const c = sliceSize;
+
+    // Corners
+    ctx.drawImage(image, 0, 0, s, s, x, y, s, s); // Top-left
+    ctx.drawImage(image, sw - s, 0, s, s, x + width - s, y, s, s); // Top-right
+    ctx.drawImage(image, 0, sh - s, s, s, x, y + height - s, s, s); // Bottom-left
+    ctx.drawImage(image, sw - s, sh - s, s, s, x + width - s, y + height - s, s, s); // Bottom-right
+
+    // Edges
+    ctx.drawImage(image, s, 0, sw - 2 * s, s, x + s, y, width - 2 * s, s); // Top
+    ctx.drawImage(image, s, sh - s, sw - 2 * s, s, x + s, y + height - s, width - 2 * s, s); // Bottom
+    ctx.drawImage(image, 0, s, s, sh - 2 * s, x, y + s, s, height - 2 * s); // Left
+    ctx.drawImage(image, sw - s, s, s, sh - 2 * s, x + width - s, y + s, s, height - 2 * s); // Right
+
+    // Center
+    ctx.drawImage(image, s, s, sw - 2 * s, sh - 2 * s, x + s, y + s, width - 2 * s, height - 2 * s);
+}
+
 export const ScreenShake = {
     magnitude: 0,
     duration: 0,
