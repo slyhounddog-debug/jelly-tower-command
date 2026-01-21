@@ -12,6 +12,7 @@ export default class CastleHealthBar {
         this.whiteBarTimer = 0;
         this.pulseTimer = 0;
         this.wobbleTimer = 0;
+        this.lowHealthFlashTimer = 0;
     }
 
     update(tsf) {
@@ -47,14 +48,17 @@ export default class CastleHealthBar {
                 // Faster pulse and wobble below 20%
                 this.pulseTimer += 0.15 * tsf;
                 this.wobbleTimer += 0.2 * tsf;
+                this.lowHealthFlashTimer += 0.1 * tsf;
             } else {
                 // Slower pulse below 40%
                 this.pulseTimer += 0.05 * tsf;
                 this.wobbleTimer = 0; // Reset wobble if not below 20%
+                this.lowHealthFlashTimer = 0;
             }
         } else {
             this.pulseTimer = 0; // Reset pulse if above 40%
             this.wobbleTimer = 0;
+            this.lowHealthFlashTimer = 0;
         }
         // --- END NEW LOGIC ---
 
@@ -107,13 +111,15 @@ export default class CastleHealthBar {
         let scaleEffect = 1.0;
         let wobbleX = 0;
         let wobbleY = 0;
+        let rotationEffect = 0;
 
         if (pct < 0.4) {
             scaleEffect = 1.0 + Math.sin(this.pulseTimer) * 0.02; // Pulse 2%
             if (pct < 0.2) {
                 scaleEffect = 1.0 + Math.sin(this.pulseTimer) * 0.04; // Pulse 4%
-                wobbleX = Math.sin(this.wobbleTimer) * 4;
-                wobbleY = Math.cos(this.wobbleTimer * 1.5) * 2;
+                wobbleX = Math.sin(this.wobbleTimer * 1.2) * 3;
+                wobbleY = Math.sin(this.wobbleTimer * 0.8) * 3;
+                rotationEffect = Math.sin(this.wobbleTimer * 0.5) * 0.02; // Tiny rotation
             }
         }
         // --- END NEW LOGIC ---
@@ -127,9 +133,10 @@ export default class CastleHealthBar {
         }
         
         ctx.save();
-        // Apply wobble and shake, then scale
-        ctx.translate(shakeX + wobbleX, shakeY + wobbleY);
+        // Apply wobble and shake, then scale and rotate
         ctx.translate(barX + barWidth / 2, barY + barHeight / 2);
+        ctx.translate(shakeX + wobbleX, shakeY + wobbleY);
+        ctx.rotate(rotationEffect);
         ctx.scale(scaleEffect, scaleEffect);
         ctx.translate(-(barX + barWidth / 2), -(barY + barHeight / 2));
 
@@ -172,6 +179,15 @@ export default class CastleHealthBar {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; // White with some transparency
             ctx.beginPath();
             ctx.roundRect(barX + (barWidth * lowerHealthPct), barY, barWidth * (higherHealthPct - lowerHealthPct), barHeight, 21);
+            ctx.fill();
+        }
+        
+        // --- Low Health Flash ---
+        if (pct < 0.2) {
+            const flashOpacity = (Math.sin(this.lowHealthFlashTimer) + 1) / 2 * 0.20; // Cycles between 0 and 0.20
+            ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
+            ctx.beginPath();
+            ctx.roundRect(barX, barY, barWidth, barHeight, 21);
             ctx.fill();
         }
 
