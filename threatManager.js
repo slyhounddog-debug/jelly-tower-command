@@ -63,9 +63,6 @@ export default class ThreatManager {
                 this.game.missiles.push(new Missile(this.game, spawnX, 'marshmallow_large'));
                 if (!this.game.marshmallowSeen) {
                     this.game.marshmallowSeen = true;
-                    this.game.isPaused = true;
-                    this.game.thermometerWarn = false;
-                    document.getElementById('marshmallow-modal').style.display = 'flex';
                 }
             }
             // Gummy Worm spawn logic
@@ -73,9 +70,6 @@ export default class ThreatManager {
                 this.game.missiles.push(new Missile(this.game, spawnX, 'gummy_worm'));
                 if (!this.game.gummyWormSeen) {
                     this.game.gummyWormSeen = true;
-                    this.game.isPaused = true;
-                    this.game.thermometerWarn = false;
-                    document.getElementById('gummy-worm-modal').style.display = 'flex';
                 }
             } else {
                 this.game.missiles.push(new Missile(this.game, spawnX, 'missile'));

@@ -209,7 +209,7 @@
             transform: translateX(-50%);
             color: var(--title-color);
             font-family: 'Titan One', cursive;
-            font-size: 38px;
+            font-size: 34px;
             font-weight: bold;
         }
 
@@ -1107,14 +1107,22 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     <h2>Field Manual</h2>
                 </div>
                 <div class="modal-body">
-                    <h3>Defensive Systems</h3>
-                    <p><strong>Auto-Turrets:</strong> Deal 50% damage/range. Target closest enemy.</p>
+                    <h3>Controls</h3>
+                    <p><strong>W/S/A/D:</strong> Up, down, left, right.</p>
+                    <p><strong>Phasing:</strong> Press 'S' to drop through platforms or drop faster.</p>
+                    <p><strong>Space:</strong> Jump.</p>
                     <h3>Enemies</h3>
-                    <p><strong>Jelly beanie:</strong> Standard threat. Spawn rate increases over time. Missile HP is calculated as a base of 30, plus the current enemies/min, and an additional 0.1 HP for every enemy killed.</p>
-                    <p><strong>Piggy Bank:</strong> Rare spawn (1/min). High HP. Grants massive bonus money and loot on kill!</p>
-                    <h3>Platforming</h3>
-                    <p><strong>Phasing:</strong> Press 'S' to drop through platforms.</p>
-                    <p><strong>Jumping:</strong> 2 mid-air jumps allow for agile recovery.</p>
+                    <p><strong>Jelly Beans:</strong> Your regular ole' sentient, blood-thirsty candies.  Drops normal loot. </p>
+                    <p><strong>Gummy Worms:</strong> Wriggly, wandering, w-slitering worms. Faster but easier to kill than Jelly Beans.</p>
+                    <p><strong>Marshmallow Meanies</strong> Mean, tough, rotating for some reason. They split each time they are killed, and only the small marshmallows drop loot.</p>
+                    <p><strong>Piggy Bank:</strong> Rare spawn. High HP. Grants bonus money, loot, and a component on kill!</p>
+                    <h3>UI</h3>
+                    <p><strong>F:</strong> Press 'F' to enter the shop.</p>
+                    <p><strong>E:</strong> Press "E" to enter towers.</p>
+                    <p><strong>Q:</strong> Press 'Q' to toggle the level up manager.</p>
+                    <p><strong>C:</strong> Press "C" to enter component quarters.</p>
+                    <h3>Defensive Systems</h3>
+                    <p><strong>Auto-Turrets:</strong> Has 50% damage/fire rate/range. Target closest enemy.</p>
                 </div>
                 <div class="modal-button-container">
                     <div class="modal-confirm-button-wrapper">
@@ -1152,16 +1160,9 @@ body #shop-info .shop-buttons #detail-buy-cost {
                 </div>
             </div>
 
-            <div id="piggy-modal" class="modal enemy-modal">
-                <div class="modal-title">
-                    <h2>Piggy Bank Seen!🐷</h2>
-                </div>
-                <div class="modal-body">
-                    <p>That big ole' sack of pig is a <strong>Piggy Bank</strong>!</p>
-                    <p id="piggy-cooldown-text">It appears once every minute.</p>
-                    <p><strong>Rewards:</strong> Smash it to get a bonus based on your current funds, and a loot multiplier (affected by luck)! Plus, these bad bois drop a <strong>Component</strong>!</p>
-                </div>
-                <div class="modal-button-container">
+            <div id="piggy-modal" class="modal" style="transform: translate(-50%, -50%) scale(0.65);">
+                <img src="assets/Images/piggybankmodal.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;">
+                <div class="modal-button-container" style="bottom: -1%;">
                     <div class="modal-confirm-button-wrapper">
                         <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closePiggyModal()">
                     </div>
@@ -1195,32 +1196,17 @@ body #shop-info .shop-buttons #detail-buy-cost {
                     </div>
                 </div>
             </div>
-            <div id="component-modal" class="modal enemy-modal" style="display: none;">
-                <div class="modal-title">
-                    <h2>New Component!🔧</h2>
-                </div>
-                <div class="modal-body">
-                    <p>You've found a Component! These are special augments for your towers.</p>
-                    <p>You can equip and unequip components in the 'Component Quarters', accessible from the upgrade shop.</p>
-                    <p>Each component has a point cost. You can increase your component points by choosing the 'Tinkerer' upgrade when you level up.</p>
-                </div>
-                <div class="modal-button-container">
+            <div id="component-modal" class="modal" style="display: none; transform: translate(-50%, -50%) scale(0.6);">
+                <img src="assets/Images/componentmodal.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;">
+                <div class="modal-button-container" style="bottom: -1%;">
                     <div class="modal-confirm-button-wrapper">
                         <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeComponentModal()">
                     </div>
                 </div>
             </div>
-            <div id="boss-modal" class="modal enemy-modal" style="display: none;">
-                <div class="modal-title">
-                    <h2>🚨 BOSS INCOMING! 🚨</h2>
-                </div>
-                <div class="modal-body">
-                    <h3>The Gummy Cluster</h3>
-                    <p>A massive conglomeration of angry gummy bears approaches! This boss is slow but tough.</p>
-                    <p>As you damage the Gummy Cluster, it will shed smaller Gummy Bears that will attack your castle.</p>
-                    <p><strong>Rewards:</strong> Defeating the boss will grant a huge loot bonus and make the game more challenging!</p>
-                </div>
-                <div class="modal-button-container">
+            <div id="boss-modal" class="modal" style="display: none; transform: translate(-50%, -50%) scale(0.8);">
+                <img src="assets/Images/bossmodal.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;">
+                <div class="modal-button-container" style="bottom: -1%;">
                     <div class="modal-confirm-button-wrapper">
                         <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" onclick="closeBossModal()">
                     </div>

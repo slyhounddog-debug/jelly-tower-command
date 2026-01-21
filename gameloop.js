@@ -58,7 +58,6 @@ export default class GameLoop {
                     this.game.piggyBankSeen = true;
                     this.game.isPaused = true;
                     const curCD = this.game.emporiumUpgrades.piggy_cooldown.values[pLvl];
-                    document.getElementById('piggy-cooldown-text').innerText = `It appears once every ${curCD} seconds.`;
                     document.getElementById('piggy-modal').style.display = 'block';
                 }
             }
