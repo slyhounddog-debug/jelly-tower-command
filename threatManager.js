@@ -47,7 +47,7 @@ export default class ThreatManager {
                 this.game.boss = new GummyCluster(this.game);
                 if (this.game.bossesKilled === 0) {
                     // Show boss modal
-                    document.getElementById('boss-modal').style.display = 'flex';
+                    this.game.modalManager.toggle('boss');
                     this.game.isPaused = true;
                 }
             }

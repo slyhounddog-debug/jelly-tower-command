@@ -11,26 +11,31 @@ export default class LevelUpManagerScreen {
         };
     }
 
+    resetMagnifiedCard() {
+        this.magnifiedCard = null;
+    }
+
     handleInput() {
-        let cardClicked = false;
+        let clickedCard = null;
+        // Check if any card was clicked
         for (const card of this.cards) {
             if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
                 this.game.mouse.y > card.y && this.game.mouse.y < card.y + card.height) {
-
-                if (this.magnifiedCard === card) {
-                    this.magnifiedCard = null;
-                } else {
-                    this.magnifiedCard = card;
-                }
-                cardClicked = true;
-                this.game.audioManager.playSound('lick');
+                clickedCard = card;
                 break;
             }
         }
 
-        if (!cardClicked && this.magnifiedCard) {
+        if (this.magnifiedCard !== null) {
+            // If a card is currently magnified, the NEXT click ALWAYS un-magnifies it.
             this.magnifiedCard = null;
+            this.game.audioManager.playSound('lick'); // Play sound for un-magnify
+        } else if (clickedCard !== null) {
+            // If no card was magnified, and a card was clicked, magnify it.
+            this.magnifiedCard = clickedCard;
+            this.game.audioManager.playSound('lick'); // Play sound for magnify
         }
+        // If no card was magnified and nothing was clicked, do nothing.
     }
 
     organizeCards(modalConfig) {

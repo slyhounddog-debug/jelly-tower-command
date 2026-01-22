@@ -3,8 +3,8 @@ import FloatingText from './floatingText.js';
 import { lightenColor, darkenColor } from './utils.js';
 import { getRandomComponent } from './components.js';
 
-const NORMAL_LOOT_LIFESPAN = 600; // 10 seconds at 60 FPS
-const SPECIAL_LOOT_LIFESPAN = 1200; // 20 seconds at 60 FPS
+const NORMAL_LOOT_LIFESPAN = 1200; // 20 seconds at 60 FPS
+const SPECIAL_LOOT_LIFESPAN = 3600; // 60 seconds at 60 FPS
 
 export default class Drop {
     constructor(game, x, y, type, value = 0) {
@@ -137,7 +137,7 @@ export default class Drop {
             this.game.audioManager.playSound('scoop');
             if (!this.game.player.firstComponentCollected) {
                 this.game.player.firstComponentCollected = true;
-                document.getElementById('component-modal').style.display = 'block';
+                this.game.modalManager.toggle('component_modal');
                 this.game.isPaused = true;
             }
         }
@@ -174,6 +174,8 @@ export default class Drop {
             ctx.restore();
         }
 
+        // --- LOOT SPRITE ---
+        ctx.save();
         // Blinking logic
         const BLINK_START_FRAME_FAST = 75; // 1.25 seconds
         const BLINK_START_FRAME_NORMAL = 180; // 3 seconds
@@ -186,9 +188,6 @@ export default class Drop {
             // Use sine wave for blinking effect, applying it to globalAlpha before drawing the sprite
             ctx.globalAlpha *= (Math.sin(this.game.gameTime * blinkSpeed) + 1) / 2;
         }
-
-        // --- LOOT SPRITE ---
-        ctx.save();
         ctx.translate(this.x + this.width / 2, this.y + this.width / 2);
         ctx.rotate(this.rotation);
         const typeMap = { 'coin': 0, 'lucky_coin': 64, 'xp_orb': 128, 'heart': 192, 'ice_cream_scoop': 256, 'component': 320 };

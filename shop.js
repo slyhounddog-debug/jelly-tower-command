@@ -25,18 +25,18 @@ export default class Shop {
         if (!modalConfig) return;
 
         const padding = 50;
-        const panelHeight = 350;
+        const panelHeight = 400;
 
         const top_offset = 98 + (modalConfig.height * 0.08);
         this.detailPanel.x = modalConfig.x + padding;
         this.detailPanel.y = modalConfig.y + top_offset;
-        this.detailPanel.width = modalConfig.width - (padding * 2);
+        this.detailPanel.width = modalConfig.width - (padding * 2) + 100;
         this.detailPanel.height = panelHeight;
 
-        this.buyButton.width = 125;
+        this.buyButton.width = 105;
         this.buyButton.height = 90;
-        this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 30;
-        this.buyButton.y = this.detailPanel.y + this.detailPanel.height / 2 - this.buyButton.height / 2;
+        this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 480;
+        this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2;
 
         const gridStartY = this.detailPanel.y + this.detailPanel.height + 40 + (modalConfig.height * 0.02);
         const slotWidth = (modalConfig.width - (padding * 2) - (3 * 20)) / 4; 
