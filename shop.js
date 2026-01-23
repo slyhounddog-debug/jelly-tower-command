@@ -39,9 +39,16 @@ export default class Shop {
         this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2;
 
         const gridStartY = this.detailPanel.y + this.detailPanel.height + 40 + (modalConfig.height * 0.02);
-        const slotWidth = (modalConfig.width - (padding * 2) - (3 * 20)) / 4; 
-        const slotHeight = 220 * 1.25;
-        const gap = 20;
+        
+        // --- MODIFIED CODE FOR GRID WIDTH AND PADDING ---
+        const columnGap = 20; // Original horizontal gap
+        const rowGap = 40;    // Doubled vertical gap as requested
+        
+        const effectiveInnerModalWidth = modalConfig.width - (padding * 2);
+        const effectiveGridContainerWidth = effectiveInnerModalWidth * 0.95; // Shrink by 5% as requested
+        
+        const slotWidth = (effectiveGridContainerWidth - (3 * columnGap)) / 4; 
+        const slotHeight = 220 * 1.25; // Keep original slot height calculation
 
         this.gridSlots = [];
         this.shopItems.forEach((item, index) => {
@@ -49,8 +56,8 @@ export default class Shop {
             const col = index % 4;
             const slot = {
                 item: item,
-                x: modalConfig.x + padding + col * (slotWidth + gap),
-                y: gridStartY + row * (slotHeight + gap),
+                x: modalConfig.x + padding + col * (slotWidth + columnGap), // Use columnGap
+                y: gridStartY + row * (slotHeight + rowGap), // Use rowGap
                 width: slotWidth,
                 height: slotHeight,
             };

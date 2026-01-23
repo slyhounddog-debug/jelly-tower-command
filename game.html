@@ -158,184 +158,34 @@
             background: linear-gradient(to right, #ff9ff3, #f368e0);
             transition: width 0.2s;
         }
-        #health-text {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            text-align: center;
-            line-height: 24px;
-            font-size: 14px;
-            color: #333;
-            font-weight: bold;
-            text-shadow: 0px 0px 2px white;
-            font-family: 'VT323', monospace;
-        }
-
-        /* --- SHOP STYLES --- */
-        #shop-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('assets/Images/shopoverlay.png');
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            z-index: 160;
-            flex-direction: column;
-            box-sizing: border-box;
-            color: var(--body-color);
-            font-family: 'Nunito', sans-serif;
-        }
-
-        #shop-top-bar {
-            position: absolute;
-            top: 1%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        #shop-money-display {
-            text-shadow: 0 0 10px #ffc300, 0 0 20px #ffc300;
-        }
-
-        #shop-title {
-            position: absolute;
-            top: 14%;
-            left: 50%;
-            transform: translateX(-50%);
-            color: var(--title-color);
-            font-family: 'Titan One', cursive;
-            font-size: 34px;
-            font-weight: bold;
-        }
-
-        #shop-info {
-            position: absolute;
-            top: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 30%;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-        }
-
-        #shop-info h2, #emporium-info h2 {
-            color: var(--title-color);
-        }
-        #shop-info p, #emporium-info p {
-            color: var(--body-color);
-        }
-        #shop-info .detail-info #detail-title {
-            color: #9966CC; /* dark-lilac */
-        }
-        #shop-info .detail-info #detail-desc {
-            color: #3e2e4d; /* dark-gray */
-        }
-        #shop-info .detail-info #detail-level-display {
-            color: #3e2e4d !important; /* dark-gray */
-        }
-
-
-        #shop-grid {
-            position: absolute;
-            top: 49.5%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 78%;
-            height: 43%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 10px;
-            text-align: center;
-        }
+                #health-text {
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    text-align: center;
+                    line-height: 24px;
+                    font-size: 14px;
+                    color: #333;
+                    font-weight: bold;
+                    text-shadow: 0px 0px 2px white;
+                    font-family: 'VT323', monospace;
+                }
         
-        .upgrade-slot {
-            position: relative;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-            text-align: center;
-        }
+                #shop-grid {
+                    position: absolute;
+                    top: 49.5%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 73%; /* Reduced by 5 percentage points */
+                    height: 43%;
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-rows: repeat(2, 1fr);
+                    row-gap: 20px; /* Doubled vertical gap */
+                    column-gap: 10px; /* Retained horizontal gap */
+                    text-align: center;
+                }
         
-        .upgrade-slot:hover {
-            filter: drop-shadow(0 0 10px #ffa807);
-        }
-        
-.upgrade-slot.selected .upgrade-slot-content {
-    filter: drop-shadow(0 0 12px #ec5700);
-}
-
-.upgrade-slot-icon {
-    font-size: 26px;
-    margin-bottom: 1px;
-    margin-left: 1px;
-    font-family: 'Fredoka One', sans-serif;
-    font-weight: normal;
-}
-
-.upgrade-slot-name {
-    font-size: 14px;
-    font-weight: bold;
-    color: #333333;
-    margin-bottom: 5px;
-    margin-left: 14%;
-    margin-right: 14%;
-    font-family: 'Fredoka One', sans-serif;
-}
-
-.upgrade-slot-cost {
-    font-size: 22px;
-    font-weight: bold;
-    color: #9966CC;
-    margin-left: 1px;
-    font-family: 'VT323', monospace;
-}
-
-#components-btn {
-    background: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-    transition: all 0.1s ease;
-    color: #5a486e;
-}
-
-#components-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
-}
-
-#components-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
-}
-
-#shop-info {
-    display: flex;
-    width: 100%;
-}
-
-.detail-icon {
-    width: 34%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    --icon-scale-factor: 4; /* Adjust this value to shrink/grow the icon */
-    font-size: calc(26px * var(--icon-scale-factor)); 
-    transform: translateX(15%);
-}
-
-.detail-info {
-    width: 66%;
-}
-
-#component-quarters-overlay {
+        #component-quarters-overlay {
     display: none;
     position: absolute;
     top: 50%;
@@ -846,46 +696,7 @@
                     transform: translateX(26px);
                 }
         
-/* --- START OF SHOP FIX --- */
-.detail-info-row {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    width: 100%;
-    margin-top: 15px;
-}
 
-.shop-buttons {
-    display: flex !important;
-    align-items: center; /* Vertically align items */
-    gap: 10px;
-    /* Lock the width so the buttons can't shrink */
-    min-width: 120px !important; 
-    flex-shrink: 0 !important;
-}
-
-.shop-upgrade-button:hover {
-    filter: drop-shadow(0 0 10px #00aaff);
-}
-
-.shop-upgrade-button {
-    width: 120px !important;
-    height: 40px !important;
-    cursor: pointer;
-    object-fit: contain;
-}
-#detail-buy-cost {
-    font-family: 'VT323', monospace;
-    color: #9966CC;
-    font-size: 28px;
-    font-weight: bold;
-}
-body #shop-info .shop-buttons #detail-buy-cost {
-    color: #9966CC;
-}
-
-/* --- END OF SHOP FIX --- */
 
         #settings-icon {
                     position: absolute;
@@ -1093,58 +904,7 @@ body #shop-info .shop-buttons #detail-buy-cost {
             </div>
             </div>
             </div>
-            <div id="shop-overlay" style="display: none;">
-                <div id="shop-top-bar">
-                    <div id="shop-money-display" style="font-size: 44px; font-weight: bold; color: #915bc7; font-family: 'VT323', monospace;">$0</div>
-                    <button id="stats-btn" class="modal-internal-button">Stats</button>
-                    <button id="components-btn" class="modal-internal-button">Components</button>
-                    <button id="help-btn" class="modal-internal-button">?</button>
-                </div>
-                <div id="emporium-top-bar" style="display: none; position: absolute; top: 2%; left: 50%; transform: translateX(-50%); width: 80%; justify-content: center;">
-                    <div id="emporium-money" style="font-size: 44px; font-weight: bold; color: #915bc7; font-family: 'VT323', monospace;">
-                        CURRENT SCOOPS: 🍦<span id="emporium-scoops-display">0</span>
-                    </div>
-                </div>
-                <div id="shop-title">Upgrade Shop</div>
-        <div id="shop-info">
-        <div class="detail-icon" id="detail-icon">🔧</div>
-        
-        <div class="detail-info" style="width: 70%; display: flex; flex-direction: column;">
-            <h2 id="detail-title" style="margin: 0;">Select an Item</h2>
-            <p id="detail-desc" style="margin: 5px 0;">Hover over items below to see stats.</p>
-            
-            <div class="stat-comparison" id="detail-stats" style="display: flex; gap: 15px; margin-bottom: 10px;"></div>
-    
-                    <div class="detail-info-row">
-                        <div id="detail-level-display" style="font-weight: bold;"></div>
-                        <div class="shop-buttons">
-                            <div class="buy-action-container" style="display: flex; align-items: center; gap: 10px;">
-                                <img src="assets/Images/shopupgradeup.png" id="buy-btn" class="shop-upgrade-button">
-                                <div id="detail-buy-cost" style="font-family: 'VT323', monospace; color: #9966CC !important; font-size: 28px; font-weight: bold;"></div>
-                            </div>
-                            <img src="assets/Images/sellbuttonup.png" id="sell-btn" class="shop-upgrade-button" style="display: none;">
-                        </div>
-                    </div>        </div>
-    </div>
-                <div id="shop-grid">
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                    <div class="upgrade-slot"></div>
-                </div>
-                <div id="emporium-buttons" style="display: none; position: absolute; bottom: -1%; left: 50%; transform: translateX(-50%); gap: 20px;">
-                    <div class="modal-confirm-button-wrapper">
-                        <img src="assets/Images/resetbutton.png" class="modal-confirm-button" id="emporium-reset-btn" />
-                    </div>
-                    <div class="modal-confirm-button-wrapper">
-                        <img src="assets/Images/modalconfirmup.png" class="modal-confirm-button" id="emporium-close-btn" />
-                    </div>
-                </div>
-            </div>
+
             <div id="component-quarters-overlay" class="modal" style="display: none;">
                 <div class="modal-title">
                     <h2 id="component-quarters-header-plate">Component Quarters</h2>

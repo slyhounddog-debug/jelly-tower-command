@@ -1,15 +1,25 @@
 const EMPORIUM_UPGRADE_COSTS = [1, 3, 6, 10, 15, 22, 30, 40, 50, 70];
+const COLORS = {
+    DARK_LILAC: '#8e44ad',
+    DARK_PINK: '#c0392b',
+    DARK_GRAY: '#34495e',
+    LIGHT_GRAY: '#95a5a6',
+    YELLOW: '#f1c40f',
+};
 
 export default class Emporium {
     constructor(game) {
         this.game = game;
         this.isEmporiumOpen = false;
         this.selectedEmporiumItem = null;
+        this.gridSlots = [];
+        this.detailPanel = {};
+        this.buyButton = {};
+        this.resetButton = {};
+        this.closeButton = {};
+
         this.loadEmporiumUpgrades();
-        document.getElementById('open-emporium-btn').addEventListener('click', () => this.toggle());
-        document.getElementById('emporium-close-btn').addEventListener('click', () => this.toggle());
-        document.getElementById('emporium-reset-btn').addEventListener('click', () => this.reset());
-        this.emporiumItems = [
+        this.emporiumItems = [ // This data structure is great, we'll keep it.
             { 
                 id: 'starting_money', name: 'Initial Funding', icon: '💰', 
                 desc: 'Increases the amount of money you start each run with.',
@@ -154,107 +164,245 @@ export default class Emporium {
         return this.game.emporiumUpgrades.ice_cream_chance.values[this.game.emporiumUpgrades.ice_cream_chance.level];
     }
 
-    toggle() {
-        if (!this.isEmporiumOpen && !this.game.isGameOver) {
-            return;
-        }
+    // --- NEW METHODS FOR CANVAS-BASED UI ---
 
-        this.isEmporiumOpen = !this.isEmporiumOpen;
-        this.game.isShopOpen = this.isEmporiumOpen; // The main shop overlay is used for the emporium as well
-        document.getElementById('shop-overlay').style.display = this.isEmporiumOpen ? 'flex' : 'none';
-        const gamePausedIndicator = document.getElementById('game-paused-indicator');
+    layout() {
+        const modalConfig = this.game.modalManager.getModalConfig('shop'); // Reuse shop modal dimensions
+        if (!modalConfig) return;
 
-        if (this.isEmporiumOpen) {
-            this.game.shopState = 'emporium';
-            document.getElementById('shop-top-bar').style.display = 'none';
-            document.getElementById('emporium-top-bar').style.display = 'flex';
-            document.getElementById('emporium-buttons').style.display = 'flex';
-            this.game.audioManager.playMusic('shopMusic');
-            this.game.isPaused = true; // Always pause when emporium is open
-            gamePausedIndicator.style.display = 'block';
-            document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
-            this.renderGrid();
-            this.selectItem(this.emporiumItems[0]);
-            document.getElementById('emporium-reset-btn').addEventListener('click', () => this.reset());
-        } else {
-            this.game.shopState = 'shop';
-            document.getElementById('shop-top-bar').style.display = 'flex';
-            document.getElementById('emporium-top-bar').style.display = 'none';
-            document.getElementById('emporium-buttons').style.display = 'none';
-            this.game.audioManager.stopMusic('shopMusic');
-            if (this.game.isGameOver) {
-                this.game.audioManager.playMusic('gameOverMusic');
-            }
-            // When closing, if game is over, remain paused. Otherwise, unpause.
-            if (!this.game.isGameOver) {
-                this.game.isPaused = false;
-            }
-            gamePausedIndicator.style.display = 'none';
-        }
-    }
+        const padding = 50;
+        const panelHeight = 400;
 
-    renderGrid() {
-        const grid = document.getElementById('shop-grid');
-        grid.innerHTML = '';
-        this.emporiumItems.forEach(item => {
-            const slot = document.createElement('div');
-            slot.className = 'upgrade-slot';
+        const top_offset = 98 + (modalConfig.height * 0.08);
+        this.detailPanel.x = modalConfig.x + padding;
+        this.detailPanel.y = modalConfig.y + top_offset;
+        this.detailPanel.width = modalConfig.width - (padding * 2) + 100;
+        this.detailPanel.height = panelHeight;
 
-            const img = document.createElement('img');
-            img.src = 'assets/Images/upgradeslot.png';
+        this.buyButton.width = 105;
+        this.buyButton.height = 90;
+        this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 480;
+        this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2;
 
-            const content = document.createElement('div');
-            content.className = 'upgrade-slot-content';
-            const cost = item.getCost();
-            content.innerHTML = `
-                <div class="upgrade-slot-icon">${item.icon}</div>
-                <div class="upgrade-slot-name">${item.name}</div>
-                <div class="upgrade-slot-cost">${cost === 'MAX' ? 'MAX' : `🍦${cost}`}</div>
-                ${item.getLevel ? `<div class="upgrade-slot-level">${item.getLevel()}</div>` : ''}
-            `;
-            
-            slot.appendChild(img);
-            slot.appendChild(content);
-            slot.onclick = () => this.selectItem(item);
-            grid.appendChild(slot);
+        this.resetButton.width = 105;
+        this.resetButton.height = 90;
+        this.resetButton.x = this.buyButton.x - this.resetButton.width - 20;
+        this.resetButton.y = this.buyButton.y;
+
+        this.closeButton.width = 105;
+        this.closeButton.height = 90;
+        this.closeButton.x = this.buyButton.x + this.buyButton.width + 20;
+        this.closeButton.y = this.buyButton.y;
+
+        const gridStartY = this.detailPanel.y + this.detailPanel.height + 40 + (modalConfig.height * 0.02);
+        
+        const columnGap = 20;
+        const rowGap = 40;
+        
+        const effectiveInnerModalWidth = modalConfig.width - (padding * 2);
+        const effectiveGridContainerWidth = effectiveInnerModalWidth * 0.95;
+        
+        const slotWidth = (effectiveGridContainerWidth - (3 * columnGap)) / 4; 
+        const slotHeight = 220 * 1.25;
+
+        this.gridSlots = [];
+        this.emporiumItems.forEach((item, index) => {
+            const row = Math.floor(index / 4);
+            const col = index % 4;
+            const slot = {
+                item: item,
+                x: modalConfig.x + padding + col * (slotWidth + columnGap),
+                y: gridStartY + row * (slotHeight + rowGap),
+                width: slotWidth,
+                height: slotHeight,
+            };
+            this.gridSlots.push(slot);
         });
     }
 
-    selectItem(item) {
-        this.selectedEmporiumItem = item;
-        this.renderGrid();
-        document.getElementById('detail-icon').innerText = item.icon;
-        document.getElementById('detail-title').innerText = item.name;
-        document.getElementById('detail-desc').innerText = item.desc;
-        const cost = item.getCost();
-
-        const buyBtn = document.getElementById('buy-btn');
-        const canAfford = typeof cost === 'number' && this.game.iceCreamScoops >= cost;
-        const isMaxLevel = cost === 'MAX';
-
-        if (isMaxLevel) {
-            buyBtn.src = 'assets/Images/disabledbutton.png';
-            buyBtn.style.pointerEvents = 'none';
-        } else {
-            buyBtn.src = canAfford ? 'assets/Images/shopupgradeup.png' : 'assets/Images/disabledbutton.png';
-            buyBtn.style.pointerEvents = canAfford ? 'all' : 'none';
+    handleInput() {
+        for (const slot of this.gridSlots) {
+            if (this.game.mouse.x > slot.x && this.game.mouse.x < slot.x + slot.width &&
+                this.game.mouse.y > slot.y && this.game.mouse.y < slot.y + slot.height) {
+                if (this.selectedEmporiumItem !== slot.item) {
+                    this.selectedEmporiumItem = slot.item;
+                    this.game.audioManager.playSound('lick');
+                }
+                return;
+            }
         }
         
-        buyBtn.onclick = () => this.buyItem(item);
+        if (this.game.mouse.x > this.buyButton.x && this.game.mouse.x < this.buyButton.x + this.buyButton.width &&
+            this.game.mouse.y > this.buyButton.y && this.game.mouse.y < this.buyButton.y + this.buyButton.height) {
+            this.buyItem(this.selectedEmporiumItem);
+        }
 
-        // Add this line to display the cost with the ice cream icon
-        const costDisplay = document.getElementById('detail-buy-cost');
-        costDisplay.innerText = typeof cost === 'number' ? `🍦${cost}` : '';
+        if (this.game.mouse.x > this.resetButton.x && this.game.mouse.x < this.resetButton.x + this.resetButton.width &&
+            this.game.mouse.y > this.resetButton.y && this.game.mouse.y < this.resetButton.y + this.resetButton.height) {
+            this.reset();
+        }
 
-        let nextValue = item.getNext();
-        if (nextValue === "MAX") document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">MAX</div>`;
-        else document.getElementById('detail-stats').innerHTML = `<div class="stat-old">${item.getValue()}</div><div class="arrow">➜</div><div class="stat-new">${nextValue}</div>`;
+        if (this.game.mouse.x > this.closeButton.x && this.game.mouse.x < this.closeButton.x + this.closeButton.width &&
+            this.game.mouse.y > this.closeButton.y && this.game.mouse.y < this.closeButton.y + this.closeButton.height) {
+            this.toggle();
+        }
+    }
 
-        const levelDisplay = document.getElementById('detail-level-display');
-        if (item.getLevel) {
-            levelDisplay.innerText = `Level: ${item.getLevel()}`;
+    update(tsf) {
+        this.layout();
+    }
+
+    draw(ctx) {
+        const modalConfig = this.game.modalManager.getModalConfig('shop');
+        if (!modalConfig) return;
+        
+        ctx.save();
+        ctx.fillStyle = COLORS.YELLOW;
+        ctx.font = 'bold 80px "VT323"';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 10;
+        ctx.fillText(`🍦${Math.floor(this.game.iceCreamScoops)}`, modalConfig.x + modalConfig.width / 2, modalConfig.y + 180);
+        ctx.restore();
+
+        this.drawDetailPanel(ctx);
+        this.drawGrid(ctx);
+    }
+
+    drawGrid(ctx) {
+        const upgradeSlotImage = this.game.upgradeSlotImage;
+        this.gridSlots.forEach(slot => {
+            ctx.save();
+            
+            const isSelected = this.selectedEmporiumItem && this.selectedEmporiumItem.id === slot.item.id;
+            
+            ctx.globalAlpha = isSelected ? 1.0 : 0.7;
+            if (isSelected) {
+                ctx.filter = 'brightness(1.2)';
+            }
+
+            if (upgradeSlotImage && upgradeSlotImage.complete) {
+                ctx.drawImage(upgradeSlotImage, slot.x, slot.y, slot.width, slot.height);
+            }
+
+            const centerX = slot.x + slot.width / 2;
+            let currentY = slot.y + 85;
+
+            ctx.fillStyle = COLORS.DARK_GRAY;
+            ctx.font = '54px "Fredoka One"';
+            ctx.textAlign = 'center';
+            ctx.fillText(slot.item.icon, centerX, currentY);
+            currentY += 50;
+
+            ctx.font = '26px "Fredoka One"';
+            this.wrapText(ctx, slot.item.name, centerX, currentY, slot.width - 20, 32);
+            currentY += 35;
+            
+            ctx.font = '38px "VT323"';
+            const cost = slot.item.getCost();
+            const canAfford = typeof cost === 'number' && this.game.iceCreamScoops >= cost;
+            ctx.fillStyle = (canAfford || cost === 'MAX') ? COLORS.DARK_LILAC : COLORS.LIGHT_GRAY;
+            ctx.fillText(cost === 'MAX' ? 'MAX' : `🍦${cost}`, centerX, currentY);
+
+            if (slot.item.getLevel) {
+                currentY += 30;
+                ctx.font = '28px "VT323"';
+                ctx.fillStyle = COLORS.DARK_GRAY;
+                ctx.fillText(slot.item.getLevel(), centerX, currentY);
+            }
+
+            ctx.restore();
+        });
+    }
+
+    drawDetailPanel(ctx) {
+        if (!this.selectedEmporiumItem) return;
+
+        ctx.save();
+        const item = this.selectedEmporiumItem;
+        const alignmentX = this.detailPanel.x + 240;
+
+        ctx.font = '115px "Fredoka One"';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.icon, this.detailPanel.x + 120, this.detailPanel.y + 220);
+
+        ctx.fillStyle = "#9c536cff";
+        ctx.font = '48px "Titan One"';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.name, alignmentX, this.detailPanel.y + 100);
+
+        ctx.font = '26px "Nunito"';
+        ctx.fillStyle = COLORS.DARK_GRAY;
+        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 500, 30);
+        
+        newY += 35;
+        ctx.font = '36px "VT323"';
+        const nextValue = item.getNext();
+        const currentValue = item.getValue();
+        ctx.textAlign = 'left'
+        ctx.fillText('Current: ' + currentValue, alignmentX, newY);
+        newY += 38;
+        if (nextValue !== "MAX") {
+            ctx.fillStyle = COLORS.DARK_PINK;
+            ctx.fillText('Next: ' + nextValue, alignmentX, newY);
         } else {
-            levelDisplay.innerText = '';
+             ctx.fillStyle = COLORS.LIGHT_GRAY;
+            ctx.fillText('MAX LEVEL', alignmentX, newY);
+        }
+        newY += 38;
+        
+        ctx.fillStyle = COLORS.DARK_GRAY;
+        ctx.font = '32px "VT323"';
+        ctx.fillText(item.getLevel(), alignmentX, newY);
+
+        this.drawBuyButton(ctx, item);
+        this.drawResetButton(ctx);
+        this.drawCloseButton(ctx);
+
+        ctx.restore();
+    }
+
+    drawBuyButton(ctx, item) {
+        const cost = item.getCost();
+        const canAfford = typeof cost === 'number' && this.game.iceCreamScoops >= cost;
+        const isMax = cost === 'MAX';
+        
+        let buttonImage = isMax || !canAfford ? this.game.disabledButtonImage : this.game.shopUpgradeDownImage;
+        
+        if (buttonImage && buttonImage.complete) {
+            ctx.drawImage(buttonImage, this.buyButton.x, this.buyButton.y, this.buyButton.width, this.buyButton.height);
+        }
+
+        ctx.fillStyle = COLORS.DARK_GRAY;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        if (!isMax) {
+            ctx.font = '32px "VT323"';
+            ctx.fillText(`🍦${cost}`, this.buyButton.x + this.buyButton.width / 2, this.buyButton.y + this.buyButton.height / 2);
+        }
+    }
+
+    drawResetButton(ctx) {
+        if (this.game.resetButtonImage && this.game.resetButtonImage.complete) {
+            ctx.drawImage(this.game.resetButtonImage, this.resetButton.x, this.resetButton.y, this.resetButton.width, this.resetButton.height);
+        }
+    }
+
+    drawCloseButton(ctx) {
+        if (this.game.modalConfirmUpImage && this.game.modalConfirmUpImage.complete) {
+            ctx.drawImage(this.game.modalConfirmUpImage, this.closeButton.x, this.closeButton.y, this.closeButton.width, this.closeButton.height);
+        }
+    }
+
+    // --- END NEW METHODS ---
+
+    toggle() {
+        if (this.game.modalManager.activeModal === 'emporium') {
+            this.game.modalManager.close();
+        } else {
+            this.game.modalManager.open('emporium');
+            this.selectedEmporiumItem = this.emporiumItems[0];
         }
     }
 
@@ -264,8 +412,6 @@ export default class Emporium {
             this.game.audioManager.playSound('purchase');
             this.game.iceCreamScoops -= cost;
             item.action();
-            this.selectItem(item);
-            document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
             this.saveEmporiumUpgrades(this.game.emporiumUpgrades);
             localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
         }
@@ -289,10 +435,26 @@ export default class Emporium {
         localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
 
         // Refresh the emporium display
-        this.renderGrid();
-        if (this.selectedEmporiumItem) {
-            this.selectItem(this.selectedEmporiumItem);
+        // The draw loop will handle this automatically
+    }
+
+    wrapText(context, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let startY = y;
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = context.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                context.fillText(line, x, startY);
+                line = words[n] + ' ';
+                startY += lineHeight;
+            } else {
+                line = testLine;
+            }
         }
-        document.getElementById('emporium-scoops-display').innerText = this.game.iceCreamScoops;
+        context.fillText(line, x, startY);
+        return startY;
     }
 }

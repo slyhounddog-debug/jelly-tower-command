@@ -7,7 +7,7 @@ const BUTTON_HEIGHT = 112;
 export default class ModalManager {
     constructor(game) {
         this.game = game;
-        this.activeModal = null; // 'shop', 'components', 'player', or null
+        this.activeModal = null; // 'shop', 'components', 'player', 'emporium', or null
 
         this.uiButtonsImage = new Image();
         this.uiButtonsImage.src = 'assets/Images/uibuttons.png';
@@ -32,6 +32,13 @@ export default class ModalManager {
                 width: this.game.width * 0.8,
                 height: this.game.height * 0.9,
                 image: this.shopOverlayImage,
+            },
+            emporium: { // Emporium reuses the shop's layout
+                x: this.game.width * 0.1,
+                y: this.game.height * 0.05,
+                width: this.game.width * 0.8,
+                height: this.game.height * 0.9,
+                image: this.shopOverlayImage, // Re-use the shop background
             },
             components: {
                 x: this.game.width * 0.15,
@@ -117,7 +124,7 @@ export default class ModalManager {
         }
 
         // Define buttons based on the new spec. Only for top-level navigation modals.
-        if (['shop', 'components', 'player'].includes(modalName)) {
+        if (['shop', 'components', 'player', 'emporium'].includes(modalName)) {
             const buttonY = config.y + 20;
             const totalButtonWidth = 3 * BUTTON_WIDTH + 2 * 10; // 3 buttons, 2 gaps
             const startX = (this.game.width - totalButtonWidth) / 2;
@@ -185,6 +192,9 @@ export default class ModalManager {
             case 'player':
                 this.game.levelUpManagerScreen.handleInput();
                 break;
+            case 'emporium':
+                this.game.emporium.handleInput();
+                break;
             // No specific input handling for piggy, component_modal, boss as they are simple display modals
         }
     }
@@ -202,6 +212,9 @@ export default class ModalManager {
             case 'player':
                 this.game.levelUpManagerScreen.update(tsf);
                 break;
+            case 'emporium':
+                this.game.emporium.update(tsf);
+                break;
             // No specific update logic for piggy, component_modal, boss
         }
     }
@@ -216,7 +229,7 @@ export default class ModalManager {
         const config = this.getModalConfig(this.activeModal);
         if (!config || !config.image) {
             // If no specific image, draw a generic modal background (or just the dimmed background)
-            // For now, let's just return if no image is found for simple modals
+            // For now, let's just return if no image is found for simple modals like piggy, boss, etc.
             if (!['shop', 'components', 'player'].includes(this.activeModal)) {
                 // If it's one of the simple modals, just draw a basic background if no image is configured
                 ctx.fillStyle = 'rgba(50, 50, 50, 0.9)'; // A generic modal background
@@ -232,6 +245,12 @@ export default class ModalManager {
                     drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
                 }
                 this.game.shop.draw(ctx);
+                break;
+            case 'emporium':
+                if (config.image && config.image.complete) {
+                    drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
+                }
+                this.game.emporium.draw(ctx);
                 break;
             case 'components':
                 if (config.image && config.image.complete) {
@@ -249,7 +268,7 @@ export default class ModalManager {
         }
 
         // Draw UI buttons (only if active modal is one of the navigation modals)
-        if (['shop', 'components', 'player'].includes(this.activeModal)) {
+        if (['shop', 'components', 'player', 'emporium'].includes(this.activeModal)) {
             this.buttons.forEach((button, index) => {
                 const isSelected = button.name === this.activeModal;
                 const sx = index * BUTTON_WIDTH;
@@ -259,4 +278,3 @@ export default class ModalManager {
         }
     }
 }
-

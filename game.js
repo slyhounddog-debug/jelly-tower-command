@@ -1,4 +1,4 @@
-const FORCE_MOBILE_DEBUG = true;
+const FORCE_MOBILE_DEBUG = false;
 
 import Player from './player.js?v=2';
 import Tower from './tower.js';
@@ -384,6 +384,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.loadSettings();
     }
 
+    requestUnpause() {
+        this.isPaused = false;
+        this.lastTime = 0;
+    }
 
     loadSettings() {
         const soundVolume = localStorage.getItem('soundEffectsVolume');
@@ -415,8 +419,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
 
     initListeners() {
-        // window.addEventListener('resize', () => this.resizeModals());
-
+        window.closeModal = this.modalManager.close.bind(this.modalManager);
         Promise.all([
             this.audioManager.loadingPromise,
             this.background.load(),
@@ -457,6 +460,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             console.error("Failed to load assets:", error);
         });
 
+        // Listeners that need the DOM to be ready
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
@@ -468,18 +472,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
             if (k === 'escape') {
                 if (this.modalManager.isOpen()) {
                     this.modalManager.close();
-                } else if (document.getElementById('guide-modal').style.display === 'flex') {
-                    document.getElementById('guide-modal').style.display = 'none';
-                    this.requestUnpause();
-                } else if (document.getElementById('stats-modal').style.display === 'flex') {
-                    document.getElementById('stats-modal').style.display = 'none';
-                    this.requestUnpause();
-                } else if (document.getElementById('gummy-worm-modal').style.display === 'flex') {
-                    this.closeGummyWormModal();
-                } else if (document.getElementById('marshmallow-modal').style.display === 'flex') {
-                    this.closeMarshmallowModal();
-                } else if (document.getElementById('piggy-modal').style.display === 'block') {
-                    this.closePiggyModal();
                 } else if (this.placementMode) {
                     this.cancelPlacement();
                 } else if (this.sellMode) {
@@ -519,13 +511,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.mouse.y = (e.clientY - rect.top) * scaleY;
             this.mouse.aimY = this.mouse.y + 100;  // GEMINI DO NOT EVER REMOVE THIS LINE IT MATCHES THE VISUAL OFFSET FOR THE REST OF THE GAME. DO NOT REMOVE.
         });
+        this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
+
         this.canvas.addEventListener('mousedown', (e) => {
             this.mouse.isDown = true;
-            if (this.modalManager.isOpen()) {
-                this.modalManager.handleInput();
-                return;
-            }
-
             if (!this.gameStarted && this.assetsReady) {
                 const btn = this.ui.readyButton;
                 if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
@@ -542,6 +531,21 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 }
             }
 
+            if (this.modalManager.isOpen()) {
+                this.modalManager.handleInput();
+                return;
+            }
+
+
+            // Game Over Buttons
+            if (this.isGameOver) {
+                const emporiumBtn = { x: (this.width / 2) - 75, y: (this.height / 2) + 100, width: 150, height: 50 };
+                if (this.mouse.x > emporiumBtn.x && this.mouse.x < emporiumBtn.x + emporiumBtn.width &&
+                    this.mouse.y > emporiumBtn.y && this.mouse.y < emporiumBtn.y + emporiumBtn.height) {
+                    this.emporium.toggle();
+                }
+            }
+
             const gameMouseY = this.mouse.y + 100;
 
             const shopBtn = this.ui.shopButton;
@@ -549,13 +553,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 gameMouseY - 100 > shopBtn.y && gameMouseY - 100 < shopBtn.y + shopBtn.height) {
                 this.modalManager.toggle('shop');
                 return; 
-            }
-
-            const settingsBtn = this.ui.settingsButton;
-            if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width &&
-                gameMouseY - 100 > settingsBtn.y && gameMouseY - 100 < settingsBtn.y + settingsBtn.height) {
-                this.toggleSettings();
-                return;
             }
 
             if (this.sellMode) {
@@ -566,66 +563,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 this.player.tryLick();
             }
         });
-        this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
-
-        document.getElementById('restart-btn').addEventListener('click', () => this.resetGame());
-        
-        document.getElementById('help-btn').addEventListener('click', () => document.getElementById('guide-modal').style.display = 'flex');
-        document.getElementById('stats-btn').addEventListener('click', () => {
-            this.updateStatsWindow();
-            const modal = document.getElementById('stats-modal');
-            const isVisible = modal.style.display === 'flex';
-            modal.style.display = isVisible ? 'none' : 'flex';
-        });
-        document.getElementById('components-btn').addEventListener('click', () => this.modalManager.toggle('components'));
-
-                                
-
-                                        document.getElementById('settings-icon').addEventListener('click', () => this.toggleSettings());
-
-                                        document.getElementById('settings-close-btn').addEventListener('click', () => this.toggleSettings());
-
-                // Add event listeners for modal-confirm-buttons
-                document.querySelectorAll('.modal .modal-confirm-button').forEach(button => {
-                    button.addEventListener('mousedown', () => {
-                        button.src = 'assets/Images/modalconfirmdown.png';
-                    });
-                    button.addEventListener('mouseup', () => {
-                        button.src = 'assets/Images/modalconfirmup.png';
-                    });
-                });
-
-                // Add event listeners for shop-upgrade-buttons
-                document.querySelectorAll('.shop-upgrade-button').forEach(button => {
-                    button.addEventListener('mousedown', () => {
-                        if (button.id === 'sell-btn') {
-                            button.src = 'assets/Images/sellbuttondown.png';
-                        } else {
-                            button.src = 'assets/Images/shopupgradedown.png';
-                        }
-                    });
-                    button.addEventListener('mouseup', () => {
-                        if (button.id === 'sell-btn') {
-                            button.src = 'assets/Images/sellbuttonup.png';
-                        } else {
-                            button.src = 'assets/Images/shopupgradeup.png';
-                        }
-                    });
-                });
-
-                document.getElementById('sound-effects-slider').addEventListener('input', (e) => {
-                    const value = e.target.value;
-                    document.getElementById('sound-effects-value').textContent = `${value}%`;
-                    this.audioManager.setSoundVolume(value / 100);
-                    this.saveSettings();
-                });
-        
-                document.getElementById('music-slider').addEventListener('input', (e) => {
-                    const value = e.target.value;
-                    document.getElementById('music-value').textContent = `${value}%`;
-                    this.audioManager.setMusicVolume(value / 100);
-                    this.saveSettings();
-                });
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     }                
@@ -797,12 +734,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         }
 
         if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
-            console.log('initMobileControls() called. FORCE_MOBILE_DEBUG:', FORCE_MOBILE_DEBUG, 'isMobileDevice():', Game.isMobileDevice());
-            joystickZone.style.display = 'block';
-            console.log('joystickZone.style.display set to block. Current style:', joystickZone.style.cssText);
-            jumpButton.style.display = 'flex';
-            console.log('jumpButton.style.display set to flex. Current style:', jumpButton.style.cssText);
-
             const manager = window.nipplejs.create({
                 zone: joystickZone,
                 mode: 'static',
@@ -839,24 +770,54 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
     start() {
         window.closeModal = this.modalManager.close.bind(this.modalManager);
-        window.closeComponentQuarters = () => this.modalManager.close();
-        this.initMobileControls(); // Initialize mobile controls here
+
+        // All event listeners are now correctly handled in initListeners().
+        // This start() method is now only responsible for binding the global closeModal function.
+    }
+
+    beginGame() {
+        this.injectMobileControls();
+        this.loadSettings();
         this.gameLoop.loop(0);
     }
-}
 
-window.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.getElementById('gameCanvas');
-    if (canvas) {
-        const game = new Game(canvas);
-        window.gameInstance = game; // Expose game instance globally
-        game.start();
-
+    injectMobileControls() {
         const shouldInjectMobileButtons = FORCE_MOBILE_DEBUG || Game.isMobileDevice();
 
         if (shouldInjectMobileButtons) {
+            // --- NIPPLEJS JOYSTICK INJECTOR ---
+            const joystickZone = document.getElementById('joystick-zone');
+            if (joystickZone) {
+                joystickZone.style.display = 'block';
+                if (typeof window.nipplejs !== 'undefined') {
+                    const manager = window.nipplejs.create({
+                        zone: joystickZone,
+                        mode: 'static',
+                        position: { left: '15%', top: '85%' },
+                        size: 120,
+                        color: 'rgba(255, 255, 255, 0.54)'
+                    });
+
+                    manager.on('move', (evt, data) => {
+                        if (data.vector) {
+                            if (data.vector.x > 0.2) {
+                                this.keys['d'] = true;
+                                this.keys['a'] = false;
+                            } else if (data.vector.x < -0.2) {
+                                this.keys['a'] = true;
+                                this.keys['d'] = false;
+                            }
+                        }
+                    }).on('end', () => {
+                        this.keys['a'] = false;
+                        this.keys['d'] = false; // Correctly stop movement
+                    });
+                    console.log("Joystick injected successfully. Nipple instance:", manager.get(0));
+                }
+            }
+
             // --- FORCE JUMP BUTTON INJECTOR ---
-            (function() {
+            (() => {
                 // 1. Create the button element programmatically
                 var btn = document.createElement('div');
                 btn.id = 'force-jump-btn';
@@ -869,8 +830,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     left: '77%', // NEVER FUCKING TOUCH THIS LINE GEMINI
                     width: '60px', // NEVER FUCKING TOUCH THIS LINE GEMINI
                     height: '60px', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    backgroundColor: 'rgba(240, 191, 223, 0.5)', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    borderRadius: '50%',
+                    backgroundColor: 'rgba(240, 191, 223, 0.5)',
                     fontWeight: 'bold',
                     display: 'flex',
                     justifyContent: 'center',
@@ -878,7 +838,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     zIndex: '2147483647', // Max integer value to ensure it's on top
                     userSelect: 'none',
                     cursor: 'pointer',
-                    fontFamily: 'Arial, sans-serif'
+                    fontFamily: 'Arial, sans-serif',
+                    borderRadius: '50%' // NEVER FUCKING TOUCH THIS LINE GEMINI
                 });
 
                 // 3. Append to #game-wrapper
@@ -887,19 +848,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 // 4. Attach Events (Touch + Mouse for testing)
                 var triggerJump = function(e) {
                     e.preventDefault(); // Stop scrolling
-                    if (typeof window.gameInstance !== 'undefined' && typeof window.gameInstance.keys !== 'undefined') {
-                        window.gameInstance.keys[' '] = true;
+                    if (this.keys) {
+                        this.keys[' '] = true;
                     }
                     btn.style.backgroundColor = 'rgba(247, 204, 232, 0.72)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
-                };
+                }.bind(this);
 
                 var releaseJump = function(e) {
                     e.preventDefault();
-                    if (typeof window.gameInstance !== 'undefined' && typeof window.gameInstance.keys !== 'undefined') {
-                        window.gameInstance.keys[' '] = false;
+                    if (this.keys) {
+                        this.keys[' '] = false;
                     }
                     btn.style.backgroundColor = 'rgba(240, 191, 223, 0.5)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
-                };
+                }.bind(this);
 
                 btn.addEventListener('touchstart', triggerJump, { passive: false });
                 btn.addEventListener('touchend', releaseJump, { passive: false });
@@ -910,7 +871,7 @@ window.addEventListener('DOMContentLoaded', () => {
             })();
 
             // --- FORCE DASH BUTTON INJECTOR ---
-            (function() {
+            (() => {
                 // 1. Create the button element programmatically
                 var btn = document.createElement('div');
                 btn.id = 'force-dash-btn';
@@ -923,8 +884,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     left: '87%', // Same left as jump button
                     width: '50px', // Half size
                     height: '50px', // Half size
-                    backgroundColor: 'rgba(195, 240, 255, 0.5)', // Light blue semi-transparent
-                    borderRadius: '50%',
+                    backgroundColor: 'rgba(195, 240, 255, 0.5)',
+                    color: 'white',
                     fontWeight: 'bold',
                     display: 'flex',
                     justifyContent: 'center',
@@ -932,7 +893,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     zIndex: '2147483647', // Max integer value to ensure it's on top
                     userSelect: 'none',
                     cursor: 'pointer',
-                    fontFamily: 'Arial, sans-serif'
+                    fontFamily: 'Arial, sans-serif',
+                    borderRadius: '50%' // NEVER FUCKING TOUCH THIS LINE GEMINI
                 });
 
                 // 3. Append to #game-wrapper
@@ -941,17 +903,17 @@ window.addEventListener('DOMContentLoaded', () => {
                 // 4. Attach Events (Touch + Mouse for testing)
                 var triggerDash = function(e) {
                     e.preventDefault(); // Stop scrolling
-                    if (typeof window.gameInstance !== 'undefined' && typeof window.gameInstance.triggerDashAction !== 'undefined') {
-                        window.gameInstance.triggerDashAction(); // Call the Game class's method
+                    if (this.triggerDashAction) {
+                        this.triggerDashAction(); // Call the Game class's method
                     }
                     btn.style.backgroundColor = 'rgba(208, 243, 255, 0.8)'; // Visual feedback (darker light blue)
-                };
+                }.bind(this);
 
                 var releaseDash = function(e) {
                     e.preventDefault();
                     // No need to set keys['shift'] = false here, as tryDash is a one-shot action
                     btn.style.backgroundColor = 'rgba(196, 240, 255, 0.5)'; // Reset color
-                };
+                }.bind(this);
 
                 btn.addEventListener('touchstart', triggerDash, { passive: false });
                 btn.addEventListener('touchend', releaseDash, { passive: false });
@@ -961,5 +923,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.log("Dash button injected successfully.");
             })();
         }
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        const game = new Game(canvas);
+        window.gameInstance = game;
+        game.start();
+        game.beginGame();
     }
 });
