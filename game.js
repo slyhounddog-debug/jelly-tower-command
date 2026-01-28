@@ -1,4 +1,4 @@
-const FORCE_MOBILE_DEBUG = false;
+const FORCE_MOBILE_DEBUG = true;
 
 import Player from './player.js?v=2';
 import Tower from './tower.js';
@@ -30,6 +30,7 @@ import DecalManager from './decalManager.js';
 import ModalManager from './modalManager.js';
 import Shop from './shop.js';
 import ComponentQuarters from './componentQuarters.js';
+import SwipeParticle from './swipeParticle.js';
 
 class Game {
     constructor(canvas) {
@@ -38,6 +39,8 @@ class Game {
         this.width = this.canvas.width;
         this.boss = null;
         this.bossesKilled = 0;
+        this.swipeTrail = [];
+        this.swipeParticles = [];
 
         // Define playable area height and mobile control zone height
         this.PLAYABLE_AREA_HEIGHT = this.canvas.height
@@ -469,6 +472,22 @@ Object.entries(colors).forEach(([name, rgb]) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
             this.keys[k] = true;
+            
+            // Tower entry/exit with 'E' key
+            if (k === 'e') {
+                if (this.player.isControlling) {
+                    this.player.exitTower();
+                } else {
+                    // Find the first tower in range and enter it
+                    for (const tower of this.towers) {
+                        if (tower.playerInRange) {
+                            this.player.enterTower(tower);
+                            break; // Exit loop once a tower is entered
+                        }
+                    }
+                }
+            }
+            
             if (k === 'f') this.modalManager.toggle('shop');
             if (k === 'q') this.modalManager.toggle('player');
             if (k === 'c') this.modalManager.toggle('components');
@@ -519,29 +538,26 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.canvas.addEventListener('mousedown', (e) => {
             this.mouse.isDown = true;
+            
+            // Check for UI buttons first
             if (!this.gameStarted && this.assetsReady) {
                 const btn = this.ui.readyButton;
                 if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
                     this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
-                    
-                    this.resetGame(); // Initialize game state
-                    this.gameStarted = true; // Mark game as started
-                    this.isPaused = false;   // Unpause the game
-                    this.lastTime = 0;       // Reset lastTime for proper deltaTime calculation
+                    this.resetGame();
+                    this.gameStarted = true;
+                    this.isPaused = false;
+                    this.lastTime = 0;
                     if (this.audioManager) {
-                        this.audioManager.playMusic('music'); // Start game music
+                        this.audioManager.playMusic('music');
                     }
                     return;
                 }
             }
-
             if (this.modalManager.isOpen()) {
                 this.modalManager.handleInput();
                 return;
             }
-
-
-            // Game Over Buttons
             if (this.isGameOver) {
                 const emporiumBtn = { x: (this.width / 2) - 75, y: (this.height / 2) + 100, width: 150, height: 50 };
                 if (this.mouse.x > emporiumBtn.x && this.mouse.x < emporiumBtn.x + emporiumBtn.width &&
@@ -549,26 +565,183 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     this.emporium.toggle();
                 }
             }
-
-            const gameMouseY = this.mouse.y + 100;
-
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-                gameMouseY - 100 > shopBtn.y && gameMouseY - 100 < shopBtn.y + shopBtn.height) {
+                this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
                 this.modalManager.toggle('shop');
-                return; 
+                return;
             }
 
+            const settingsBtn = this.ui.settingsButton;
+            if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width &&
+                this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
+                this.toggleSettings();
+                return;
+            }
+
+            // Tower interaction
+            let clickedOnTower = false;
+            for (const tower of this.towers) {
+                if (this.mouse.x > tower.x && this.mouse.x < tower.x + tower.width &&
+                    this.mouse.y > tower.y && this.mouse.y < tower.y + tower.height) {
+                    clickedOnTower = true;
+                    if (this.player.isControlling === tower) {
+                        this.player.exitTower();
+                        return;
+                    } else if (!this.player.isControlling && tower.playerInRange) {
+                        this.player.enterTower(tower);
+                        return;
+                    }
+                }
+            }
+            
+            // If player is controlling a tower and clicked anywhere else, do nothing
+            if (this.player.isControlling && !clickedOnTower) {
+                return;
+            }
+            
+            // If no UI element was clicked, start swipe or lick
             if (this.sellMode) {
                 // This logic will be moved to the modal manager
             } else if (this.placementMode) {
                 this.tryPlaceItem();
             } else if (!this.isPaused && !this.isGameOver && !this.player.isControlling) {
-                this.player.tryLick();
+                if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
+                     // On mobile, mousedown starts a swipe
+                    handleSwipeStart(e);
+                } else {
+                    // On PC, mousedown triggers a lick immediately
+                    this.player.tryLick();
+                }
             }
         });
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+
+        let isSwiping = false;
+        let swipeStartTime = 0;
+        let swipePath = [];
+
+        const getCanvasCoords = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : (e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
+            const clientY = e.touches ? e.touches[0].clientY : (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY,
+            };
+        };
+
+        const handleSwipeStart = (e) => {
+            const { x, y } = getCanvasCoords(e);
+            
+            // Check for tower interaction on touch
+            for (const tower of this.towers) {
+                if (x > tower.x && x < tower.x + tower.width &&
+                    y > tower.y && y < tower.y + tower.height) {
+                    if (this.player.isControlling === tower) {
+                        this.player.exitTower();
+                        return;
+                    } else if (!this.player.isControlling && tower.playerInRange) {
+                        this.player.enterTower(tower);
+                        return;
+                    }
+                }
+            }
+
+            isSwiping = true;
+            this.swipeTrail = [];
+            swipePath = [{ x, y }];
+            swipeStartTime = Date.now();
+            this.swipeTrail.push({ x, y: y + 100, life: 60 });
+        };
+
+        const handleSwipeMove = (e) => {
+            if (!isSwiping) return;
+            e.preventDefault();
+            const { x, y } = getCanvasCoords(e);
+
+            if (Date.now() - swipeStartTime <= 1500) {
+                this.swipeTrail.push({ x, y: y + 100, life: 60 });
+                for (let i = 0; i < 2; i++) {
+                    this.swipeParticles.push(new SwipeParticle(this, x, y + 100));
+                }
+                if (swipePath) {
+                    swipePath.push({ x, y });
+                }
+            }
+        };
+
+        const handleSwipeEnd = (e) => {
+            if (!isSwiping) return;
+            isSwiping = false;
+
+            if (!swipePath || swipePath.length < 2) {
+                swipePath = [];
+                return;
+            }
+
+            const startPoint = swipePath[0];
+            const endPoint = swipePath[swipePath.length - 1];
+
+            const dx = endPoint.x - startPoint.x;
+            const dy = endPoint.y - startPoint.y;
+
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            if (Math.max(absDx, absDy) > 30) { // Swipe threshold
+                const swipeAngle = Math.atan2(dy, dx);
+                if (!this.player.isControlling) {
+                    this.player.tryLick(swipeAngle);
+                }
+            }
+            swipePath = []; // Clear for next swipe
+        };
+
+        this.canvas.addEventListener('touchstart', handleSwipeStart, { passive: true });
+        this.canvas.addEventListener('touchmove', handleSwipeMove, { passive: false });
+        this.canvas.addEventListener('touchend', handleSwipeEnd, { passive: true });
+
+        if (FORCE_MOBILE_DEBUG && !Game.isMobileDevice()) {
+            this.canvas.addEventListener('mousedown', handleSwipeStart);
+            this.canvas.addEventListener('mousemove', handleSwipeMove);
+            this.canvas.addEventListener('mouseup', handleSwipeEnd);
+            this.canvas.addEventListener('mouseleave', () => { 
+                if (isSwiping) {
+                    handleSwipeEnd({});
+                }
+            });
+        }
+    }
+
+    drawSwipeTrail(ctx) {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+        ctx.shadowBlur = 15;
+
+        for (let i = 1; i < this.swipeTrail.length; i++) {
+            const point1 = this.swipeTrail[i - 1];
+            const point2 = this.swipeTrail[i];
+            ctx.beginPath();
+            ctx.moveTo(point1.x, point1.y);
+            ctx.lineTo(point2.x, point2.y);
+            ctx.strokeStyle = `hsla(280, 100%, 75%, ${point2.life / 60})`;
+            ctx.lineWidth = (point2.life / 60) * 22.5;
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        for (let i = this.swipeTrail.length - 1; i >= 0; i--) {
+            this.swipeTrail[i].life -= 1;
+            if (this.swipeTrail[i].life <= 0) {
+                this.swipeTrail.splice(i, 1);
+            }
+        }
     }                
                         
     toggleSettings() {
@@ -771,7 +944,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 Object.assign(joystickZone.style, {
                     position: 'absolute',
                     left: '50px', // Adjusted to 50px from left edge
-                    top: '175px', // Vertically centered for 150px height
+                    top: '185px', // Vertically centered for 150px height
                     width: '150px', // Fixed width for tighter interaction zone
                     height: '150px', // Fixed height for tighter interaction zone
                     pointerEvents: 'auto', // Make the joystick clickable
@@ -783,7 +956,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     zone: joystickZone,
                     mode: 'static',
                     position: { left: '25%', top: '50%' }, // Corrected: Position relative to its own zone
-                    size: 100,
+                    size: 110,
                     color: 'rgba(255, 255, 255, 0.5)'
                 });
 
@@ -821,9 +994,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 Object.assign(btn.style, {
                     position: 'absolute', // Changed to absolute
                     right: '90px', // Position from the right edge of the container
-                    bottom: '45%', // Position from the bottom edge of the container
-                    width: '70px', // Larger for touch
-                    height: '70px', // Larger for touch
+                    bottom: '46%', // Position from the bottom edge of the container
+                    width: '90px', // Larger for touch
+                    height: '90px', // Larger for touch
                     backgroundColor: 'rgba(241, 228, 248, 0.5)',
                     display: 'flex',
                     justifyContent: 'center',
@@ -879,10 +1052,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 // 2. Force CSS Styles directly (Bypasses stylesheet issues)
                 Object.assign(btn.style, {
                     position: 'absolute',
-                    right: '15px', // Position from the right edge
-                    bottom: '56%', // Position from the bottom edge
-                    width: '55px', // Larger for touch
-                    height: '55px', // Larger for touch
+                    right: '6px', // Position from the right edge
+                    bottom: '54%', // Position from the bottom edge
+                    width: '70px', // Larger for touch
+                    height: '70px', // Larger for touch
                     backgroundColor: 'rgba(195, 240, 255, 0.5)',
                     display: 'flex',
                     justifyContent: 'center',

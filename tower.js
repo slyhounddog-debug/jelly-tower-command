@@ -14,11 +14,31 @@ export default class Tower extends BaseStructure {
         this.isAnimating = false;
         this.scale = 2;
         this.recoil = 0;
+        this.playerInRange = false;
+        this.inRangeAlpha = 0;
+        this.enterRadius = 144;
         const locatedPlatform = this.game.platforms.find(p => p.type === 'cloud' && Math.abs((y + this.height) - p.y) < 15 && (x + this.width / 2) > p.x && (x + this.width / 2) < p.x + p.width);
         this.isOnCloud = !!locatedPlatform;
         this.cloudPlatform = locatedPlatform; // Store the platform object
     }
     update(tsf) {
+        // Range indicator logic
+        const player = this.game.player;
+        if (this.game.player.isControlling) {
+            this.playerInRange = false;
+        } else {
+            const distance = Math.hypot((this.x + 23) - (player.x + 14), (this.y + 23) - (player.y + 20.5));
+            this.playerInRange = distance < this.enterRadius;
+        }
+
+        if (this.playerInRange && !this.game.player.isControlling && this.inRangeAlpha < 0.64) {
+            this.inRangeAlpha += 0.05 * tsf;
+            if (this.inRangeAlpha > 0.64) this.inRangeAlpha = 0.64;
+        } else if ((!this.playerInRange || this.game.player.isControlling) && this.inRangeAlpha > 0) {
+            this.inRangeAlpha -= 0.07 * tsf;
+            if (this.inRangeAlpha < 0) this.inRangeAlpha = 0;
+        }
+        
         const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
         let fireRate = this.isAuto ? this.game.stats.fireRate : this.game.stats.fireRate;
         if (sniperCount > 0) {
@@ -128,6 +148,14 @@ export default class Tower extends BaseStructure {
         }
     }
     draw(ctx) {
+        // Draw player in range indicator
+        if (this.inRangeAlpha > 0) {
+            ctx.beginPath();
+            ctx.arc(this.x + 23, this.y + 12, this.enterRadius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${this.inRangeAlpha * 0.5})`;
+            ctx.fill();
+        }
+        
         // Player-controlled radius
         if (this.game.player.isControlling === this) {
             ctx.beginPath(); ctx.arc(this.x + 23, this.y + 12, this.range, 0, Math.PI * 2);

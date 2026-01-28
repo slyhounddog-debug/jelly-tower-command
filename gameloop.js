@@ -179,6 +179,7 @@ export default class GameLoop {
             for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
             for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
             for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
+            for (let i = this.game.swipeParticles.length - 1; i >= 0; i--) { this.game.swipeParticles[i].update(tsf); if (this.game.swipeParticles[i].life <= 0) this.game.swipeParticles.splice(i, 1); }
             for (let i = this.game.particlesBehind.length - 1; i >= 0; i--) { this.game.particlesBehind[i].update(tsf); if (this.game.particlesBehind[i].lifespan <= 0) this.game.particlesBehind.splice(i, 1); }
             for (let i = this.game.particlesInFront.length - 1; i >= 0; i--) { this.game.particlesInFront[i].update(tsf); if (this.game.particlesInFront[i].lifespan <= 0) this.game.particlesInFront.splice(i, 1); }
 
@@ -280,6 +281,8 @@ export default class GameLoop {
         this.game.particlesBehind.forEach(p => p.draw(this.game.ctx));
 
         this.game.player.draw(this.game.ctx);
+        this.game.drawSwipeTrail(this.game.ctx);
+        this.game.swipeParticles.forEach(p => p.draw(this.game.ctx));
         this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));

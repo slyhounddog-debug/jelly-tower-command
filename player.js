@@ -103,6 +103,31 @@ export default class Player {
         this.tongueTipY = 0;
         this.shockwaveAnimations = [];
     }
+
+    enterTower(tower) {
+        if (!this.keyLock && !this.isControlling && !this.transitionState) {
+            this.transitionState = 'entering';
+            this.transitionTarget = tower;
+            this.transitionProgress = 0;
+            this.keyLock = true;
+            setTimeout(() => this.keyLock = false, 300);
+        }
+    }
+
+    exitTower() {
+        if (!this.keyLock && this.isControlling) {
+            const tower = this.isControlling;
+            this.isControlling = null;
+            this.scaleX = 0;
+            this.scaleY = 0;
+            this.x = tower.x + tower.width / 2 - this.width / 2;
+            this.y = tower.y - this.height;
+            this.transitionState = 'leaving';
+            this.keyLock = true;
+            setTimeout(() => this.keyLock = false, 300);
+        }
+    }
+    
     tryDash(direction) {
         if (this.dashCooldown <= 0) {
             this.vx += this.dashSpeed * direction;
@@ -139,7 +164,7 @@ export default class Player {
             }
         }
     }
-    tryLick() {
+    tryLick(swipeAngle = null) {
         if (this.lickCooldown > 0) return;
 
         if (this.upgrades['Lick Mania'] > 0 && (Date.now() - this.lastDashTime < 200)) {
@@ -153,7 +178,11 @@ export default class Player {
         this.game.audioManager.playSound('mlem');
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
-        this.lickAngle = Math.atan2(this.game.mouse.aimY - cy, this.game.mouse.x - cx);
+        if (swipeAngle !== null) {
+            this.lickAngle = swipeAngle;
+        } else {
+            this.lickAngle = Math.atan2(this.game.mouse.aimY - cy, this.game.mouse.x - cx);
+        }
         this.lickAnim = 15;
         this.lickCooldown = 20;
         this.hitEnemies = [];
@@ -348,14 +377,7 @@ export default class Player {
         if (this.isControlling) {
             this.vx = 0; this.vy = 0;
             if (this.game.keys['e'] && !this.keyLock) {
-                const tower = this.isControlling;
-                this.isControlling = null;
-                this.scaleX = 0; this.scaleY = 0;
-                this.x = tower.x + tower.width / 2 - this.width / 2;
-                this.y = tower.y - this.height;
-                this.transitionState = 'leaving';
-                this.keyLock = true;
-                setTimeout(() => this.keyLock = false, 300);
+                this.exitTower();
             }
             return;
         }
@@ -590,12 +612,8 @@ export default class Player {
 
         if (this.game.keys['e'] && !this.keyLock && !this.isControlling) {
             this.game.towers.forEach(t => {
-                if (!this.transitionState && Math.hypot((t.x + 23) - (this.x + 14), (t.y + 23) - (this.y + 20.5)) < 144) {
-                    this.transitionState = 'entering';
-                    this.transitionTarget = t;
-                    this.transitionProgress = 0;
-                    this.keyLock = true;
-                    setTimeout(() => this.keyLock = false, 300);
+                if (t.playerInRange) {
+                    this.enterTower(t);
                 }
             });
         }
@@ -852,7 +870,7 @@ export default class Player {
         if (!this.isControlling && this.lickAnim > 0) {
             const tongueOriginX = mouthX;
             const tongueOriginY = mouthY;
-            const mouseAngle = Math.atan2(this.game.mouse.aimY - tongueOriginY, this.game.mouse.x - tongueOriginX);
+            const mouseAngle = this.lickAngle;
             const animPhase = (15 - this.lickAnim) / 15; 
             const animCurve = Math.sin(animPhase * Math.PI);
             const lickDistance = this.lickRange * animCurve;
