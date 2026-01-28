@@ -21,7 +21,7 @@ export default class FloatingText {
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
         this.vy += this.gravity * tsf;
-
+        
         this.life -= 2 * tsf;
         if (this.life < 0) this.life = 0;
         this.opacity = this.life / 60;

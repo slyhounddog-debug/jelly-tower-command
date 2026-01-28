@@ -28,30 +28,30 @@ export default class ModalManager {
         this.MODAL_CONFIG = {
             shop: {
                 x: this.game.width * 0.1,
-                y: this.game.height * 0.05,
+                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.8,
-                height: this.game.height * 0.9,
+                height: this.game.PLAYABLE_AREA_HEIGHT * 0.7,
                 image: this.shopOverlayImage,
             },
             emporium: { // Emporium reuses the shop's layout
                 x: this.game.width * 0.1,
-                y: this.game.height * 0.05,
+                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.8,
-                height: this.game.height * 0.9,
+                height: this.game.PLAYABLE_AREA_HEIGHT * 0.7,
                 image: this.shopOverlayImage, // Re-use the shop background
             },
             components: {
                 x: this.game.width * 0.15,
-                y: this.game.height * 0.05,
+                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.7,
-                height: this.game.height * 0.8,
+                height: this.game.PLAYABLE_AREA_HEIGHT * 0.6,
                 image: this.componentQuartersImage,
             },
             player: { // This is for the level-up/player screen
                 x: this.game.width * 0.05,
-                y: this.game.height * 0.05,
+                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.9,
-                height: this.game.height * 0.98,
+                height: this.game.PLAYABLE_AREA_HEIGHT * 0.8,
                 image: this.levelUpManagerImage,
             }
         };
@@ -66,7 +66,7 @@ export default class ModalManager {
         // Dynamically calculate x, y for centering fixed-size modals
         const calculateCenteredPosition = (width, height) => {
             const x = (this.game.width - width) / 2;
-            const y = (this.game.height - height) / 2;
+            const y = (this.game.PLAYABLE_AREA_HEIGHT - height) / 2;
             return { x, y };
         };
 
@@ -77,19 +77,19 @@ export default class ModalManager {
         switch (modalName) {
             case 'piggy': {
                 const width = this.game.width * 0.35; // 0.5 * 0.7
-                const height = this.game.height * 0.42; // 0.6 * 0.7
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.42; // 0.6 * 0.7
                 const { x, y } = calculateCenteredPosition(width, height);
                 return { x, y, width, height, image: this.piggyModalImage };
             }
             case 'component_modal': { // Corrected name for clarity
                 const width = this.game.width * 0.35; // 0.5 * 0.7
-                const height = this.game.height * 0.42; // 0.6 * 0.7
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.42; // 0.6 * 0.7
                 const { x, y } = calculateCenteredPosition(width, height);
                 return { x, y, width, height, image: this.componentModalImage };
             }
             case 'boss': {
-                const width = this.game.width * 0.42; // 0.6 * 0.7
-                const height = this.game.height * 0.49; // 0.7 * 0.7
+                const width = this.game.width * 0.42;
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.49;
                 const { x, y } = calculateCenteredPosition(width, height);
                 return { x, y, width, height, image: this.bossModalImage };
             }
@@ -118,9 +118,15 @@ export default class ModalManager {
 
         if (modalName === 'player') {
             this.game.levelUpManagerScreen.organizeCards(config);
-        } else if (['piggy', 'component_modal', 'boss'].includes(modalName)) {
+        } else if (['piggy', 'component_modal', 'boss'].includes(modalName)) { // These are HTML modals
             const modalId = modalName === 'component_modal' ? 'component-modal' : `${modalName}-modal`;
             document.getElementById(modalId).style.display = 'block';
+            // Adjust button position dynamically since it's an HTML modal
+            const confirmButton = document.querySelector(`#${modalId} .modal-confirm-button`);
+            if (confirmButton) {
+                confirmButton.style.position = 'absolute';
+                confirmButton.style.setProperty('top', '85%', 'important');
+            }
         }
 
         // Define buttons based on the new spec. Only for top-level navigation modals.
@@ -223,8 +229,8 @@ export default class ModalManager {
         if (!this.isOpen()) return;
 
         // Draw darkened background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(0, 0, this.game.width, this.game.height);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.27)';
+        ctx.fillRect(0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT-100); // Only darken playable area
 
         const config = this.getModalConfig(this.activeModal);
         if (!config || !config.image) {

@@ -81,7 +81,7 @@ export default class FrostingParticle {
                 }
             }
 
-            if (this.x < 0 || this.x > this.game.width || this.y > this.game.height || this.y < 0) {
+            if (this.x < 0 || this.x > this.game.width || this.y > this.game.PLAYABLE_AREA_HEIGHT || this.y < 0) {
                 this.lifespan = 0; // Disappear off screen
                 return;
             }

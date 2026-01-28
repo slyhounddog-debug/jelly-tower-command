@@ -3,7 +3,7 @@ import FloatingText from './floatingText.js';
 import { lightenColor, darkenColor } from './utils.js';
 import { getRandomComponent } from './components.js';
 
-const NORMAL_LOOT_LIFESPAN = 1200; // 20 seconds at 60 FPS
+const NORMAL_LOOT_LIFESPAN = 1800; // 30 seconds at 60 FPS
 const SPECIAL_LOOT_LIFESPAN = 3600; // 60 seconds at 60 FPS
 
 export default class Drop {
@@ -84,8 +84,8 @@ export default class Drop {
 
         if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
         if (this.x > this.game.width - this.width) { this.x = this.game.width - this.width; this.vx *= -0.8; }
-        if (this.y > this.game.height - 90 - this.width / 2) { 
-            this.y = this.game.height - 90 - this.width / 2; 
+        if (this.y > this.game.PLAYABLE_AREA_HEIGHT - 90 - this.width / 2) { 
+            this.y = this.game.PLAYABLE_AREA_HEIGHT - 90 - this.width / 2; 
             this.vy *= -0.3; 
         }
 
@@ -177,13 +177,13 @@ export default class Drop {
         // --- LOOT SPRITE ---
         ctx.save();
         // Blinking logic
-        const BLINK_START_FRAME_FAST = 75; // 1.25 seconds
-        const BLINK_START_FRAME_NORMAL = 180; // 3 seconds
+        const BLINK_START_FRAME_FAST = 180; // 3 seconds
+        const BLINK_START_FRAME_NORMAL = 360; // 5 seconds
 
         if (this.life < BLINK_START_FRAME_NORMAL) {
-            let blinkSpeed = 0.1; // Default slow blink
+            let blinkSpeed = 0.15; // Default slow blink
             if (this.life < BLINK_START_FRAME_FAST) {
-                blinkSpeed = 0.3; // Faster blink
+                blinkSpeed = 0.35; // Faster blink
             }
             // Use sine wave for blinking effect, applying it to globalAlpha before drawing the sprite
             ctx.globalAlpha *= (Math.sin(this.game.gameTime * blinkSpeed) + 1) / 2;

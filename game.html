@@ -115,7 +115,7 @@
 
         #bottom-ui-overlay {
             position: absolute;
-            bottom: 15px;
+            bottom: 10px;
             left: 15px;
             right: 15px;
             display: flex;
@@ -270,18 +270,18 @@
         .modal {
             display: none;
             position: absolute;
-            top: 50%;
+            top: 39.58%; /* Center relative to playable area (1900px / 2 = 950px, 950/2400 = 39.58%) */
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 75%;
-            height: 80%;
+            transform: translate(-50%, -50%); /* Maintain centering */
+            width: 70%; /* 70% of 75% */
+            height: 45%; /* 70% of 80% */
             background-image: url('assets/Images/modal.png');
             background-size: 100% 100%;
             background-repeat: no-repeat;
             z-index: 200;
             color: var(--body-color);
             max-width: 80vw;
-            max-height: 80vh;
+            max-height: 80vh; /* Keep max-height as is, it's viewport relative */
             font-family: 'Nunito', sans-serif;
             --title-color: #872657; /* dark-raspberry */
             --body-color: #9966CC; /* dark-lilac */
@@ -793,14 +793,14 @@
         /* Mobile Controls Styling */
         #joystick-zone {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
+            left: 15%;
+            top: 90%;
             width: 150px;
             height: 150px;
             z-index: 1000;
             display: none; /* Hidden by default, shown by JS */
             /* Add some visual styling for joystick zone for better visibility */
-            background-color: rgba(100, 100, 100, 0.3); /* Semi-transparent gray */
+            background-color: rgba(100, 100, 100, 0.9); /* Semi-transparent gray */
             border-radius: 50%; /* Make it circular */
             border: 2px solid rgba(255, 255, 255, 0.4);
         }
@@ -812,7 +812,7 @@
             transform: translate(-50%, -50%);
             width: 80px;
             height: 80px;
-            background-color: rgba(255, 0, 0, 0.5);
+            background-color: rgba(245, 215, 215, 0.5);
             border-radius: 50%;
             display: flex;
             justify-content: center;
@@ -854,7 +854,7 @@
             </div>
     
             <!-- Zoomed out resolution -->
-            <canvas id="gameCanvas" width="1200" height="1500"></canvas>
+            <canvas id="gameCanvas" width="1200" height="1900"></canvas>
 
             <!-- Mobile Controls -->
             <div id="joystick-zone"></div>

@@ -9,7 +9,7 @@ export default class initLevel {
         // --- 1. CORE ENVIRONMENT & COLORS ---
         const groundPlatform = { 
             x: 0, 
-            y: game.height +28, 
+            y: game.PLAYABLE_AREA_HEIGHT + 28, // Move ground down by 100px relative to new playable area
             width: game.width, 
             height: 330, 
             hitboxOffsetY: -95, // Move hitbox 100px UP from visual Y
@@ -19,9 +19,9 @@ export default class initLevel {
                          const castlePlatforms = [
             { 
                 x: game.width - 1100, 
-                y: game.height - 10,
+                y: game.PLAYABLE_AREA_HEIGHT - 20, // Move castle up by 90px
                 hitboxOffsetX: 100,
-                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                hitboxOffsetY: -200, 
                 width: 150,   
                 height: 20,   
                 vWidth: 350,  
@@ -30,9 +30,9 @@ export default class initLevel {
             },
             { 
                 x: game.width - 425, 
-                y: game.height - 10, 
+                y: game.PLAYABLE_AREA_HEIGHT - 20, // Move castle up by 90px
                 hitboxOffsetX: 100,
-                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                hitboxOffsetY: -200, 
                 width: 150, 
                 height: 20, 
                 vWidth: 350, 
@@ -40,10 +40,10 @@ export default class initLevel {
                 type: 'castle' 
             },
             { 
-                x: game.width - 760, 
-                y: game.height + 30, 
+                x: game.width - 760,
+                y: game.PLAYABLE_AREA_HEIGHT + 30, // Move castle up by 90px
                 hitboxOffsetX: 100,
-                hitboxOffsetY: -200, // MOVED UP 100 (was -200)
+                hitboxOffsetY: -200, 
                 width: 150, 
                 height: 20, 
                 vWidth: 350, 
@@ -56,12 +56,12 @@ export default class initLevel {
 
         // Cloud Platforms logic
         const floatingConfigs = [
-            { x: 100, y: game.height - 399, width: 200, height: 65 }, 
-            { x: 900, y: game.height - 430, width: 200, height: 65 },
-            { x: 500, y: game.height - 660, width: 250, height: 69 }, 
-            { x: 100, y: game.height - 800, width: 180, height: 60 },
-            { x: 800, y: game.height - 890, width: 180, height: 60 }, 
-            { x: 450, y: game.height - 1140, width: 200, height: 65 }
+            { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 449 + 90, width: 200, height: 65 }, // Lowest Y (highest on screen) + 50px
+            { x: 900, y: game.PLAYABLE_AREA_HEIGHT - 505 + 80, width: 200, height: 65 }, // + 75px
+            { x: 500, y: game.PLAYABLE_AREA_HEIGHT - 760 + 70, width: 250, height: 69 }, // + 100px
+            { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 925 + 60, width: 180, height: 60 }, // + 125px
+            { x: 800, y: game.PLAYABLE_AREA_HEIGHT - 1040 + 50, width: 180, height: 60 }, // + 150px
+            { x: 450, y: game.PLAYABLE_AREA_HEIGHT - 1340 + 40, width: 200, height: 65 } // Highest Y (lowest on screen) + 200px
         ];
 
         floatingConfigs.forEach(cfg => {

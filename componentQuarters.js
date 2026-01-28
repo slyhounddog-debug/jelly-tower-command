@@ -17,7 +17,7 @@ export default class ComponentQuarters {
         const slotWidth = (modalConfig.width - 100 - 40) / 2; // 50 padding each side, 40 gap
         const slotHeight = 80;
         const gap = 20;
-        const topMargin = 98 + (modalConfig.height * 0.08); // 8% away from UI bar
+        const topMargin = 98 + (modalConfig.height * 0.08);
         
         components.forEach((component, index) => {
             const col = index % 2;

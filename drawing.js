@@ -67,7 +67,7 @@ export default class Drawing {
 
     drawTitleScreen(ctx) {
         if (this.game.titlescreenImage && this.game.titlescreenImage.complete) {
-            ctx.drawImage(this.game.titlescreenImage, 0, 0, this.width, this.height);
+            ctx.drawImage(this.game.titlescreenImage, 0, 0, this.width, this.game.PLAYABLE_AREA_HEIGHT);
         }
 
         const btn = this.game.ui.readyButton;
@@ -84,15 +84,15 @@ export default class Drawing {
             btn.width = buttonImage.naturalWidth * 1.2;
             btn.height = buttonImage.naturalHeight * 1.2;
             btn.x = (this.width - btn.width) / 2;
-            btn.y = this.height - (this.height * 0.045) - btn.height;
+            btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height;
             ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
         }
     }
 
     drawLoadingScreen(ctx) {
-        ctx.clearRect(0, 0, this.width, this.height);
+        ctx.clearRect(0, 0, this.width, this.game.PLAYABLE_AREA_HEIGHT);
         if (this.game.titlescreenImage && this.game.titlescreenImage.complete) {
-            ctx.drawImage(this.game.titlescreenImage, 0, 0, this.width, this.height);
+            ctx.drawImage(this.game.titlescreenImage, 0, 0, this.width, this.game.PLAYABLE_AREA_HEIGHT);
         }
 
         const btn = this.game.ui.readyButton;
@@ -104,7 +104,7 @@ export default class Drawing {
             btn.width = buttonImage.naturalWidth * 1.2;
             btn.height = buttonImage.naturalHeight * 1.2;
             btn.x = (this.width - btn.width) / 2;
-            btn.y = this.height - (this.height * 0.045) - btn.height;
+            btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height;
             ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
         }
     }

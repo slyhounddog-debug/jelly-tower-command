@@ -39,7 +39,7 @@ export default class Gumball {
 
         // Disappear off-screen
         if (this.x < -this.width || this.x > this.game.width + this.width ||
-            this.y < -this.height || this.y > this.game.height + this.height) {
+            this.y < -this.height || this.y > this.game.PLAYABLE_AREA_HEIGHT + this.height) {
             this.dead = true;
             return;
         }

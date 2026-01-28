@@ -21,7 +21,7 @@ export default class LevelUpScreen {
             return {
                 x: this.game.width / 2 - (cardWidth * 1.5 + 20) + (index * (cardWidth + 20)),
                 y: this.game.height + 100, // Start below screen
-                targetY: this.game.height / 2 - cardHeight / 2,
+                targetY: this.game.PLAYABLE_AREA_HEIGHT / 2 - cardHeight / 2,
                 width: cardWidth,
                 height: cardHeight,
                 choice: choice,
@@ -42,7 +42,7 @@ export default class LevelUpScreen {
     }
 
     update(tsf) {
-        this.titleY += (this.game.height / 2 - 250 - this.titleY) * 0.1 * tsf;
+        this.titleY += (this.game.PLAYABLE_AREA_HEIGHT / 2 - 250 - this.titleY) * 0.1 * tsf;
 
         this.cards.forEach(card => {
             card.y += (card.targetY - card.y) * 0.1 * tsf;
@@ -62,7 +62,7 @@ export default class LevelUpScreen {
     draw(ctx) {
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, this.game.width, this.game.height);
+        ctx.fillRect(0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT);
 
         ctx.fillStyle = 'white';
         ctx.font = '80px "Titan One"';

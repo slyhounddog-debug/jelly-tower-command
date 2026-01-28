@@ -174,8 +174,8 @@ class LootPopupManager {
     constructor(game) {
         this.game = game;
         this.popups = [];
-        this.baseX = 20;
-        this.baseY = game.height - 250; // Adjust as needed, above money
+        this.baseX = 20; // This is a comment
+        this.baseY = game.PLAYABLE_AREA_HEIGHT - 250; // Adjust as needed, above money
         this.spacing = 50;
     }
 

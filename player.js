@@ -45,7 +45,7 @@ export default class Player {
         this.reset();
     }
     reset() {
-        this.x = this.game.width / 2; this.y = this.game.height - 350; this.vx = 0; this.vy = 0;
+        this.x = this.game.width / 2; this.y = this.game.PLAYABLE_AREA_HEIGHT - 350; this.vx = 0; this.vy = 0;
         this.isOnGround = false; this.isControlling = null;
         this.jumpsLeft = 2; this.jumpLock = false;
         this.isPassingThrough = false;

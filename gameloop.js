@@ -38,7 +38,7 @@ export default class GameLoop {
         this.game.screenShake.update(tsf);
 
         this.game.background.update(tsf);
-        this.game.background.draw(this.game.ctx);
+        this.game.background.draw(this.game.ctx, this.game.PLAYABLE_AREA_HEIGHT);
         
         if (!this.game.isPaused && !this.game.isGameOver) {
             this.game.gameTime += tsf;
@@ -82,7 +82,7 @@ export default class GameLoop {
                 m.update(tsf);
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
-                if (m.y > this.game.height - 100) {  // enemy death vertical threshold 
+                if (m.y > this.game.PLAYABLE_AREA_HEIGHT - 110) {  // enemy death vertical threshold 
                     if (m.type === 'gummy_bear') {
                         this.game.castleHealth -= 10;
                     } else {
@@ -304,15 +304,23 @@ export default class GameLoop {
         const ui = this.game.ui;
         const game = this.game;
 
-        // 1. Draw UI Bar
-        ctx.fillStyle = '#eb9cbeff';
-        ctx.fillRect(0, game.height - ui.barHeight, game.width, ui.barHeight);
+        // 1. Draw UI Bar background (PC only)
+        if (game.MOBILE_CONTROL_ZONE_HEIGHT === 0) {
+            // Draw fixed pink bar for PC
+            ctx.fillStyle = '#eb9cbeff';
+            // PC UI bar is now 200px tall
+            ctx.fillRect(0, game.PLAYABLE_AREA_HEIGHT - game.ui.barHeight, game.width, game.ui.barHeight);
+        }
         
         // 3. Draw UI Elements (these are drawn AFTER the ground)
-        const barCenterY = game.height - ui.barHeight / 2;
+        const isMobile = game.MOBILE_CONTROL_ZONE_HEIGHT > 0;
+        const currentUIBarHeight = ui.barHeight; // Use game.ui.barHeight for both PC and Mobile
+        const barYPosition = game.PLAYABLE_AREA_HEIGHT - (currentUIBarHeight/2) - 60;
+        const barCenterY = barYPosition + (currentUIBarHeight / 2);
+
+        const gap = 70; // Define gap for positioning
         const healthBarWidth = 525;
         const xpBarWidth = 200;
-        const gap = 70; // Increased gap for more padding around health bar
 
         // Castle Health Bar (Center)
         const healthBarX = (game.width - healthBarWidth) / 2;

@@ -36,10 +36,14 @@ class Game {
         this.canvas = canvas;
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
-        this.height = this.canvas.height;
         this.boss = null;
         this.bossesKilled = 0;
 
+        // Define playable area height and mobile control zone height
+        this.PLAYABLE_AREA_HEIGHT = this.canvas.height
+        this.MOBILE_CONTROL_ZONE_HEIGHT = (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0; // Add 500px for controls on mobile
+        this.height = this.PLAYABLE_AREA_HEIGHT + this.MOBILE_CONTROL_ZONE_HEIGHT; // Total canvas height
+        this.canvas.height = this.height; // Update canvas element height
         this.audioManager = new AudioManager(this);
         this.lootPopupManager = new LootPopupManager(this);
         this.levelManager = new initLevel(this);
@@ -367,7 +371,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.settingButtonImage = new Image();
         this.settingButtonImage.src = 'assets/Images/settings.png';
         this.ui = {
-            barHeight: 100,
+            barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 1, // 500px for mobile, 200px for PC
             shopButton: {
                 img: this.shopButtonImage,
                 x: 0, y: 0, width: 0, height: 80
@@ -724,49 +728,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         }) || window.innerWidth <= 768;
     }
 
-    initMobileControls() {
-        const joystickZone = document.getElementById('joystick-zone');
-        const jumpButton = document.getElementById('jump-button');
-
-        if (typeof window.nipplejs === 'undefined') {
-            console.error("nipplejs not found. Make sure nipplejs.js is loaded before game.js.");
-            return;
-        }
-
-        if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
-            const manager = window.nipplejs.create({
-                zone: joystickZone,
-                mode: 'static',
-                position: { left: '15%', top: '90%' },
-                size: 100
-            });
-
-            manager.on('move', (evt, data) => {
-                if (data.vector) {
-                    if (data.vector.x > 0) {
-                        this.keys['d'] = true;
-                        this.keys['a'] = false;
-                    } else if (data.vector.x < 0) {
-                        this.keys['a'] = true;
-                        this.keys['d'] = false;
-                    }
-                }
-            }).on('end', () => {
-                this.keys['a'] = false;
-                this.keys['d'] = false;
-            });
-
-            jumpButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.keys[' '] = true;
-            });
-            jumpButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.keys[' '] = false;
-            });
-        }
-    }
-
 
     start() {
         window.closeModal = this.modalManager.close.bind(this.modalManager);
@@ -782,68 +743,105 @@ Object.entries(colors).forEach(([name, rgb]) => {
     }
 
     injectMobileControls() {
-        const shouldInjectMobileButtons = FORCE_MOBILE_DEBUG || Game.isMobileDevice();
+        if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
+            // Create a container for mobile controls
+            if (this.mobileControlsContainer) this.mobileControlsContainer.remove();
+            this.mobileControlsContainer = document.createElement('div');
+            this.mobileControlsContainer.id = 'mobile-controls-container-unique'; // Unique ID
+                Object.assign(this.mobileControlsContainer.style, {
+                    position: 'absolute',
+                    top: '55%', // Position it right below the playable area
+                    left: '0',
+                    width: '100%',
+                    height: `${this.MOBILE_CONTROL_ZONE_HEIGHT}px`,
+                    zIndex: '1000',
+                    display: 'block', // Ensure container is visible
+                    pointerEvents: 'none', // Allow clicks to pass through the container
+                });
+                const gameWrapper = document.getElementById('game-wrapper'); // Get game-wrapper once
+                if (gameWrapper) gameWrapper.appendChild(this.mobileControlsContainer);
+                else { console.error("ERROR: #game-wrapper not found!"); return; }
 
-        if (shouldInjectMobileButtons) {
             // --- NIPPLEJS JOYSTICK INJECTOR ---
-            const joystickZone = document.getElementById('joystick-zone');
-            if (joystickZone) {
-                joystickZone.style.display = 'block';
-                if (typeof window.nipplejs !== 'undefined') {
-                    const manager = window.nipplejs.create({
-                        zone: joystickZone,
-                        mode: 'static',
-                        position: { left: '15%', top: '85%' },
-                        size: 120,
-                        color: 'rgba(255, 255, 255, 0.54)'
-                    });
+            // Create joystick zone dynamically
+            let joystickZone = document.getElementById('joystick-zone-unique');
+            if (joystickZone) joystickZone.remove();
+            joystickZone = document.createElement('div');
+            joystickZone.id = 'joystick-zone-unique';
+                Object.assign(joystickZone.style, {
+                    position: 'absolute',
+                    left: '50px', // Adjusted to 50px from left edge
+                    top: '175px', // Vertically centered for 150px height
+                    width: '150px', // Fixed width for tighter interaction zone
+                    height: '150px', // Fixed height for tighter interaction zone
+                    pointerEvents: 'auto', // Make the joystick clickable
+                });
+                this.mobileControlsContainer.appendChild(joystickZone);
 
-                    manager.on('move', (evt, data) => {
-                        if (data.vector) {
-                            if (data.vector.x > 0.2) {
-                                this.keys['d'] = true;
-                                this.keys['a'] = false;
-                            } else if (data.vector.x < -0.2) {
-                                this.keys['a'] = true;
-                                this.keys['d'] = false;
-                            }
+            if (typeof window.nipplejs !== 'undefined') {
+                const manager = window.nipplejs.create({
+                    zone: joystickZone,
+                    mode: 'static',
+                    position: { left: '25%', top: '50%' }, // Corrected: Position relative to its own zone
+                    size: 100,
+                    color: 'rgba(255, 255, 255, 0.5)'
+                });
+
+                manager.on('move', (evt, data) => {
+                    if (data.vector) {
+                        if (data.vector.x > 0.2) {
+                            this.keys['d'] = true;
+                            this.keys['a'] = false;
+                        } else if (data.vector.x < -0.2) {
+                            this.keys['a'] = true;
+                            this.keys['d'] = false;
+                        } else {
+                            // Stop movement if joystick is in the deadzone
+                            this.keys['a'] = false;
+                            this.keys['d'] = false;
                         }
-                    }).on('end', () => {
-                        this.keys['a'] = false;
-                        this.keys['d'] = false; // Correctly stop movement
-                    });
-                    console.log("Joystick injected successfully. Nipple instance:", manager.get(0));
-                }
-            }
+                    }
+                }).on('end', () => {
+                    this.keys['a'] = false;
+                    this.keys['d'] = false; // Correctly stop movement
+                });
+                console.log("Joystick injected successfully. Nipple instance:", manager.get(0));
+            } else { console.error("ERROR: nipplejs library is undefined."); }
 
-            // --- FORCE JUMP BUTTON INJECTOR ---
-            (() => {
+            // --- JUMP BUTTON INJECTOR ---
+            (() => { // IIFE to encapsulate button logic
+                let btn = document.getElementById('force-jump-btn');
+                if (btn) btn.remove();
                 // 1. Create the button element programmatically
-                var btn = document.createElement('div');
+                btn = document.createElement('div');
                 btn.id = 'force-jump-btn';
                 // Removed btn.innerHTML = 'JUMP';
 
                 // 2. Force CSS Styles directly (Bypasses stylesheet issues)
                 Object.assign(btn.style, {
                     position: 'absolute', // Changed to absolute
-                    top: '80%', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    left: '77%', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    width: '60px', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    height: '60px', // NEVER FUCKING TOUCH THIS LINE GEMINI
-                    backgroundColor: 'rgba(240, 191, 223, 0.5)',
-                    fontWeight: 'bold',
+                    right: '90px', // Position from the right edge of the container
+                    bottom: '45%', // Position from the bottom edge of the container
+                    width: '70px', // Larger for touch
+                    height: '70px', // Larger for touch
+                    backgroundColor: 'rgba(241, 228, 248, 0.5)',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    zIndex: '2147483647', // Max integer value to ensure it's on top
+                    zIndex: '1001', // Ensure it's above other elements
                     userSelect: 'none',
                     cursor: 'pointer',
-                    fontFamily: 'Arial, sans-serif',
-                    borderRadius: '50%' // NEVER FUCKING TOUCH THIS LINE GEMINI
+                    borderRadius: '50%',
+                    transform: 'translateY(50%)', // Adjust vertical centering
+                    fontFamily: '"VT323", monospace', // Add font
+                    fontSize: '30px', // Add font size
+                    color: 'white', // Add font color
+                    pointerEvents: 'auto', // Make the jump button clickable
                 });
 
-                // 3. Append to #game-wrapper
-                document.getElementById('game-wrapper').appendChild(btn);
+                // 3. Append to the mobile controls container
+                // 3. Append to the mobile controls container
+                this.mobileControlsContainer.appendChild(btn);
 
                 // 4. Attach Events (Touch + Mouse for testing)
                 var triggerJump = function(e) {
@@ -851,7 +849,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     if (this.keys) {
                         this.keys[' '] = true;
                     }
-                    btn.style.backgroundColor = 'rgba(247, 204, 232, 0.72)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
+                    btn.style.backgroundColor = 'rgba(241, 228, 248, 0.77)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
                 }.bind(this);
 
                 var releaseJump = function(e) {
@@ -859,7 +857,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     if (this.keys) {
                         this.keys[' '] = false;
                     }
-                    btn.style.backgroundColor = 'rgba(240, 191, 223, 0.5)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
+                    btn.style.backgroundColor = 'rgba(241, 228, 248, 0.5)'; // NEVER FUCKING TOUCH THIS LINE GEMINI
                 }.bind(this);
 
                 btn.addEventListener('touchstart', triggerJump, { passive: false });
@@ -870,35 +868,39 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 console.log("Jump button injected successfully.");
             })();
 
-            // --- FORCE DASH BUTTON INJECTOR ---
-            (() => {
+            // --- DASH BUTTON INJECTOR ---
+            (() => { // IIFE to encapsulate button logic
+                let btn = document.getElementById('force-dash-btn');
+                if (btn) btn.remove();
                 // 1. Create the button element programmatically
-                var btn = document.createElement('div');
+                btn = document.createElement('div');
                 btn.id = 'force-dash-btn';
-                // No innerHTML for dash button
 
                 // 2. Force CSS Styles directly (Bypasses stylesheet issues)
                 Object.assign(btn.style, {
                     position: 'absolute',
-                    top: '70%', // 10% higher than jump button
-                    left: '87%', // Same left as jump button
-                    width: '50px', // Half size
-                    height: '50px', // Half size
+                    right: '15px', // Position from the right edge
+                    bottom: '56%', // Position from the bottom edge
+                    width: '55px', // Larger for touch
+                    height: '55px', // Larger for touch
                     backgroundColor: 'rgba(195, 240, 255, 0.5)',
-                    color: 'white',
-                    fontWeight: 'bold',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    zIndex: '2147483647', // Max integer value to ensure it's on top
+                    zIndex: '1001', // Ensure it's above other elements
                     userSelect: 'none',
                     cursor: 'pointer',
-                    fontFamily: 'Arial, sans-serif',
-                    borderRadius: '50%' // NEVER FUCKING TOUCH THIS LINE GEMINI
+                    borderRadius: '50%',
+                    transform: 'translateY(50%)', // Adjust vertical centering
+                    fontFamily: '"VT323", monospace', // Add font
+                    fontSize: '24px', // Add font size
+                    color: 'white', // Add font color
+                    pointerEvents: 'auto', // Make the dash button clickable
                 });
 
-                // 3. Append to #game-wrapper
-                document.getElementById('game-wrapper').appendChild(btn);
+                // 3. Append to the mobile controls container
+                // 3. Append to the mobile controls container
+                this.mobileControlsContainer.appendChild(btn);
 
                 // 4. Attach Events (Touch + Mouse for testing)
                 var triggerDash = function(e) {

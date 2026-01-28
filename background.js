@@ -52,7 +52,7 @@ export default class Background {
             this.clouds.push({
                 image: this.cloudImages[Math.floor(Math.random() * this.cloudImages.length)],
                 x: Math.random() * this.game.width,
-                y: Math.random() * (this.game.height / 2),
+                y: Math.random() * (this.game.PLAYABLE_AREA_HEIGHT / 2),
                 speed: Math.random() * 0.2 + 0.1,
             });
         }
@@ -71,22 +71,31 @@ export default class Background {
         if (!this.sugarSnowflakes) {
             this.sugarSnowflakes = Array.from({ length: 70 }, () => ({
                 x: Math.random() * this.game.width,
-                y: Math.random() * this.game.height,
+                y: Math.random() * this.game.PLAYABLE_AREA_HEIGHT,
                 size: Math.random() * 2 + 1,
                 speed: Math.random() * 0.6 + 0.2
             }));
         }
         this.sugarSnowflakes.forEach(f => {
             f.y += f.speed * tsf;
-            if (f.y > this.game.height) f.y = -20;
+            if (f.y > this.game.PLAYABLE_AREA_HEIGHT) f.y = -20;
         });
     }
 
     draw(ctx) {
-        ctx.drawImage(this.backgroundImage, 0, 0, this.game.width, this.game.height);
+        ctx.drawImage(this.backgroundImage, 0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT);
         this.clouds.forEach(cloud => {
             ctx.drawImage(cloud.image, cloud.x, cloud.y);
         });
+
+        // Draw the mobile control zone background if active
+        if (this.game.MOBILE_CONTROL_ZONE_HEIGHT > 0) {
+            const gradient = ctx.createLinearGradient(0, this.game.PLAYABLE_AREA_HEIGHT, 0, this.game.height);
+            gradient.addColorStop(0, 'rgba(243, 169, 201, 1)'); // Top of the control zone
+            gradient.addColorStop(1, 'rgba(218, 141, 174, 1)'); // Bottom
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, this.game.PLAYABLE_AREA_HEIGHT -100, this.game.width, this.game.MOBILE_CONTROL_ZONE_HEIGHT + 100);
+        }
         this.drawSunlight(ctx);
         this.drawSugarSnow(ctx, 1);
         if (this.game.boss) {
@@ -99,7 +108,7 @@ export default class Background {
         const opacity = pulse * 0.20; // Less vibrant
         ctx.save();
         ctx.fillStyle = `rgba(255, 0, 255, ${opacity})`;
-        ctx.fillRect(0, 0, this.game.width, this.game.height);
+        ctx.fillRect(0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT);
         ctx.restore();
     }
 
@@ -115,8 +124,8 @@ export default class Background {
             ctx.fillStyle = grad;
             ctx.moveTo(150 + (i * 400), -100);
             ctx.lineTo(400 + (i * 400), -100);
-            ctx.lineTo(-100 + (i * 400), this.game.height + 100);
-            ctx.lineTo(-350 + (i * 400), this.game.height + 100);
+            ctx.lineTo(-100 + (i * 400), this.game.PLAYABLE_AREA_HEIGHT + 100);
+            ctx.lineTo(-350 + (i * 400), this.game.PLAYABLE_AREA_HEIGHT + 100);
             ctx.fill();
         }
         ctx.restore();
@@ -126,7 +135,7 @@ export default class Background {
         if (!this.sugarSnowflakes) {
             this.sugarSnowflakes = Array.from({ length: 70 }, () => ({
                 x: Math.random() * this.game.width,
-                y: Math.random() * this.game.height,
+                y: Math.random() * this.game.PLAYABLE_AREA_HEIGHT,
                 size: Math.random() * 2 + 1,
                 speed: Math.random() * 0.6 + 0.2
             }));
@@ -135,7 +144,7 @@ export default class Background {
         ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
         this.sugarSnowflakes.forEach(f => {
             f.y += f.speed * tsf;
-            if (f.y > this.game.height) f.y = -20;
+            if (f.y > this.game.PLAYABLE_AREA_HEIGHT) f.y = -20;
             ctx.beginPath();
             ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
             ctx.fill();

@@ -178,7 +178,7 @@ export class GummyBear {
         this.animationTimer += 0.05 * tsf;
         this.angle = Math.sin(this.animationTimer) * 0.1;
 
-        if (this.y > this.game.height) {
+        if (this.y > this.game.PLAYABLE_AREA_HEIGHT) {
             this.dead = true;
         }
     }
@@ -473,7 +473,7 @@ export default class GummyCluster {
         const distToGround = ground ? ground.y - (this.y + this.height) : 1000;
         this.groundProximity = distToGround < this.game.groundProximityThreshold;
 
-        if (this.y > this.game.height) {
+        if (this.y > this.game.PLAYABLE_AREA_HEIGHT) {
             this.game.castleHealth -= 50;
             this.game.castleHealthBar.triggerHit();
             this.game.boss = null;

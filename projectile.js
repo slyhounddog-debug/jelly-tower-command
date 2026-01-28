@@ -130,7 +130,7 @@ export default class Projectile {
 
         // Check if out of range OR off screen
         const outOfRange = Math.hypot(this.x - this.origin.x, this.y - this.origin.y) > this.range;
-        const offScreen = this.y > this.game.height;
+        const offScreen = this.y > this.game.PLAYABLE_AREA_HEIGHT;
 
         if ((outOfRange && this.bouncesLeft <= 0) || offScreen) {
             this.dead = true;

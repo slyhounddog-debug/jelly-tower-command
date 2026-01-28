@@ -45,7 +45,7 @@ export default class LevelUpManagerScreen {
         const cardWidth = 160; // Reduced size
         const cardHeight = 235; // Reduced size
         const gap = 15;
-        const topMargin = 100 + (modalConfig.height * 0.07); // Move everything down 7%
+        const topMargin = 180 + (modalConfig.height * 0.07);
 
         let yOffset = modalConfig.y + topMargin;
 
@@ -82,10 +82,10 @@ export default class LevelUpManagerScreen {
         };
 
         const normalHeight = processUpgrades(upgrades.normal, yOffset, Math.ceil(upgrades.normal.length / 2));
-        yOffset += normalHeight + 50; // Reduced gap
+        yOffset += normalHeight + 60; // Reduced gap
 
         const rareHeight = processUpgrades(upgrades.rare, yOffset, upgrades.rare.length);
-        yOffset += rareHeight + 50; // Reduced gap
+        yOffset += rareHeight + 60; // Reduced gap
 
         processUpgrades(upgrades.legendary, yOffset, upgrades.legendary.length);
     }
@@ -100,12 +100,12 @@ export default class LevelUpManagerScreen {
 
         // Title text rendering removed
 
-        const topMargin = 100 + (modalConfig.height * 0.07);
+        const topMargin = 170 + (modalConfig.height * 0.07);
         const rarityY1 = modalConfig.y + topMargin - 20;
         const normalRows = Math.ceil(this.game.levelingManager.upgrades.normal.length / Math.ceil(this.game.levelingManager.upgrades.normal.length / 2));
-        const rarityY2 = rarityY1 + (normalRows * (235 + 15)) + 45; // Use new cardHeight
+        const rarityY2 = rarityY1 + (normalRows * (235 + 15)) + 60; // Use new cardHeight
         const rareRows = Math.ceil(this.game.levelingManager.upgrades.rare.length / this.game.levelingManager.upgrades.rare.length);
-        let rarityY3 = rarityY2 + (rareRows * (235 + 15)) + 45; // Use new cardHeight
+        let rarityY3 = rarityY2 + (rareRows * (235 + 15)) + 60; // Use new cardHeight
         
 
         ctx.save();
@@ -138,7 +138,7 @@ export default class LevelUpManagerScreen {
         });
 
         if (this.magnifiedCard && this.magnifiedCard.preRenderedCanvas) {
-            const hoverScale = 2.0;
+            const hoverScale = 2.8;
             const width = this.magnifiedCard.width * hoverScale;
             const height = this.magnifiedCard.height * hoverScale;
             const x = modalConfig.x + (modalConfig.width / 2) - (width / 2);
