@@ -10,6 +10,9 @@ export default class GameLoop {
     }
 
     loop(currentTime) {
+        const game = this.game;
+        const ctx = this.game.ctx;
+
         if (!this.game.gameStarted) {
             this.game.drawing.drawTitleScreen(this.game.ctx);
             requestAnimationFrame((t) => this.loop(t));
@@ -134,8 +137,8 @@ export default class GameLoop {
                     }
                     this.game.castleHealthBar.triggerHit();
                     m.dead = true;
-                    this.game.hitStopFrames = 5;
-                    this.game.screenShake.trigger(5, 10);
+                    this.game.hitStopFrames = 2; // Add a brief hit stop
+                    this.game.screenShake.trigger(10, 15); // Doubled the shake
                     for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
                     
                     const castlePlats = this.game.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
@@ -339,8 +342,8 @@ export default class GameLoop {
         // Draw Ghost Turret if in building mode
         if (this.game.isBuilding && this.game.towersImage.complete) {
             const img = this.game.towersImage;
-            const turretWidth = 137;
-            const turretHeight = 190;
+            const turretWidth = 137 * 0.9; // Scale down by 10%
+            const turretHeight = 190 * 0.9; // Scale down by 10%
             let drawX = this.game.mouse.x - (turretWidth / 2);
             let drawY = this.game.mouse.y - (turretHeight / 2);
             let alpha = 0.5;
@@ -371,15 +374,15 @@ export default class GameLoop {
             if (tintColor === 'red') {
                 this.game.ctx.filter = 'hue-rotate(180deg) brightness(1.5)'; 
             }
-            this.game.ctx.drawImage(img, 0, 190, turretWidth, turretHeight, drawX, drawY, turretWidth, turretHeight);
+            ctx.drawImage(img, 0, 190, 137, 190, drawX, drawY, turretWidth, turretHeight);
             this.game.ctx.restore(); 
         }
 
         this.game.ctx.restore(); // Restore screen shake translation
 
-        const ctx = this.game.ctx;
-        const ui = this.game.ui;
-        const game = this.game;
+        // Apply screen shake to the entire UI bar
+        ctx.save();
+        ctx.translate(offset.x, offset.y);
 
         // BOTTOM UI BAR (All elements housed in the ground)
         const uiBarHeight = game.ui.barHeight; 
@@ -394,6 +397,7 @@ export default class GameLoop {
         }
 
         const centerY = uiBarY + (uiBarHeight / 2);
+        const ui = this.game.ui;
         const uiScale = 1.55; // 25% bigger
 
 
@@ -532,6 +536,9 @@ export default class GameLoop {
             ctx.fillText("Hold", textX, textY);
             ctx.restore();
         }
+
+        // Restore the UI bar screen shake translation
+        ctx.restore();
 
 
         const bossHealthContainer = document.getElementById('boss-health-container');

@@ -6,25 +6,25 @@ import FrostingParticle from './frostingParticle.js';
 export default class Player {
     constructor(game) {
         this.game = game;
-        this.width = 55; this.height = 100; this.color = '#ffc1cc';
+        this.width = 66; this.height = 120; this.color = '#ffc1cc';
         this.scaleX = 1; this.scaleY = 1;
         this.lickCooldown = 0; this.lickAnim = 0;
 
-        this.baseAcceleration = 1.815 * 1.25;
-        this.baseJumpForce = -26;
-        this.baseAirJumpForce = -26;
+        this.baseAcceleration = 1.815 * 1.5;
+        this.baseJumpForce = -27;
+        this.baseAirJumpForce = -27;
         this.baseDashCooldown = 40;
-        this.baseLickRange = 140;
+        this.baseLickRange = 160;
 
         this.acceleration = this.baseAcceleration;
         this.jumpForce = this.baseJumpForce;
         this.airJumpForce = this.baseAirJumpForce;
         this.dashCooldown = 0;
         this.lickRange = this.baseLickRange;
-        this.basePickupRange = 80;
+        this.basePickupRange = 80 * 1.2;
         this.pickupRange = this.basePickupRange;
 
-        this.maxVel = 12.1; 
+        this.maxVel = 13.31; 
         this.gravity = 1.2;
         this.passThroughTimer = 0;
         this.lickAngle = 0;
@@ -286,7 +286,7 @@ export default class Player {
                 }
 
                 if (hit && !this.hitEnemies.includes(m.id)) {
-                    this.game.hitStopFrames = 1;
+                    this.game.hitStopFrames = 0;
                     this.hitEnemies.push(m.id);
                     if (this.upgrades['Jelly Tag'] > 0) {
                         m.isJellyTagged = true;
@@ -300,7 +300,7 @@ export default class Player {
                         m.applySlow(180, 0.5, 'tongue');
                     }
                     m.kbVy = -this.game.stats.lickKnockback * 0.2;
-                    this.game.screenShake.trigger(4, 10);
+                    this.game.screenShake.trigger(2, 10);
                     for (let i = 0; i < 15; i++) {
                         this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
                         if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
@@ -330,10 +330,10 @@ export default class Player {
                 }
 
                 if (hit && !this.hitEnemies.includes(boss.id)) {
-                    this.game.hitStopFrames = 1;
+                    this.game.hitStopFrames = 0;
                     this.hitEnemies.push(boss.id);
-                    boss.takeDamage(this.game.stats.lickDamage, false);
-                    this.game.screenShake.trigger(4, 10);
+                    boss.takeDamage(this.game.stats.lickDamage, false, this);
+                    this.game.screenShake.trigger(2, 10);
                     for (let i = 0; i < 15; i++) {
                         this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
                         if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
@@ -768,10 +768,13 @@ export default class Player {
         // --- 2. PREPARE PLAYER TRANSFORM ---
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
-        const eyeY = this.y + this.height * 0.3;
-        const mouthY = eyeY + this.height * 0.4;
-        const mouthX = this.x + this.width / 2;
+        
+        // The unscaled mouth position relative to the player's center
+        const unscaledMouthOffsetY = this.height * 0.2; 
+        // The scaled mouth position, accounting for squash/stretch
+        const scaledMouthY = cy + (unscaledMouthOffsetY * this.scaleY);
 
+        const mouthX = this.x + this.width / 2;
         // --- 3. APPLY TRANSFORMATIONS AND DRAW PLAYER ---
         ctx.save();
         ctx.translate(cx, cy);
@@ -788,11 +791,11 @@ export default class Player {
         let mouseXForAngle = this.game.mouse.x;
         if (isMirrored) {
             mouseXForAngle = mouthX - (this.game.mouse.x - mouthX);
-        }
+        }        const eyeY = cy + (-this.height * 0.2 * this.scaleY); // Scaled eye Y position
         const ang = Math.atan2(this.game.mouse.aimY - eyeY, mouseXForAngle - mouthX);
-        const pupilDist = 3.5;
-        const eyeRadius = 10.5;
-        const pupilRadius = 7;
+        const pupilDist = 4.2;
+        const eyeRadius = 12.6;
+        const pupilRadius = 8.4;
         const eyeXOffset = -(this.width * 0.05);
         const relativeEyeY = -this.height/2 + this.height * 0.58;
 
@@ -807,17 +810,17 @@ export default class Player {
         ctx.fill();
 
         if (this.lickAnim <= 0) {
-            const idleBounce = Math.sin(this.game.gameTime * 0.15) * 2 + 2;
-            const relativeMouthY = mouthY + 6 - cy;
+            const idleBounce = (Math.sin(this.game.gameTime * 0.15) * 2 + 2) * 1.2;
+            const relativeMouthY = scaledMouthY + 6 - cy;
             
             ctx.fillStyle = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
             ctx.beginPath();
-            ctx.roundRect(eyeXOffset - 6, relativeMouthY, 12, 6 + idleBounce, 6);
+            ctx.roundRect(eyeXOffset - 7.2, relativeMouthY, 14.4, 7.2 + idleBounce, 7.2);
             ctx.fill();
 
             ctx.fillStyle = '#3a0014';
             ctx.beginPath();
-            const mouthSize = 4;
+            const mouthSize = 4.8;
             ctx.arc(eyeXOffset, relativeMouthY, mouthSize, 0, Math.PI * 2);
             ctx.fill();
         }
@@ -869,18 +872,18 @@ export default class Player {
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
         if (!this.isControlling && this.lickAnim > 0) {
             const tongueOriginX = mouthX;
-            const tongueOriginY = mouthY;
+            const tongueOriginY = scaledMouthY;
             const mouseAngle = this.lickAngle;
             const animPhase = (15 - this.lickAnim) / 15; 
             const animCurve = Math.sin(animPhase * Math.PI);
             const lickDistance = this.lickRange * animCurve;
 
-            const drag = 2.5;
-            const shiftX = Math.sin(animPhase * Math.PI) * (this.vx * drag);
-            const shiftY = Math.sin(animPhase * Math.PI) * (this.vy * drag);
+            const drag = 5.5; // Increased drag for more elasticity
+            const totalShiftX = this.vx * drag;
+            const totalShiftY = this.vy * drag * 0.1; // Re-introduce vertical drag, but keep it controlled
 
-            this.tongueTipX = tongueOriginX + Math.cos(mouseAngle) * lickDistance - shiftX;
-            this.tongueTipY = tongueOriginY + Math.sin(mouseAngle) * lickDistance - shiftY;
+            this.tongueTipX = tongueOriginX + Math.cos(mouseAngle) * lickDistance - totalShiftX;
+            this.tongueTipY = tongueOriginY + Math.sin(mouseAngle) * lickDistance - totalShiftY;
 
             ctx.save();
             const mainColor = this.upgrades['Ice Tongue'] > 0 ? '#a0c4ff' : '#ff5e7a';
@@ -889,12 +892,17 @@ export default class Player {
 
             for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
-                const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - shiftX;
-                const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - shiftY;
+                const curveFactor = Math.sin(t * Math.PI); // This creates the curve
+                const segmentX = tongueOriginX + Math.cos(mouseAngle) * (lickDistance * t) - (totalShiftX * curveFactor);
+                const segmentY = tongueOriginY + Math.sin(mouseAngle) * (lickDistance * t) - (totalShiftY * curveFactor);
 
-                let size = (t < 0.3) ? 10 - (t * 5) : 5 + (Math.pow(t, 2) * 19);
-                size *= animCurve;
+                // The base size of the tongue segment, which tapers towards the end.
+                const baseSize = 12 - (t * 6); 
+                // The size of the tip, which grows as the tongue extends.
+                const tipSize = (6 + (Math.pow(t, 2) * 22.8)) * animCurve;
 
+                // The final size is a combination, ensuring the base doesn't shrink too much on retraction.
+                let size = Math.max(baseSize, tipSize) * 1.2;
                 ctx.fillStyle = mainColor;
                 ctx.beginPath();
                 ctx.arc(segmentX, segmentY, size, 0, Math.PI * 2);
@@ -917,8 +925,8 @@ export default class Player {
             // Also draw the base of the tongue/mouth hole when licking
             ctx.fillStyle = '#3a0014';
             ctx.beginPath();
-            const mouthSize = 8;
-            ctx.arc(mouthX, mouthY + 6, mouthSize, 0, Math.PI * 2);
+            const mouthSize = 9.6 * this.scaleY; // Scale mouth hole with player
+            ctx.arc(mouthX, scaledMouthY + 6, mouthSize, 0, Math.PI * 2);
             ctx.fill();
         }
 

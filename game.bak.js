@@ -227,8 +227,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
             lickLvl: 0,
             piggyLvl: 0,
             baseDamage: 10,
-            baseFireRate: 45,
-            baseRange: 375,
+            baseFireRate: 40,
+            baseRange: 400,
             turretsBought: 0,
             maxTurrets: 5,
             componentPointsLvl: 0, // New: Component Points Level for shop upgrade

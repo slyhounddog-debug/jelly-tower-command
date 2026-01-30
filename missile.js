@@ -18,8 +18,8 @@ export default class Missile {
         this.dead = false;
 
        if (type === 'missile') {
-            this.width = 64; 
-            this.height = 64;
+            this.width = 74; 
+            this.height = 74;
             this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1));
             
             const variantIndex = Math.floor(Math.random() * 8);
@@ -36,40 +36,40 @@ export default class Missile {
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
         
         } else if (type === 'gummy_worm') {
-            this.width = 25;
-            this.height = 80;
+            this.width = 29;
+            this.height = 90;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
             this.health = 15 + (((this.game.currentRPM * 1.8) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 1; 
         } else if (type === 'marshmallow_large') {
-            this.width = 76.5 * 1.2;
-            this.height = 76.5 * 1.2;
+            this.width = 76.5 * 1.4;
+            this.height = 76.5 * 1.4;
             this.color = '#F8F8FF';
             this.health = 50 + (((this.game.currentRPM * 2.3) + (this.game.enemiesKilled * 0.1)) * 1.4);
             this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowBigImage;
         } else if (type === 'marshmallow_medium') {
-            this.width = 45 * 1.4;
-            this.height = 45 * 1.4;
+            this.width = 45 * 1.6;
+            this.height = 45 * 1.6;
             this.color = '#F8F8FF';
             this.health = 25 + (((this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 0.5;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowMediumImage;
         } else if (type === 'marshmallow_small') {
-            this.width = 22 * 2;
-            this.height = 22 * 2;
+            this.width = 22 * 2.5;
+            this.height = 22 * 2.5;
             this.color = '#F8F8FF';
             this.health = 10 + (((this.game.currentRPM * 1) + (this.game.enemiesKilled * 0.01)) * 0.5);
             this.baseSpeed = 0.5;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowSmallImage;
         } else if (type === 'piggy') {
-            this.width = 33;
-            this.height = 44;
+            this.width = 84;
+            this.height = 86;
             this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * 1.3;
             this.baseSpeed = 0.5;
         }
@@ -122,7 +122,7 @@ export default class Missile {
                 this.kbVy -= this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
             }
         }
-        this.game.hitStopFrames = 1;
+        this.game.hitStopFrames = 0;
         const player = this.game.player;
         if (player.upgrades['Sweet Aura'] > 0) {
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
@@ -400,7 +400,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
         if (this.type === 'piggy') {
             const piggyLevel = this.game.stats.piggyLvl;
-            const sizeMultiplier = 1 + (piggyLevel * 0.15);
+            const sizeMultiplier = 1.6 + (piggyLevel * 0.11);
             const cx = this.x + this.width / 2;
             const cy = this.y + 1 + this.height / 2;
 
@@ -599,11 +599,11 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         let xpGained = 0;
         let maxHealthForXp = this.maxHealth;
 
-       let intensity = 5; 
-        if (this.type === 'marshmallow_large') intensity = 15;
-        else if (this.type === 'marshmallow_medium') intensity = 8;
-        else if (this.type === 'marshmallow_small') intensity = 3;
-        else if (this.type === 'piggy') intensity = 10;
+       let intensity = 4; 
+        if (this.type === 'marshmallow_large') intensity = 5;
+        else if (this.type === 'marshmallow_medium') intensity = 4;
+        else if (this.type === 'marshmallow_small') intensity = 2;
+        else if (this.type === 'piggy') intensity = 5;
 
         import('./utils.js?v=25').then(utils => {
             if (utils.ScreenShake && typeof utils.ScreenShake.trigger === 'function') {

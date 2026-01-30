@@ -18,7 +18,7 @@ export default class Tower extends BaseStructure {
         const hitboxHeight = Tower.SPRITE_FRAME_HEIGHT - Tower.PADDING_TOP - Tower.PADDING_BOTTOM;
         
         // These are the dimensions of the collision box passed to BaseStructure
-        super(x, y, hitboxWidth * 0.9, hitboxHeight * 0.9); // Apply overall 10% scaling to the hitbox too
+        super(x, y, hitboxWidth * 0.76, hitboxHeight * 0.76); // Apply overall scaling to the hitbox
         
         this.game = game;
         this.isAuto = isAuto;
@@ -26,8 +26,8 @@ export default class Tower extends BaseStructure {
 
         // Offsets to correctly draw the original sprite frame relative to the new, smaller hitbox
         // The drawn image will still be the original scaled size (0.9), but its top-left will be offset.
-        this.drawOffsetX = -(Tower.SPRITE_FRAME_WIDTH * 0.9 - this.width) / 2;
-        this.drawOffsetY = -(Tower.SPRITE_FRAME_HEIGHT * 0.9 - this.height);
+        this.drawOffsetX = (this.width + 80 - Tower.SPRITE_FRAME_WIDTH * 0.9) / 2;
+        this.drawOffsetY = (this.height + 80 - Tower.SPRITE_FRAME_HEIGHT * 0.9);
         
         // Ensure the new sprite index is different from the last one
         let newSpriteIndex;
@@ -63,13 +63,12 @@ export default class Tower extends BaseStructure {
         
         // Auto-turret logic only
         let target = null; let minDist = this.range;
-        // Adjusted cx, cy to be relative to the visual center of the drawn sprite
-        const visualWidth = Tower.SPRITE_FRAME_WIDTH * 0.9;
-        const visualHeight = Tower.SPRITE_FRAME_HEIGHT * 0.9;
-        const cx = this.x + this.drawOffsetX + visualWidth / 2;
-        const cy = this.y + this.drawOffsetY + visualHeight / 2 - 30; // Barrel pivot offset
+        // Center of the hitbox, which is the logical center
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+
         this.game.missiles.forEach(m => {
-            const dist = Math.hypot((m.x + m.width / 2) - cx, (m.y + m.height / 2) - cy);
+            const dist = Math.hypot((m.x + m.width / 2) - (cx + this.drawOffsetX), (m.y + m.height / 2) - (cy + this.drawOffsetY - 30));
             if (dist < minDist) { minDist = dist; target = m; }
         });
         if (target) {
@@ -78,8 +77,8 @@ export default class Tower extends BaseStructure {
                 const projectileSpeed = this.game.stats.projectileSpeed;
                 const dist = Math.hypot(target.x + 15 - cx, target.y + 20 - cy);
                 const time = dist / projectileSpeed;
-                const predY = target.y + 20 + (target.speed * time);
-                this.barrelAngle = Math.atan2(predY - cy, target.x + 15 - cx);
+                const predY = target.y + 20 + (target.speed * time) - (cy + this.drawOffsetY - 30);
+                this.barrelAngle = Math.atan2(predY, target.x + 15 - (cx + this.drawOffsetX));
                 this.shoot(fireRate); this.cooldown = fireRate;
             }
         }
@@ -87,11 +86,11 @@ export default class Tower extends BaseStructure {
     shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
-        // Adjusted cx, cy to be relative to the visual center of the drawn sprite
-        const visualWidth = Tower.SPRITE_FRAME_WIDTH * 0.9;
-        const visualHeight = Tower.SPRITE_FRAME_HEIGHT * 0.9;
-        const cx = this.x + this.drawOffsetX + visualWidth / 2;
-        const cy = this.y + this.drawOffsetY + visualHeight / 2 - 30; // Barrel pivot offset
+        // Center of the hitbox, which is the logical center
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const visualCx = cx + this.drawOffsetX;
+        const visualCy = cy + this.drawOffsetY - 30; // Barrel pivot offset
         
         const splitShotCount = this.game.player.getEquippedComponentCount('Split Shot');
         const numShots = 1 + splitShotCount;
@@ -101,8 +100,8 @@ export default class Tower extends BaseStructure {
 
         for (let i = 0; i < numShots; i++) {
             const angle = startAngle + i * (totalSpread / (numShots > 1 ? numShots - 1 : 1));
-            const tx = cx + Math.cos(angle) * 30;
-            const ty = cy + Math.sin(angle) * 30;
+            const tx = visualCx + Math.cos(angle) * 30;
+            const ty = visualCy + Math.sin(angle) * 30;
             let damage = this.game.stats.damage * 0.5; // Always auto-turret damage
             if (this.game.player.sugarRushTimer > 0) {
                 damage *= 1.2;
@@ -123,13 +122,16 @@ export default class Tower extends BaseStructure {
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
             const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true); // Always auto-turret
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: visualCx, y: visualCy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true); // Always auto-turret
             this.game.projectiles.push(projectile);
         }
     }
     draw(ctx) {
+        const visualCx = this.x + this.width / 2 + this.drawOffsetX;
+        const visualCy = this.y + this.height / 2 + this.drawOffsetY;
+
         // Always-visible auto-turret radius
-        ctx.beginPath(); ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.range, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(visualCx, visualCy - 30, this.range, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(130, 180, 200, 0.3)';
         ctx.fillStyle = 'rgba(130, 180, 200, 0.1)';
         ctx.fill();
@@ -137,7 +139,7 @@ export default class Tower extends BaseStructure {
 
         ctx.save();
         // Translate to the center of the tower to scale from the center
-        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.translate(visualCx, visualCy);
 
         // Apply body shake
         const bodyShakeX = Math.cos(this.barrelAngle) * this.recoil * -2.2;
@@ -155,7 +157,7 @@ export default class Tower extends BaseStructure {
             const sx = (this.spriteIndex % 4) * sWidth;
             const sy = Math.floor(this.spriteIndex / 4) * sHeight;
             ctx.drawImage(towerBodyImage, sx, sy, sWidth, sHeight, 
-                          this.drawOffsetX - halfWidth, this.drawOffsetY - halfHeight, // Apply offsets here
+                          -sWidth * 0.9 / 2, -sHeight * 0.9 / 2, // Center the image
                           Tower.SPRITE_FRAME_WIDTH * 0.9, Tower.SPRITE_FRAME_HEIGHT * 0.9); // Draw at original scaled size
         }
 

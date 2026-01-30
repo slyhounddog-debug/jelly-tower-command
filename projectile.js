@@ -178,7 +178,7 @@ export default class Projectile {
             this.game.particles.push(new Particle(this.game, particleX, particleY, sparkColor, 'spark', 0.5));
         }
 
-        this.game.screenShake.trigger(3 * this.popRockStacks, 10);
+        this.game.screenShake.trigger(2 * this.popRockStacks, 10);
         this.game.audioManager.playSound('pop');
     }
 
