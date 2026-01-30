@@ -228,11 +228,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.piggyBankSeen = false;
         this.isBuilding = false;
         this.highlightedSlot = null;
-        this.buildButtonHoldTimer = 0; // New property for tracking build button hold
-        this.showHoldText = false; // New property to control "Hold" text visibility
-        this.holdTextAlpha = 0; // New property for "Hold" text fade effect
-        this.holdTextBounceOffset = 0; // New property for "Hold" text bounce animation
-        this.holdTextStartTime = 0; // New property to track "Hold" text animation start time
+        this.isCancelingBuild = false;
+        this.cancelAnimTimer = 0;
+        this.cancelAnimDuration = 20; // Match tower sell duration
+        this.cancelAnimData = { x: 0, y: 0, width: 0, height: 0 };
 
 
         this.gummyWormSpawnThreshold = 24;
@@ -250,6 +249,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.emporium = new Emporium(this);
         this.emporium.loadEmporiumUpgrades(); // Essential to load upgrade levels
         this.gameLoop = new GameLoop(this);
+        this.timeScale = 1; // New property for controlling game speed
+
 
         this.player = new Player(this);
 
@@ -393,6 +394,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
 
+
         this.buildButtonImage = new Image();
         this.buildButtonImage.src = 'assets/Images/buildbutton.png';
         this.shopButtonImage = new Image(); // NEWLY ADDED for the relocated shop button
@@ -424,6 +426,13 @@ Object.entries(colors).forEach(([name, rgb]) => {
             },
             sellButton: {
                 visible: false, alpha: 0, x: 0, y: 0, width: 80, height: 80
+            },
+            sellButton: {
+                visible: false, alpha: 0, x: 0, y: 0, width: 120, height: 120,
+                animTimer: 0,
+                animDuration: 12, // 20% faster (was 15)
+                isAnimatingIn: false,
+                isAnimatingOut: false
             },
             moneyTextPos: { x: 0, y: 0 },
             xpBarPos: { x: 0, y: 0 }
@@ -464,6 +473,26 @@ Object.entries(colors).forEach(([name, rgb]) => {
         let nearestSlot = null;
         let minDistance = Infinity;
 
+        // Special case for the cancel button in build mode
+        if (this.isBuilding) {
+            const cancelBtn = this.ui.cancelButton;
+            const uiScale = 1.55;
+            const scaledWidth = cancelBtn.width * uiScale;
+            const scaledHeight = cancelBtn.height * uiScale;
+            const cancelBtnCenterX = cancelBtn.x + scaledWidth / 2;
+            const cancelBtnCenterY = cancelBtn.y + scaledHeight / 2;
+            const dist = Math.hypot(mouseX - cancelBtnCenterX, mouseY - cancelBtnCenterY);
+
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestSlot = {
+                    id: 'cancel',
+                    x: cancelBtnCenterX,
+                    y: cancelBtnCenterY,
+                    canPlace: false // This flag indicates it's not a real buildable slot
+                };
+            }
+        }
         const checkPlatformSlots = (platform, slots) => {
             slots.forEach(slot => {
                 const turretWidth = 137;
@@ -512,14 +541,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
         });
     
-        this.towers = this.towers.filter(t => t !== tower);
+        tower.sell(); // Trigger the sell animation
         showNotification(`Sold +$${refundAmount}!`);
         this.cancelSell();
     }
     
     cancelSell() {
         this.towerToSell = null;
-        this.ui.sellButton.visible = false;
+        const sellBtn = this.ui.sellButton;
+        sellBtn.isAnimatingIn = false;
+        sellBtn.isAnimatingOut = true;
+        sellBtn.animTimer = 0;
         this.awaitingSellConfirmation = false;
         this.lastClickTime = 0; // Reset double-tap state
         this.lastClickedTower = null; // Reset double-tap state
@@ -743,10 +775,28 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
             const buildBtn = this.ui.buildButton;
             if (this.mouse.x > buildBtn.x && this.mouse.x < buildBtn.x + buildBtn.width && this.mouse.y > buildBtn.y && this.mouse.y < buildBtn.y + buildBtn.height) {
-                this.buildButtonHoldTimer = Date.now();
-                this.showHoldText = false;
-                // Do not return here, so the click can fall through to the lick if not held
+                if (!this.isBuilding) {
+                    this.isBuilding = true;
+                    this.audioManager.setBuildMode(true, false); // In build mode, not just muffled
+                    this.ui.buildButton.img = this.ui.cancelButton.img;
+                    this.timeScale = 0.05; // Game will be slowed
+                    this.highlightedSlot = null; // Clear any previous highlighted slot
+                } else { // If already in build mode, clicking the build button acts as cancel
+                    this.isBuilding = false;
+                    this.audioManager.setBuildMode(false, false);
+                    this.ui.buildButton.img = this.buildButtonImage;
+                    this.timeScale = 1; // Resume game speed
+                    this.highlightedSlot = null;
+                }
+                return; // Consume the click
             }
+
+            // Check for the new shop button position on the right
+            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+                this.modalManager.toggle('shop');
+                return;
+            }
+
             const settingsBtn = this.ui.settingsButton;
             if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width && this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
                 this.toggleSettings();
@@ -770,44 +820,24 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
 
             if (clickedTower) {
-                const currentTime = Date.now();
-                // Clear any pending single-click timeout for a new click on a tower
-                if (this.doubleTapTimeoutId) {
-                    clearTimeout(this.doubleTapTimeoutId);
-                    this.doubleTapTimeoutId = null;
+                // If another sell was pending, cancel it before showing the new one.
+                if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
+                    this.cancelSell();
                 }
 
-                // Check for double tap
-                if (this.lastClickedTower === clickedTower && (currentTime - this.lastClickTime < this.doubleTapThreshold)) {
-                    this.towerToSell = clickedTower;
-                    const sellBtn = this.ui.sellButton;
-                    
-                    // Position sell button relative to the clicked tower
-                    sellBtn.x = this.towerToSell.x + this.towerToSell.width / 2 - sellBtn.width / 2;
-                    sellBtn.y = this.towerToSell.y - sellBtn.height - 10;
-                    sellBtn.visible = true; // Make it immediately visible
+                this.towerToSell = clickedTower;
+                const sellBtn = this.ui.sellButton;
+                
+                // Position sell button in the center of the clicked tower
+                sellBtn.x = 25 + this.towerToSell.x + (this.towerToSell.width / 2) - (sellBtn.width / 2);
+                sellBtn.y = this.towerToSell.y + (this.towerToSell.height / 2) - (sellBtn.height / 2);
+                sellBtn.visible = true;
+                sellBtn.isAnimatingIn = true;
+                sellBtn.isAnimatingOut = false;
+                sellBtn.animTimer = 0;
 
-                    this.awaitingSellConfirmation = true;
-                    // Reset double-tap state so a triple tap doesn't register another sell request
-                    this.lastClickedTower = null;
-                    this.lastClickTime = 0;
-                    return; // Consumed by sell-initiation
-                } else {
-                    // First click of a potential double tap, or clicked a different tower
-                    this.lastClickedTower = clickedTower;
-                    this.lastClickTime = currentTime;
-                    // Set a timeout to clear the double-tap state if no second click occurs
-                    this.doubleTapTimeoutId = setTimeout(() => {
-                        this.lastClickedTower = null;
-                        this.lastClickTime = 0;
-                        this.doubleTapTimeoutId = null;
-                    }, this.doubleTapThreshold);
-
-                    // If sell button was already visible, and user clicked a different tower, cancel the previous sell intent
-                    if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
-                        this.cancelSell();
-                    }
-                }
+                this.awaitingSellConfirmation = true;
+                // NOTE: We do NOT return here, so the click can fall through to the lick action.
             } else {
                 // Clicked nowhere or not on a tower (and no sell confirmation pending from a previous double-tap)
                 // Clear any pending single-click timeout
@@ -842,28 +872,43 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.canvas.addEventListener('mouseup', () => {
             this.mouse.isDown = false;
             
-            // 3. Handle building logic
+            // Handle building logic after mouseup
             if (this.isBuilding) {
-                const cancelBtn = this.ui.cancelButton;
-                // Check if the build button (now cancel button) was clicked to start building.
-                // If so, we don't want to immediately cancel on mouseup.
-                if (Date.now() - this.buildButtonHoldTimer < 100) {
-                    // This was a quick click, not a hold. Treat as a lick.
-                    this.player.tryLick();
-                }
-                if (this.mouse.x > cancelBtn.x && this.mouse.x < cancelBtn.x + cancelBtn.width && this.mouse.y > cancelBtn.y && this.mouse.y < cancelBtn.y + cancelBtn.height) {
-                    this.isBuilding = false;
-                    this.highlightedSlot = null;
-                    this.isPaused = false;
-                    this.ui.buildButton.img = this.buildButtonImage;
-                    this.buildButtonHoldTimer = 0;
-                    return;
-                }
+                // If the highlighted slot is the cancel button, just cancel the build.
+                const isCancelAction = this.highlightedSlot && (this.highlightedSlot.id === 'cancel' || this.highlightedSlot.isOccupied);
 
-                if (this.highlightedSlot && this.highlightedSlot.canPlace) {
+                if (isCancelAction) {
+                    // --- Start Cancel Animation ---
+                    this.isBuilding = false; // Stop drawing the normal ghost
+                    this.isCancelingBuild = true;
+                    this.cancelAnimTimer = 0;
+                    
+                    // Store ghost turret's final position for the animation
+                    const turretWidth = 137 * 0.9;
+                    const turretHeight = 190 * 0.9;
+                    this.cancelAnimData.width = turretWidth;
+                    this.cancelAnimData.height = turretHeight;
+                    this.cancelAnimData.x = this.highlightedSlot.x;
+                    this.cancelAnimData.y = this.highlightedSlot.y;
+                    this.cancelAnimData.id = this.highlightedSlot.id; // Store the ID for positioning
+
+                    // Create "poof" effect at the correct location
+                    const poofY = (this.highlightedSlot.id === 'cancel') ? this.highlightedSlot.y - (this.ui.cancelButton.height * 1.55 / 2) + 30 : this.highlightedSlot.y - 80;
+                    for (let i = 0; i < 25; i++) {
+                        this.particles.push(new Particle(this, this.highlightedSlot.x, poofY, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
+                    }
+
+                    this.audioManager.playSound('reset'); // Play a cancel sound
+                } else if (this.highlightedSlot && this.highlightedSlot.canPlace) {
                     const cost = this.getNextTurretCost();
                     if (this.towers.length >= this.stats.maxTurretsAvailable) {
                         showNotification("Max turrets reached!");
+                        // Poof effect for failed placement
+                        const poofX = this.highlightedSlot.x;
+                        const poofY = this.highlightedSlot.y - 80;
+                        for (let i = 0; i < 25; i++) {
+                            this.particles.push(new Particle(this, poofX, poofY, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
+                        }
                     } else if (this.money < cost) {
                         showNotification("Not enough money!");
                     } else {
@@ -873,24 +918,32 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         const turretY = this.highlightedSlot.y - turretHeight + (turretHeight / 2);
                         const newTurret = new Tower(this, turretX, turretY, true, this.highlightedSlot.id); 
                         this.towers.push(newTurret);
-                        this.stats.turretsBought++; 
                         this.money -= cost; 
 
-                        const placedSlotId = this.highlightedSlot.id;
-                        const platform = this.highlightedSlot.platform;
-                        const originalSlot = platform.slots.find(s => s.id === placedSlotId);
-                        if (originalSlot) { originalSlot.isOccupied = true; }
-                        
-                        // showNotification("Turret placed!"); // Removed per user request
+                        // Mark the slot as occupied
+                        let foundSlot = false;
+                        for (const p of this.platforms) {
+                            if (p.slots) {
+                                const slotToOccupy = p.slots.find(s => s.id === this.highlightedSlot.id);
+                                if (slotToOccupy) {
+                                    slotToOccupy.isOccupied = true;
+                                    foundSlot = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!foundSlot) console.error("Could not find and occupy slot with ID:", this.highlightedSlot.id);
                     }
                 }
-                this.highlightedSlot = null;
-                this.isBuilding = false;
-                this.isPaused = false;
-                this.showHoldText = false;
-                this.ui.buildButton.img = this.buildButtonImage;
-                this.buildButtonHoldTimer = 0;
-            } 
+                // If not starting a cancel animation, exit build mode immediately
+                if (!this.isCancelingBuild) {
+                    this.isBuilding = false;
+                    this.audioManager.setBuildMode(false, false);
+                    this.highlightedSlot = null;
+                    this.timeScale = 1; // Resume game speed
+                    this.ui.buildButton.img = this.buildButtonImage;
+                }
+            }
         });
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
@@ -1163,56 +1216,49 @@ Object.entries(colors).forEach(([name, rgb]) => {
         return Math.round(cost / 10) * 10; // Round to nearest 10 for cleaner numbers
     }
 
-    updateHoldText(tsf) {
-        if (!this.showHoldText) return;
-
-        const animationDuration = 60; // Total duration of one bounce in frames
-        const timeSinceStart = (this.gameTime - this.holdTextStartTime) * tsf;
-
-        // Fade in and out
-        const fadeDuration = animationDuration * 0.8;
-        if (timeSinceStart < fadeDuration) {
-            this.holdTextAlpha = Math.min(1, timeSinceStart / (fadeDuration * 0.2));
-        } else {
-            this.holdTextAlpha = Math.max(0, 1 - (timeSinceStart - fadeDuration) / (fadeDuration * 0.8));
-        }
-
-        // Bouncing effect
-        const bounceProgress = (timeSinceStart % animationDuration) / animationDuration;
-        this.holdTextBounceOffset = Math.sin(bounceProgress * Math.PI) * 10; // 10px bounce height
-
-        if (this.holdTextAlpha <= 0) {
-            this.showHoldText = false;
-        }
-    }
-
     update(tsf) { // tsf is time scale factor, passed from gameloop
         // UI Shake animations
         if (this.uiShake.money > 0) this.uiShake.money *= 0.9;
         if (this.uiShake.xp > 0) this.uiShake.xp *= 0.9;
 
+        // Sell button fade animation
         const sellBtn = this.ui.sellButton;
-        if (sellBtn.visible) {
-            sellBtn.alpha = Math.min(1, sellBtn.alpha + 0.1);
-        } else { // Fading out
-            sellBtn.alpha = Math.max(0, sellBtn.alpha - 0.1);
-        }
-
-        if (this.buildButtonHoldTimer > 0 && !this.isBuilding) {
-            if (Date.now() - this.buildButtonHoldTimer >= 100) {
-                this.isBuilding = true;
-                this.audioManager.setBuildMode(true, false); // In build mode, not just muffled
-                this.showHoldText = false;
-                this.buildButtonHoldTimer = 0;
-                this.isPaused = true; // Pause the game for building
-                this.ui.buildButton.img = this.ui.cancelButton.img;
+        if (sellBtn.isAnimatingIn) {
+            sellBtn.animTimer = Math.min(sellBtn.animDuration, sellBtn.animTimer + tsf);
+            if (sellBtn.animTimer >= sellBtn.animDuration) {
+                sellBtn.isAnimatingIn = false;
+            }
+        } else if (sellBtn.isAnimatingOut) {
+            sellBtn.animTimer = Math.min(sellBtn.animDuration, sellBtn.animTimer + tsf);
+            if (sellBtn.animTimer >= sellBtn.animDuration) {
+                sellBtn.isAnimatingOut = false;
+                sellBtn.visible = false;
             }
         }
+        // Set alpha based on animation state
+        const fadeSpeedMultiplier = 1.5; // 50% faster fade
+        const fadeProgress = Math.min(1, (sellBtn.animTimer / sellBtn.animDuration) * fadeSpeedMultiplier);
+        if (sellBtn.isAnimatingIn) sellBtn.alpha = fadeProgress;
+        else if (sellBtn.isAnimatingOut) sellBtn.alpha = 1 - fadeProgress;
+        else if (sellBtn.visible) sellBtn.alpha = 1;
+        else sellBtn.alpha = 0;
 
         // Only update game entities if the game is not paused for any reason.
-        if (!this.isPaused && !this.isBuilding) {
+        if (!this.isPaused) {
             this.player.update(tsf);
             this.towers.forEach(t => t.update(tsf));
+        }
+
+        // Update logic for the build-cancel animation
+        if (this.isCancelingBuild) {
+            this.cancelAnimTimer += tsf;
+            if (this.cancelAnimTimer >= this.cancelAnimDuration) {
+                this.isCancelingBuild = false;
+                this.audioManager.setBuildMode(false, false);
+                this.timeScale = 1;
+                this.ui.buildButton.img = this.buildButtonImage;
+                this.highlightedSlot = null;
+            }
         }
     }
 

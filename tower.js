@@ -1,6 +1,7 @@
 import BaseStructure from './baseStructure.js';
 import Projectile from './projectile.js';
 import Particle from './particle.js';
+import FrostingParticle from './frostingParticle.js';
 
 export default class Tower extends BaseStructure {
     static lastSpriteIndex = -1; // Add this line
@@ -42,6 +43,19 @@ export default class Tower extends BaseStructure {
         this.range = 300;
         this.isAnimating = false;
         this.recoil = 0;
+
+        // Sell animation properties
+        this.isSelling = false;
+        this.sellAnimTimer = 0;
+        this.sellAnimDuration = 20; // 1/3 of a second at 60fps
+
+        // Placement animation properties
+        this.isPlacing = true;
+        this.finalY = y; // Store the target Y
+        this.y = y - 80; // Start 80px higher
+        this.placementVY = 0;
+        this.placementGravity = 1.5;
+        this.squashTimer = 0;
     }
     update(tsf) {
         // Player-controlled range indicator logic and player control checks removed
@@ -55,6 +69,41 @@ export default class Tower extends BaseStructure {
         // Apply Sugar Rush fire rate buff
         if (this.game.player.sugarRushTimer > 0) {
             fireRate *= 0.75; // 25% faster fire rate (cooldown is 75% of normal)
+        }
+
+        if (this.isSelling) {
+            this.sellAnimTimer += tsf;
+            if (this.sellAnimTimer >= this.sellAnimDuration) {
+                this.game.towers = this.game.towers.filter(t => t !== this);
+            }
+            return; // Don't do other updates while selling
+        }
+
+        if (this.squashTimer > 0) {
+            this.squashTimer -= tsf;
+        }
+
+        if (this.isPlacing) {
+            this.placementVY += this.placementGravity * tsf;
+            this.y += this.placementVY * tsf;
+
+            if (this.y >= this.finalY) {
+                this.y = this.finalY; // Snap to final position
+                this.isPlacing = false;
+                this.squashTimer = 15; // Trigger squish animation (15 frames)
+                
+                // Spawn frosting particles on land
+                const visualCx = this.x + this.width / 2 + this.drawOffsetX;
+                const visualCy = this.y + this.height + this.drawOffsetY; // At the base
+                for (let i = 0; i < 20; i++) { // Increased from 20 to 30
+                    const vx = (Math.random() - 0.5) * 10; // Increased velocity slightly
+                    const vy = -Math.random() * 12 - 5;   // Increased velocity slightly
+                    const radius = Math.random() * 8 + 1; // Increased radius (was effectively 2-7, now 4-10)
+                    const lifespan = 30 + Math.random() * 20;
+                    this.game.particlesBehind.push(new FrostingParticle(this.game, visualCx, visualCy, vx, vy, radius, this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)], lifespan));
+                }
+            }
+            return; // Don't do other updates while placing
         }
 
         this.recoil *= 0.9;
@@ -87,8 +136,7 @@ export default class Tower extends BaseStructure {
                 this.shoot(fireRate); this.cooldown = fireRate;
             }
         }
-    }
-    shoot(fireRate) {
+    }    shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
         // Center of the hitbox, which is the logical center
@@ -123,20 +171,55 @@ export default class Tower extends BaseStructure {
             this.game.projectiles.push(projectile);
         }
     }
+
+    sell() {
+        if (this.isSelling) return;
+        this.isSelling = true;
+        this.sellAnimTimer = 0;
+
+        // Puff of pink smoke
+        const visualCx = this.x + this.width / 2 + this.drawOffsetX;
+        const visualCy = this.y + this.height / 2 + this.drawOffsetY;
+        for (let i = 0; i < 25; i++) {
+            this.game.particles.push(new Particle(this.game, visualCx, visualCy, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
+        }
+    }
+
     draw(ctx) {
         const visualCx = this.x + this.width / 2 + this.drawOffsetX;
         const visualCy = this.y + this.height / 2 + this.drawOffsetY;
 
-        // Always-visible auto-turret radius
-        ctx.beginPath(); ctx.arc(visualCx, visualCy - 30, this.range, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(130, 180, 200, 0.3)';
-        ctx.fillStyle = 'rgba(130, 180, 200, 0.1)';
-        ctx.fill();
-        ctx.stroke();
+        // Only draw range circle after placement is complete
+        if (!this.isPlacing && !this.isSelling) {
+            ctx.beginPath(); ctx.arc(visualCx, visualCy, this.range, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(130, 180, 200, 0.3)';
+            ctx.fillStyle = 'rgba(130, 180, 200, 0.1)';
+            ctx.fill();
+            ctx.stroke();
+        }
 
         ctx.save();
         // Translate to the center of the tower to scale from the center
         ctx.translate(visualCx, visualCy);
+
+        // Sell Animation: Squish, shrink, and fade
+        if (this.isSelling) {
+            const progress = this.sellAnimTimer / this.sellAnimDuration;
+            const scale = 1 - progress;
+            const squishY = 1 - progress * 0.8; // Squishes down
+            const squishX = 1 + progress * 0.5; // Bulges out
+            ctx.scale(scale * squishX, scale * squishY);
+            ctx.globalAlpha = 1 - progress;
+        }
+
+        // Landing Squish Animation
+        if (this.squashTimer > 0) {
+            const progress = this.squashTimer / 15;
+            const scaleY = 1 - Math.sin(progress * Math.PI) * 0.3;
+            const scaleX = 1 + Math.sin(progress * Math.PI) * 0.3;
+            ctx.scale(scaleX, scaleY);
+        }
+
 
         // Apply body shake
         const bodyShakeX = Math.cos(this.barrelAngle) * this.recoil * -2.2;
@@ -157,7 +240,6 @@ export default class Tower extends BaseStructure {
                           -sWidth * 0.9 / 2, -sHeight * 0.9 / 2, // Center the image
                           Tower.SPRITE_FRAME_WIDTH * 0.9, Tower.SPRITE_FRAME_HEIGHT * 0.9); // Draw at original scaled size
         }
-        ctx.restore(); // Restore from body shake
 
         // --- Sugar Rush Animation ---
         if (this.game.player.sugarRushTimer > 0) {
@@ -196,8 +278,26 @@ export default class Tower extends BaseStructure {
         }
         // --- End Sugar Rush ---
 
-        ctx.save();
-        ctx.translate(0, -30); // Barrel pivot point relative to tower center
+        ctx.restore(); // Restore from the main tower body's translation and scaling
+        if (this.isPlacing) { return; } // Don't draw arm while falling
+        ctx.save(); // A NEW save specifically for the arm
+        ctx.translate(visualCx, visualCy - 30); // Translate to the arm's pivot point
+
+        // Apply the same squish/sell animations to the arm
+        if (this.isSelling) {
+            const progress = this.sellAnimTimer / this.sellAnimDuration;
+            const scale = 1 - progress;
+            const squishY = 1 - progress * 0.8;
+            const squishX = 1 + progress * 0.5;
+            ctx.scale(scale * squishX, scale * squishY);
+        }
+        if (this.squashTimer > 0) {
+            const progress = this.squashTimer / 15;
+            const scaleY = 1 - Math.sin(progress * Math.PI) * 0.3;
+            const scaleX = 1 + Math.sin(progress * Math.PI) * 0.3;
+            ctx.scale(scaleX, scaleY);
+        }
+
         ctx.rotate(this.barrelAngle);
 
         // Apply barrel recoil
@@ -231,6 +331,6 @@ export default class Tower extends BaseStructure {
         // Muzzle Flash
         ctx.fillStyle = (this.cooldown > this.game.stats.fireRate - 3) ? '#e67e22' : 'transparent';
         ctx.beginPath(); ctx.arc(100, 0, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
+        ctx.restore(); // Restore from the arm's transformations
     }
 }

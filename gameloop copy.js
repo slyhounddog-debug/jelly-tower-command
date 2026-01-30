@@ -296,6 +296,15 @@ export default class GameLoop {
         this.game.towers.forEach(t => t.draw(this.game.ctx));
 
         // Draw the sell button if it's active
+        if (this.game.ui.sellButton.visible) {
+            const btn = this.game.ui.sellButton;
+            const img = this.game.sellButtonUpImage;
+            ctx.save();
+            ctx.globalAlpha = btn.alpha;
+            ctx.drawImage(img, btn.x, btn.y, btn.width, btn.height);
+            ctx.restore();
+        }
+
         this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
@@ -324,72 +333,47 @@ export default class GameLoop {
             this.game.levelUpScreen.draw(this.game.ctx);
         }
 
-        // Draw pulsing placement slots if in building mode
-        if (this.game.isBuilding) {
-            // Animation is 20x faster to compensate for the 1/20 slowdown in build mode.
-            const pulse = (Math.sin(this.game.gameTime * (0.1 * 20)) + 1) / 2; // 0 to 1 pulse
-            this.game.platforms.forEach(p => {
-                if (p.slots) {
-                    p.slots.forEach(slot => { // line 332
-                        // If the ghost turret is hovering over this slot, it disappears.
-                        if (this.game.highlightedSlot && this.game.highlightedSlot.id === slot.id) {
-                            return; // Skip drawing this slot
-                        }
+        // this.game.levelUpManagerScreen.update(tsf); // Now handled by ModalManager
+        // this.game.levelUpManagerScreen.draw(this.game.ctx); // Now handled by ModalManager
 
-                        // If a turret is already there, don't draw the slot.
-                        if (slot.isOccupied) {
-                            return; // Skip drawing this slot
-                        }
+        // Draw Ghost Turret if in building mode
+        if (this.game.isBuilding && this.game.towersImage.complete) {
+            const img = this.game.towersImage;
+            const turretWidth = 137;
+            const turretHeight = 190;
+            let drawX = this.game.mouse.x - (turretWidth / 2);
+            let drawY = this.game.mouse.y - (turretHeight / 2);
+            let alpha = 0.5;
+            let tintColor = null; 
 
+            const cancelBtn = this.game.ui.cancelButton;
+            const cancelBtnCenterX = cancelBtn.x + cancelBtn.width / 2;
+            const cancelBtnCenterY = cancelBtn.y + cancelBtn.height / 2;
+            const distToCancelBtn = Math.hypot(this.game.mouse.x - cancelBtnCenterX, this.game.mouse.y - cancelBtnCenterY);
+            const SNAP_DISTANCE = 60; // Pixels to snap to cancel button
 
-                        this.game.ctx.save();
-                        
-                        const rectWidth = 80;
-                        const rectHeight = 80;
-                        const rectX = slot.x - rectWidth / 2;
-                        const rectY = slot.y - rectHeight / 2;
-
-                        this.game.ctx.beginPath();
-                        this.game.ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 10);
-                        
-                        // If a turret is already there, show a faint red. Otherwise, pulse white.
-                        this.game.ctx.fillStyle = `rgba(255, 255, 255, ${0.38 + pulse * 0.5})`;
-                        
-                        this.game.ctx.fill();
-                        this.game.ctx.restore();
-                    });
+            if (distToCancelBtn < SNAP_DISTANCE) {
+                // Snap to cancel button
+                drawX = cancelBtnCenterX - (turretWidth / 2);
+                drawY = cancelBtnCenterY - (turretHeight / 2);
+                tintColor = 'red';
+                alpha = 0.7; // Make it slightly more opaque when snapping
+            } else if (this.game.highlightedSlot) {
+                drawX = this.game.highlightedSlot.x - (turretWidth / 2);
+                drawY = this.game.highlightedSlot.y - (turretHeight / 2);
+                if (!this.game.highlightedSlot.canPlace) {
+                    tintColor = 'red'; 
                 }
-            });
-        }
-
-        // Draw the sell button if it's active
-        if (this.game.ui.sellButton.visible) {
-            const btn = this.game.ui.sellButton;
-            const img = this.game.sellButtonUpImage;
-            this.game.ctx.save();
-
-            const centerX = btn.x + btn.width / 2;
-            const centerY = btn.y + btn.height / 2;
-            this.game.ctx.translate(centerX, centerY);
-
-            if (btn.isAnimatingIn) {
-                const progress = btn.animTimer / btn.animDuration;
-                const scaleY = 1 - Math.sin(progress * Math.PI) * -0.3; // Bounces up
-                const scaleX = 1 + Math.sin(progress * Math.PI) * 0.3;  // Bulges out
-                this.game.ctx.scale(scaleX, scaleY);
-            } else if (btn.isAnimatingOut) {
-                const progress = btn.animTimer / btn.animDuration;
-                const scaleY = 1 - progress * 0.8; // Squishes down
-                const scaleX = 1 + progress * 0.5; // Bulges out
-                this.game.ctx.scale(scaleX, scaleY);
             }
 
-            this.game.ctx.globalAlpha = btn.alpha;
-            this.game.ctx.drawImage(img, -btn.width / 2, -btn.height / 2, btn.width, btn.height);
-            this.game.ctx.restore();
+            this.game.ctx.save();
+            this.game.ctx.globalAlpha = alpha; 
+            if (tintColor === 'red') {
+                this.game.ctx.filter = 'hue-rotate(180deg) brightness(1.5)'; 
+            }
+            this.game.ctx.drawImage(img, 0, 190, turretWidth, turretHeight, drawX, drawY, turretWidth, turretHeight);
+            this.game.ctx.restore(); 
         }
-        
-
 
         this.game.ctx.restore(); // Restore screen shake translation
 
@@ -449,8 +433,21 @@ export default class GameLoop {
         ctx.fillText(`$${game.money}`, currentXLeft, centerY);
         ctx.restore();
         ctx.shadowBlur = 0;
-        currentXLeft -= (elementSpacing + xpBarTotalWidth + 30); // Move left for XP bar, added extra padding
+        currentXLeft -= (elementSpacing + shopButtonTotalWidth); // Move left for shop button
 
+        // Shop Button (middle of left group)
+        const shopBtn = ui.shopButton;
+        shopBtn.x = currentXLeft;
+        shopBtn.y = centerY - (shopButtonTotalWidth / 2);
+        ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
+        ctx.shadowBlur = 10;
+        if (shopBtn.img.complete) {
+            ctx.drawImage(shopBtn.img, shopBtn.x, shopBtn.y, shopButtonTotalWidth, shopButtonTotalWidth);
+        }
+        ctx.shadowBlur = 0;
+        currentXLeft -= (elementSpacing + xpBarTotalWidth); // Move left for XP bar
+
+        // XP Bar (leftmost of left group)
         game.xpBar.height = 38 * uiScale;
         ctx.save();
         const xpShakeX = (Math.random() - 0.5) * game.uiShake.xp;
@@ -466,40 +463,36 @@ export default class GameLoop {
         // 4. Place elements to the RIGHT of Health Bar (Turret Cost, Build, Settings)
         let currentXRight = healthBarX + healthBarTotalWidth + elementSpacing; // Start at right edge of health bar, moving right
 
-        // Shop Button (now leftmost of right group)
-        const shopBtn = ui.shopButton;
-        shopBtn.x = currentXRight;
-        shopBtn.y = centerY - (shopButtonTotalWidth / 2);
-        currentXRight += shopButtonTotalWidth + elementSpacing;
+        // Next Turret Cost Display (leftmost of right group)
+        ctx.font = 'bold 400px "VT323"'; 
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        console.log("I AM RUNNING: " + game.getNextTurretCost());
+ctx.fillStyle = 'red'; // Force it to red
+ctx.font = '100px Arial'; // Make it huge
 
-        // Build Button (now middle of right group)
+        // 1. Set the text color to Pink/Purple
+        ctx.fillStyle = '#566ffdff'; 
+
+        // 2. Keep your shadow for the glow effect
+        ctx.shadowColor = 'rgba(255, 0, 191, 0.5)';
+        ctx.shadowBlur = 10;
+
+        // 3. Draw the text (Removed the invalid ctx.border line)
+        ctx.fillText(`$${game.getNextTurretCost()}`, currentXRight, centerY);
+
+        ctx.shadowBlur = 0;
+        currentXRight += turretCostTextTotalWidth + (elementSpacing * 1.25);
+
+        // Build Button (middle of right group)
         const buildBtn = ui.buildButton;
         const cancelBtn = ui.cancelButton;
         buildBtn.x = currentXRight;
         buildBtn.y = centerY - (buildButtonTotalWidth / 2);
         cancelBtn.x = currentXRight; // Position cancel button at the same spot
         cancelBtn.y = centerY - (buildButtonTotalWidth / 2);
-        // Draw Next Turret Cost above the build button, but only when not in build mode
-        if (!game.isBuilding) {
-            ctx.font = `bold ${Math.floor(30 * uiScale)}px "VT323"`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillStyle = game.turretCostTextColor;
-            ctx.shadowColor = 'rgba(255, 0, 191, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.fillText(`$${game.getNextTurretCost()}`, buildBtn.x + (buildButtonTotalWidth / 2), buildBtn.y - 10);
-            ctx.shadowBlur = 0;
-        }
 
-        // Draw the moved shop button
         ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
-        ctx.shadowBlur = 10;
-        if (shopBtn.img.complete) {
-            ctx.drawImage(shopBtn.img, shopBtn.x, shopBtn.y, shopButtonTotalWidth, shopButtonTotalWidth);
-        }
-        ctx.shadowBlur = 0;
-
-        // Draw the Build/Cancel button
         ctx.shadowBlur = 10;
         
         let buttonToDraw = buildBtn.img; // Default to build button
@@ -518,7 +511,7 @@ export default class GameLoop {
             ctx.drawImage(buttonToDraw, buildBtn.x, buildBtn.y, buildButtonTotalWidth, buildButtonTotalWidth);
         }
         ctx.shadowBlur = 0;
-        currentXRight += buildButtonTotalWidth + elementSpacing;
+        currentXRight += buildButtonTotalWidth + (elementSpacing * 1.25);
 
         // Settings Button (rightmost of right group)
         const settingsBtn = ui.settingsButton;
@@ -530,7 +523,6 @@ export default class GameLoop {
             ctx.drawImage(settingsBtn.img, settingsBtn.x, settingsBtn.y, settingsButtonTotalWidth, settingsButtonTotalWidth);
         }
         ctx.shadowBlur = 0;
-
 
 
         // Draw "Hold" text for build button feedback
@@ -551,66 +543,6 @@ export default class GameLoop {
             ctx.restore();
         }
 
-        // Draw Ghost Turret if in building mode (MOVED TO END OF DRAW)
-        if (this.game.isBuilding && this.game.towersImage.complete) {
-            const img = this.game.towersImage;
-            const turretWidth = 137 * 0.9; // Scale down by 10%
-            const turretHeight = 190 * 0.9;
-            let drawX = this.game.mouse.x - (turretWidth / 2);
-            let drawY = this.game.mouse.y - (turretHeight / 2);
-            let alpha = 0.5;
-            let tintColor = null;
-
-            if (this.game.highlightedSlot) {
-                // If it's the cancel slot
-                if (this.game.highlightedSlot.id === 'cancel') {
-                    drawX = this.game.highlightedSlot.x - (turretWidth / 2);
-                    drawY = this.game.highlightedSlot.y - (turretHeight / 2);
-                    tintColor = 'red';
-                    alpha = 0.7;
-                } else { // It's a regular build slot
-                    drawX = this.game.highlightedSlot.x - (turretWidth / 2);
-                    drawY = this.game.highlightedSlot.y - (turretHeight / 2) - 80; // 80px higher to match spawn
-                    if (this.game.highlightedSlot.isOccupied) {
-                        tintColor = 'red';
-                    }
-                }
-            }
-
-            ctx.save();
-            ctx.globalAlpha = alpha;
-            if (tintColor === 'red') {
-                ctx.filter = 'hue-rotate(180deg) brightness(1.5)';
-            } 
-            // Draw the ghost turret relative to the main canvas, not the UI bar
-            ctx.drawImage(img, 0, 190, 137, 190, drawX, drawY - 100, turretWidth, turretHeight);
-            ctx.restore();
-        }
-
-        // Draw Build-Cancel Animation
-        if (this.game.isCancelingBuild && this.game.towersImage.complete) {
-            const animData = this.game.cancelAnimData;
-            const visualCx = animData.x;
-            // Adjust Y based on whether it was a cancel button or a build slot
-            const visualCy = (animData.id === 'cancel') ? animData.y : animData.y - 80;
-
-            ctx.save();
-            ctx.translate(visualCx, visualCy);
-
-            // Apply the same squish/sell animation logic
-            const progress = this.game.cancelAnimTimer / this.game.cancelAnimDuration;
-            const scale = 1 - progress;
-            const squishY = 1 - progress * 0.8; // Squishes down
-            const squishX = 1 + progress * 0.5; // Bulges out
-            ctx.scale(scale * squishX, scale * squishY);
-            ctx.globalAlpha = 1 - progress;
-
-            // Draw the ghost turret image centered
-            const img = this.game.towersImage;
-            ctx.drawImage(img, 0, 190, 137, 190, -animData.width / 2, -animData.height, animData.width, animData.height);
-
-            ctx.restore();
-        }
 
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');
