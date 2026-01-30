@@ -13,6 +13,8 @@ export default class CastleHealthBar {
         this.pulseTimer = 0;
         this.wobbleTimer = 0;
         this.lowHealthFlashTimer = 0;
+        this.width = 525;
+        this.height = 42;
     }
 
     update(tsf) {
@@ -98,9 +100,9 @@ export default class CastleHealthBar {
         this.whiteBarTimer = 60; // Start timer. visualHealth will NOT update for 1 second.
     }
 
-    draw(ctx, x, y) {
-        const barWidth = 525; // 350 * 1.5
-        const barHeight = 42; // 28 * 1.5
+    draw(ctx, x, y, barWidth = this.width) {
+        // const barWidth = 525; // 350 * 1.5 - Now comes from parameter or this.width
+        const barHeight = this.height; // Now comes from this.height
         const barX = x;
         const barY = y;
 
@@ -145,7 +147,7 @@ export default class CastleHealthBar {
         ctx.strokeStyle = '#ff00ff'; // Magenta border
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.roundRect(barX, barY, barWidth, barHeight, 21); // 14 * 1.5
+        ctx.roundRect(barX, barY, barWidth, barHeight, 38); // 14 * 1.5
         ctx.fill();
         ctx.stroke();
 
@@ -170,7 +172,7 @@ export default class CastleHealthBar {
 
             ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
             ctx.beginPath();
-            ctx.roundRect(barX, barY, barWidth * lowerHealthPct, barHeight, 21);
+            ctx.roundRect(barX, barY, barWidth * lowerHealthPct, barHeight, 38);
             ctx.fill();
         }
 
@@ -178,7 +180,7 @@ export default class CastleHealthBar {
         if (this.whiteBarTimer > 0 && Math.abs(currentHealthPct - visualHealthPct) > 0.001) { // Only draw if there's a significant difference
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; // White with some transparency
             ctx.beginPath();
-            ctx.roundRect(barX + (barWidth * lowerHealthPct), barY, barWidth * (higherHealthPct - lowerHealthPct), barHeight, 21);
+            ctx.roundRect(barX + (barWidth * lowerHealthPct), barY, barWidth * (higherHealthPct - lowerHealthPct), barHeight, 38);
             ctx.fill();
         }
         
@@ -187,7 +189,7 @@ export default class CastleHealthBar {
             const flashOpacity = (Math.sin(this.lowHealthFlashTimer) + 1) / 2 * 0.20; // Cycles between 0 and 0.20
             ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
             ctx.beginPath();
-            ctx.roundRect(barX, barY, barWidth, barHeight, 21);
+            ctx.roundRect(barX, barY, barWidth, barHeight, 38);
             ctx.fill();
         }
 
@@ -195,12 +197,12 @@ export default class CastleHealthBar {
         // Shine
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.beginPath();
-        ctx.roundRect(barX + 3, barY + 3, barWidth - 6, barHeight / 3, 15); // 10 * 1.5
+        ctx.roundRect(barX + 3, barY + 3, barWidth - 6, barHeight / 3, 20); // 10 * 1.5
         ctx.fill();
 
         // Text
         const healthText = `${Math.ceil(this.game.castleHealth)} / ${maxHealth}`;
-        ctx.font = 'bold 42px "VT323"'; // 16 * 1.5
+        ctx.font = 'bold 52px "VT323"'; // 42 * 1.25
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';

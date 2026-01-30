@@ -76,16 +76,10 @@ export default class Drawing {
         let buttonImage;
         if (this.game.assetsReady) {
             buttonImage = this.game.readybuttonImage;
-        } else {
-            buttonImage = this.game.loadingbuttonImage;
-        }
-
-        if (buttonImage && buttonImage.complete) {
-            btn.width = buttonImage.naturalWidth * 1.2;
-            btn.height = buttonImage.naturalHeight * 1.2;
-            btn.x = (this.width - btn.width) / 2;
-            btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height;
-            ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
+                    btn.width = buttonImage.naturalWidth * 1.5;
+                    btn.height = buttonImage.naturalHeight * 1.5;
+                    btn.x = (this.width - btn.width) / 2;
+                    btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height - 50;            ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
         }
     }
 
@@ -101,10 +95,10 @@ export default class Drawing {
         let buttonImage = this.game.loadingbuttonImage;
 
         if (buttonImage && buttonImage.complete) {
-            btn.width = buttonImage.naturalWidth * 1.2;
-            btn.height = buttonImage.naturalHeight * 1.2;
+            btn.width = buttonImage.naturalWidth * 1.5;
+            btn.height = buttonImage.naturalHeight * 1.5;
             btn.x = (this.width - btn.width) / 2;
-            btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height;
+            btn.y = this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.045) - btn.height - 50;
             ctx.drawImage(buttonImage, btn.x, btn.y, btn.width, btn.height);
         }
     }

@@ -87,10 +87,9 @@ export default class Shop {
         const cost = item.getCost();
         if (typeof cost === 'number' && this.game.money >= cost) {
             if (item.id === 'buy_turret') {
-                this.game.placementMode = 'turret';
-                this.game.placementItemCost = cost;
-                this.game.modalManager.close();
-                return;
+                // The new building mode is activated by holding the build button, not from the shop
+                // So, no action here for buy_turret beyond checking cost.
+                // The item would still need to be "purchased" to increase money.
             }
             this.game.money -= cost;
             item.action();

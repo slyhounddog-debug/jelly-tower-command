@@ -106,10 +106,10 @@ export function showNotification(message) {
     notification.style.transform = 'translate(-50%, -50%)';
     notification.style.backgroundColor = 'lightpink';
     notification.style.color = '#9966CC'; // Change font color to white
-    notification.style.padding = '20px 40px';
+    notification.style.padding = '15px 30px';
     notification.style.borderRadius = '25px'; // More rounded
     notification.style.zIndex = '2000';
-    notification.style.fontSize = '32px'; // h2 font size (approx)
+    notification.style.fontSize = '24px'; // h2 font size (approx)
    
     notification.style.fontFamily = "'Titan One', cursive"; // h2 font type
     notification.style.textAlign = 'center';

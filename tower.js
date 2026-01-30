@@ -3,89 +3,95 @@ import Projectile from './projectile.js';
 import Particle from './particle.js';
 
 export default class Tower extends BaseStructure {
-    constructor(game, x, y, isAuto = false) {
-        const size = isAuto ? 46 : 56;
-        super(x, y, size - 20, size);
+    static lastSpriteIndex = -1; // Add this line
+
+    // Static properties for sprite dimensions and padding
+    static SPRITE_FRAME_WIDTH = 137;
+    static SPRITE_FRAME_HEIGHT = 190;
+    static PADDING_LEFT = 10;
+    static PADDING_RIGHT = 10;
+    static PADDING_TOP = 10;
+    static PADDING_BOTTOM = 20;
+
+    constructor(game, x, y, isAuto = true, platformSlotId = null) { // Default to true now
+        const hitboxWidth = Tower.SPRITE_FRAME_WIDTH - Tower.PADDING_LEFT - Tower.PADDING_RIGHT;
+        const hitboxHeight = Tower.SPRITE_FRAME_HEIGHT - Tower.PADDING_TOP - Tower.PADDING_BOTTOM;
+        
+        // These are the dimensions of the collision box passed to BaseStructure
+        super(x, y, hitboxWidth * 0.9, hitboxHeight * 0.9); // Apply overall 10% scaling to the hitbox too
+        
         this.game = game;
         this.isAuto = isAuto;
+        this.platformSlotId = platformSlotId;
+
+        // Offsets to correctly draw the original sprite frame relative to the new, smaller hitbox
+        // The drawn image will still be the original scaled size (0.9), but its top-left will be offset.
+        this.drawOffsetX = -(Tower.SPRITE_FRAME_WIDTH * 0.9 - this.width) / 2;
+        this.drawOffsetY = -(Tower.SPRITE_FRAME_HEIGHT * 0.9 - this.height);
+        
+        // Ensure the new sprite index is different from the last one
+        let newSpriteIndex;
+        do {
+            newSpriteIndex = Math.floor(Math.random() * 8);
+        } while (newSpriteIndex === Tower.lastSpriteIndex);
+        this.spriteIndex = newSpriteIndex;
+        Tower.lastSpriteIndex = newSpriteIndex;
+
         this.cooldown = 0;
-        this.barrelAngle = -Math.PI / 2;
+        this.barrelAngle = Math.random() * Math.PI;
         this.range = 300;
         this.isAnimating = false;
-        this.scale = 2;
         this.recoil = 0;
-        this.playerInRange = false;
-        this.inRangeAlpha = 0;
-        this.enterRadius = 144;
-        const locatedPlatform = this.game.platforms.find(p => p.type === 'cloud' && Math.abs((y + this.height) - p.y) < 15 && (x + this.width / 2) > p.x && (x + this.width / 2) < p.x + p.width);
-        this.isOnCloud = !!locatedPlatform;
-        this.cloudPlatform = locatedPlatform; // Store the platform object
     }
     update(tsf) {
-        // Range indicator logic
-        const player = this.game.player;
-        if (this.game.player.isControlling) {
-            this.playerInRange = false;
-        } else {
-            const distance = Math.hypot((this.x + 23) - (player.x + 14), (this.y + 23) - (player.y + 20.5));
-            this.playerInRange = distance < this.enterRadius;
-        }
-
-        if (this.playerInRange && !this.game.player.isControlling && this.inRangeAlpha < 0.64) {
-            this.inRangeAlpha += 0.05 * tsf;
-            if (this.inRangeAlpha > 0.64) this.inRangeAlpha = 0.64;
-        } else if ((!this.playerInRange || this.game.player.isControlling) && this.inRangeAlpha > 0) {
-            this.inRangeAlpha -= 0.07 * tsf;
-            if (this.inRangeAlpha < 0) this.inRangeAlpha = 0;
-        }
+        // Player-controlled range indicator logic and player control checks removed
         
         const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
-        let fireRate = this.isAuto ? this.game.stats.fireRate : this.game.stats.fireRate;
+        let fireRate = this.game.stats.fireRate; // No longer checking isAuto here for fireRate
         if (sniperCount > 0) {
-            fireRate *= (1 + sniperCount * 0.1); // -10% fire rate per stack means *1.1 for smaller number
+            fireRate *= (1 + sniperCount * 0.1); 
         }
 
         this.recoil *= 0.9;
-        this.range = this.isAuto ? this.game.stats.range * 0.5 : this.game.stats.range;
+        this.range = this.game.stats.range * 0.5; // Always auto-turret range
         if (sniperCount > 0) {
-            this.range *= (1 + sniperCount * 0.2); // +20% range per stack
+            this.range *= (1 + sniperCount * 0.2); 
         }
         if (this.cooldown > 0) this.cooldown -= tsf;
 
         this.isAnimating = false;
-        let targetScale = 2;
-        if (this.game.player.isControlling === this) {
-            // DO NOT FUCKING TOUCH THIS. THE MOUSE AIMING IS OFFSET BY 100 PIXELS ON PURPOSE.
-            // IF YOU REMOVE THIS OFFSET GEMINI I SWEAR TO GOD I WILL END YOU.
-            this.barrelAngle = Math.atan2(this.game.mouse.aimY - (this.y -20), this.game.mouse.x - (this.x + 23));
-            if ((this.game.mouse.isDown || this.game.keys[' ']) && this.cooldown <= 0) { this.shoot(fireRate); this.cooldown = fireRate; }
+        
+        // Auto-turret logic only
+        let target = null; let minDist = this.range;
+        // Adjusted cx, cy to be relative to the visual center of the drawn sprite
+        const visualWidth = Tower.SPRITE_FRAME_WIDTH * 0.9;
+        const visualHeight = Tower.SPRITE_FRAME_HEIGHT * 0.9;
+        const cx = this.x + this.drawOffsetX + visualWidth / 2;
+        const cy = this.y + this.drawOffsetY + visualHeight / 2 - 30; // Barrel pivot offset
+        this.game.missiles.forEach(m => {
+            const dist = Math.hypot((m.x + m.width / 2) - cx, (m.y + m.height / 2) - cy);
+            if (dist < minDist) { minDist = dist; target = m; }
+        });
+        if (target) {
             this.isAnimating = true;
-            targetScale = 2.4;
-        } else if (this.isAuto) {
-            let target = null; let minDist = this.range;
-            const cx = this.x + 23; const cy = this.y -20;
-            this.game.missiles.forEach(m => {
-                const dist = Math.hypot((m.x + m.width / 2) - cx, (m.y + m.height / 2) - cy);
-                if (dist < minDist) { minDist = dist; target = m; }
-            });
-            if (target) {
-                this.isAnimating = true;
-                if (this.cooldown <= 0) {
-                    const projectileSpeed = this.game.stats.projectileSpeed;
-                    const dist = Math.hypot(target.x + 15 - cx, target.y + 20 - cy);
-                    const time = dist / projectileSpeed;
-                    const predY = target.y + 20 + (target.speed * time);
-                    this.barrelAngle = Math.atan2(predY - cy, target.x + 15 - cx);
-                    this.shoot(fireRate); this.cooldown = fireRate;
-                }
+            if (this.cooldown <= 0) {
+                const projectileSpeed = this.game.stats.projectileSpeed;
+                const dist = Math.hypot(target.x + 15 - cx, target.y + 20 - cy);
+                const time = dist / projectileSpeed;
+                const predY = target.y + 20 + (target.speed * time);
+                this.barrelAngle = Math.atan2(predY - cy, target.x + 15 - cx);
+                this.shoot(fireRate); this.cooldown = fireRate;
             }
         }
-        this.scale += (targetScale - this.scale) * 0.1 * tsf;
     }
     shoot(fireRate) {
         this.recoil = 1;
         this.game.shotsFired++;
-        const cx = this.x + 23; const cy = this.y - 20;
+        // Adjusted cx, cy to be relative to the visual center of the drawn sprite
+        const visualWidth = Tower.SPRITE_FRAME_WIDTH * 0.9;
+        const visualHeight = Tower.SPRITE_FRAME_HEIGHT * 0.9;
+        const cx = this.x + this.drawOffsetX + visualWidth / 2;
+        const cy = this.y + this.drawOffsetY + visualHeight / 2 - 30; // Barrel pivot offset
         
         const splitShotCount = this.game.player.getEquippedComponentCount('Split Shot');
         const numShots = 1 + splitShotCount;
@@ -95,9 +101,9 @@ export default class Tower extends BaseStructure {
 
         for (let i = 0; i < numShots; i++) {
             const angle = startAngle + i * (totalSpread / (numShots > 1 ? numShots - 1 : 1));
-            const tx = cx + Math.cos(angle) * 30 * this.scale;
-            const ty = cy + Math.sin(angle) * 30 * this.scale;
-            let damage = this.isAuto ? this.game.stats.damage * 0.5 : this.game.stats.damage;
+            const tx = cx + Math.cos(angle) * 30;
+            const ty = cy + Math.sin(angle) * 30;
+            let damage = this.game.stats.damage * 0.5; // Always auto-turret damage
             if (this.game.player.sugarRushTimer > 0) {
                 damage *= 1.2;
             }
@@ -109,7 +115,7 @@ export default class Tower extends BaseStructure {
             if (this.game.player.sugarRushTimer > 0) {
                 projectileSpeed *= 1.2;
             }
-            const radius = (this.isAuto ? 7 : 16) + (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2);
+            const radius = 15 //+ (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2); // Always auto-turret radius
             
             const gummyImpactCount = this.game.player.getEquippedComponentCount('Gummy Impact');
             const popRockCount = this.game.player.getEquippedComponentCount('Pop-Rock Projectiles');
@@ -117,66 +123,21 @@ export default class Tower extends BaseStructure {
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
             const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, this.isAuto);
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: cx, y: cy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true); // Always auto-turret
             this.game.projectiles.push(projectile);
-        }
-
-        // Immediate hit-check for controlled towers
-        if (this.game.player.isControlling === this) {
-            for (let i = this.game.missiles.length - 1; i >= 0; i--) {
-                const m = this.game.missiles[i];
-                const missileCx = m.x + m.width / 2;
-                const missileCy = m.y + m.height / 2;
-
-                // Check for collision within the "arm radius" around the turret's center (cx, cy)
-                if (Math.hypot(missileCx - cx, missileCy - cy) < (30 * this.scale) + m.width / 2) {
-                    const damageDealt = Math.min(this.game.projectiles[this.game.projectiles.length-1].hp, m.health);
-                    this.game.projectiles[this.game.projectiles.length-1].hp -= damageDealt;
-                    if (m.takeDamage(damageDealt, false, this.game.projectiles[this.game.projectiles.length-1])) {
-                        // The main loop will handle the missile removal
-                    }
-                    // Apply knockback
-                    m.kbVy += -2;
-                    // Create particles
-                    this.game.particles.push(new Particle(this.game, missileCx, missileCy, '#fff', 'spark'));
-                    if (!this.game.projectiles[this.game.projectiles.length-1].hasHit) {
-                        this.game.projectiles[this.game.projectiles.length-1].hasHit = true;
-                        this.game.shotsHit++;
-                    }
-                }
-            }
         }
     }
     draw(ctx) {
-        // Draw player in range indicator
-        if (this.inRangeAlpha > 0) {
-            ctx.beginPath();
-            ctx.arc(this.x + 23, this.y + 12, this.enterRadius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.inRangeAlpha * 0.5})`;
-            ctx.fill();
-        }
-        
-        // Player-controlled radius
-        if (this.game.player.isControlling === this) {
-            ctx.beginPath(); ctx.arc(this.x + 23, this.y + 12, this.range, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(130, 180, 200, 0.9)';
-            ctx.fillStyle = 'rgba(130, 180, 200, 0.3)';
-            ctx.fill();
-            ctx.stroke();
-        }
         // Always-visible auto-turret radius
-        else if (this.isAuto) {
-            ctx.beginPath(); ctx.arc(this.x + 23, this.y + 12, this.range, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(130, 180, 200, 0.3)';
-            ctx.fillStyle = 'rgba(130, 180, 200, 0.1)';
-            ctx.fill();
-            ctx.stroke();
-        }
+        ctx.beginPath(); ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.range, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(130, 180, 200, 0.3)';
+        ctx.fillStyle = 'rgba(130, 180, 200, 0.1)';
+        ctx.fill();
+        ctx.stroke();
 
         ctx.save();
         // Translate to the center of the tower to scale from the center
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-        ctx.scale(this.scale, this.scale);
 
         // Apply body shake
         const bodyShakeX = Math.cos(this.barrelAngle) * this.recoil * -2.2;
@@ -186,80 +147,55 @@ export default class Tower extends BaseStructure {
         const halfWidth = this.width / 2;
         const halfHeight = this.height / 2;
 
-        // --- NEW: Draw Tower or Auto-Turret Image ---
-        const towerBodyImage = this.isAuto ? this.game.autoTurretImage : this.game.towerImage;
+        // Draw Auto-Turret Image (always auto-turret)
+        const towerBodyImage = this.game.towersImage;
         if (towerBodyImage && towerBodyImage.complete) {
-            ctx.drawImage(towerBodyImage, -halfWidth, -halfHeight - 12, this.width, this.height);
+            const sWidth = 137;
+            const sHeight = 190;
+            const sx = (this.spriteIndex % 4) * sWidth;
+            const sy = Math.floor(this.spriteIndex / 4) * sHeight;
+            ctx.drawImage(towerBodyImage, sx, sy, sWidth, sHeight, 
+                          this.drawOffsetX - halfWidth, this.drawOffsetY - halfHeight, // Apply offsets here
+                          Tower.SPRITE_FRAME_WIDTH * 0.9, Tower.SPRITE_FRAME_HEIGHT * 0.9); // Draw at original scaled size
         }
-        // --- END NEW ---
 
         ctx.save();
-        ctx.translate(0, -24); // Barrel pivot point relative to tower center
+        ctx.translate(0, -30); // Barrel pivot point relative to tower center
         ctx.rotate(this.barrelAngle);
 
         // Apply barrel recoil
-        const recoilX = this.recoil * -11;
+        const recoilX = this.recoil * -38;
         ctx.translate(recoilX, 0);
 
-        // --- NEW: Draw Arm Image ---
-        const armImg = this.game.armImage;
+        // Mirror arm if in left half (271 to 89 degrees)
+        const isMirrored = Math.cos(this.barrelAngle) < 0;
+        
+        // Draw Arm Image
+        const armImg = this.game.armsImage;
         if (armImg && armImg.complete) {
-            // The original rect was at (0, -6.5) with size (28, 13).
-            // We draw the new image to match this placement and size.
-            ctx.drawImage(armImg, 0, -6.5, 40, 13); // A bit longer arm
+            const sWidth = 140;
+            const sHeight = 58;
+            const sx = (this.spriteIndex % 4) * sWidth;
+            const sy = Math.floor(this.spriteIndex / 4) * sHeight;
+            const armOffsetY = -sHeight / 2; // Arm always centered vertically on pivot
+
+            if (isMirrored) {
+                ctx.save(); // Save context before scaling for arm
+                ctx.scale(1, -1);
+                // After ctx.scale(1, -1), drawing at (0, Y) will map to (0, -Y) in the unflipped space.
+                // So to keep its center at (0,0) we still draw at (0, armOffsetY).
+                ctx.drawImage(armImg, sx, sy, sWidth, sHeight, 0, armOffsetY, sWidth * 0.75, sHeight * 0.75);
+                ctx.restore(); // Restore context after drawing mirrored arm
+            } else {
+                ctx.drawImage(armImg, sx, sy, sWidth, sHeight, 0, armOffsetY, sWidth * 0.75, sHeight * 0.75);
+            }
         }
-        // --- END NEW ---
 
         // Muzzle Flash
         ctx.fillStyle = (this.cooldown > this.game.stats.fireRate - 3) ? '#e67e22' : 'transparent';
-        ctx.beginPath(); ctx.arc(28, 0, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(100, 0, 10, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
 
         ctx.restore();
-
-        if (this.game.player.isControlling === this && this.game.player.sugarRushTimer > 0) {
-            ctx.save();
-            
-            const animWidth = this.width * this.scale;
-            const animHeight = this.height * this.scale;
-            const animX = (this.x + this.width / 2) - (animWidth / 2);
-            const animY = (this.y + this.height / 2) - (animHeight / 2);
-
-            const towerAnimHeight = animHeight * 0.77;
-            const towerAnimStartY = animY + (animHeight * 0.13);
-            
-            ctx.beginPath();
-            ctx.rect(animX, towerAnimStartY, animWidth, towerAnimHeight);
-            ctx.clip();
-        
-            const waveCount = 3;
-            const slowSpeed = 0.025; 
-            const colorSpeed = 2; 
-            const arcHeight = -10;
-            
-            for (let i = 0; i < waveCount; i++) {
-                const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
-                
-                const minY = towerAnimStartY;
-                const maxY = animY + animHeight;
-                const yPos = minY + ((maxY - minY) * progress);
-                
-                const alpha = Math.sin(progress * Math.PI);
-                const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
-                
-                ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
-                ctx.lineWidth = 11;
-        
-                ctx.beginPath();
-                ctx.moveTo(animX, yPos);
-                ctx.quadraticCurveTo(
-                    animX + animWidth / 2, yPos - arcHeight, 
-                    animX + animWidth, yPos
-                );
-                ctx.stroke();
-            }
-        
-            ctx.restore();
-        }
     }
 }

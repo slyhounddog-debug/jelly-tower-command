@@ -8,9 +8,9 @@ export default class LevelingManager {
 
         // --- ADJUST THESE THREE NUMBERS TO CHANGE BALANCING ---
         const totalLevels = 125; 
-        const startXP = 50;      // XP needed for Level 2
+        const startXP = 100;      // XP needed for Level 2
         const endXP = 200000;    // XP needed for the final level
-        const curve = 2;       // 1.0 = linear, 2.0 = normal, 3.0+ = very slow start/fast end
+        const curve = 2.2;       // 1.0 = linear, 2.0 = normal, 3.0+ = very slow start/fast end
         
         this.xpLevels = this.generateXPLevels(totalLevels, startXP, endXP, curve);
 

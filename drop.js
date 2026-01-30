@@ -99,11 +99,9 @@ export default class Drop {
 
     collect() {
         if (this.type === 'coin' || this.type === 'lucky_coin') {
-            this.game.money += this.coinValue;
-            this.game.totalMoneyEarned += this.coinValue;
+            this.game.addMoney(this.coinValue);
             this.game.audioManager.playSound('money');
             this.game.lootPopupManager.addLoot('cash', 'Cash', this.coinValue);
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, this.type === 'coin' ? '+💰' : '+💰💰'));
         }
         if (this.type === 'heart') {
             const healAmount = this.game.emporium.getHeartHeal();
@@ -125,10 +123,9 @@ export default class Drop {
             this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
         }
         if (this.type === 'xp_orb') {
-            this.game.levelingManager.grantXpToPlayer(this.xpValue);
+            this.game.addXp(this.xpValue);
             this.game.audioManager.playSound('xp');
             this.game.lootPopupManager.addLoot('xp', 'XP', this.xpValue);
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+XP'));
         }
         if (this.type === 'component') {
             const componentName = getRandomComponent();
@@ -138,7 +135,7 @@ export default class Drop {
             if (!this.game.player.firstComponentCollected) {
                 this.game.player.firstComponentCollected = true;
                 this.game.modalManager.toggle('component_modal');
-                this.game.isPaused = true;
+                this.isPaused = true;
             }
         }
     }

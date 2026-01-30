@@ -4,14 +4,16 @@ import { darkenColor } from './utils.js';
 export default class XPBar {
     constructor(game) {
         this.game = game;
+        this.width = 200;
+        this.height = 28;
     }
 
-    draw(ctx, x, y) {
+    draw(ctx, x, y, barWidth = this.width) {
         const player = this.game.player;
         if (!player) return;
 
-        const barWidth = 200;
-        const barHeight = 28; // Slightly taller
+        // const barWidth = 200; // Now comes from parameter or this.width
+        const barHeight = this.height; // Now comes from this.height
         // Position in the top center, but offset to the right of the health bar
         const barX = x;
         const barY = y;
@@ -23,7 +25,7 @@ export default class XPBar {
         ctx.strokeStyle = '#00f2ea'; // Bright Teal border
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.roundRect(barX, barY, barWidth, barHeight, 14);
+        ctx.roundRect(barX, barY, barWidth, barHeight, 25);
         ctx.fill();
         ctx.stroke();
 
@@ -31,19 +33,19 @@ export default class XPBar {
         if (pct > 0) {
             ctx.fillStyle = '#00f2ea';
             ctx.beginPath();
-            ctx.roundRect(barX, barY, barWidth * pct, barHeight, 14);
+            ctx.roundRect(barX, barY, barWidth * pct, barHeight, 25);
             ctx.fill();
         }
 
         // Shine
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.beginPath();
-        ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 10);
+        ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 16);
         ctx.fill();
 
         // Text
         const xpText = `${Math.floor(player.xp)} / ${player.xpForNextLevel}`;
-        ctx.font = 'bold 32px "VT323"'; // Increased font size
+        ctx.font = 'bold 40px "VT323"'; // Increased font size (32 * 1.25)
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';
@@ -53,7 +55,7 @@ export default class XPBar {
         ctx.shadowBlur = 0;
 
         // Level Bulb
-        const bulbRadius = 22; // Larger bulb
+        const bulbRadius = 22 * 1.25; // Larger bulb
         const bulbX = barX - bulbRadius + 8;
         const bulbY = barY + barHeight / 2;
 
@@ -66,7 +68,7 @@ export default class XPBar {
         ctx.stroke();
         
         // Level Text
-        ctx.font = 'bold 26px "VT323"'; // Increased font size
+        ctx.font = 'bold 32px "VT323"'; // Increased font size (26 * 1.25)
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';

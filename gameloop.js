@@ -17,12 +17,12 @@ export default class GameLoop {
         }
 
         if (this.game.modalManager.isOpen()) {
+            this.game.isPaused = true;
             this.game.modalManager.update((currentTime - (this.game.lastTime || currentTime)) / this.game.targetFrameTime);
-            this.game.background.draw(this.game.ctx); // Draw game background behind modal
-            this.game.modalManager.draw(this.game.ctx);
-            requestAnimationFrame((t) => this.loop(t));
-            this.game.lastTime = currentTime;
-            return;
+        } else if (this.game.isPaused && !this.game.sellModeActive && !this.game.levelingManager.isLevelingUp) {
+            // If nothing else is keeping the game paused, unpause it.
+            // This is to handle the case where a modal was closed, but the game remained paused.
+            this.game.isPaused = false;
         }
 
         if (this.game.hitStopFrames > 0) {
@@ -31,18 +31,60 @@ export default class GameLoop {
             return;
         }
         if (!this.game.lastTime) this.game.lastTime = currentTime;
-        const deltaTime = currentTime - this.game.lastTime;
+        const deltaTime = Math.min(100, currentTime - this.game.lastTime); // Cap delta to prevent physics explosion
         this.game.lastTime = currentTime;
-        const tsf = deltaTime / this.game.targetFrameTime;
-
-        this.game.screenShake.update(tsf);
-
-        this.game.background.update(tsf);
-        this.game.background.draw(this.game.ctx, this.game.PLAYABLE_AREA_HEIGHT);
+                let tsf = deltaTime / this.game.targetFrameTime;
+                if (this.game.isBuilding) {
+                    tsf *= 0.05; // Slow down by 95%
+                }
+                this.game.update(tsf); // Call the game's main update method regardless of pause state
         
-        if (!this.game.isPaused && !this.game.isGameOver) {
-            this.game.gameTime += tsf;
-            this.game.threatManager.update(tsf);
+                this.game.screenShake.update(tsf);
+        
+                this.game.background.update(tsf);
+                this.game.background.draw(this.game.ctx, this.game.PLAYABLE_AREA_HEIGHT);
+                
+        
+        // Sell Mode Activation - This should run even if the game is "paused" for building, etc.
+        if (this.game.heldTurret && !this.game.sellModeActive) {
+            if (Date.now() - this.game.sellTimer > 100) { // 400ms hold to activate
+                this.game.sellModeActive = true;
+                this.game.isPaused = true; // Pause game for selling interaction
+            }
+        }
+
+        // Check for full game pause (e.g., modals, sell mode)
+        //         if ((!this.game.isPaused || this.game.isBuilding) && !this.game.isGameOver) {
+            // Game Over logic should only run when not paused and not already over
+            if (this.game.castleHealth <= 0) {
+                this.game.isGameOver = true;
+                this.game.audioManager.stopMusic('music');
+                this.game.audioManager.playMusic('gameOverMusic');
+                document.getElementById('open-emporium-btn').style.display = 'block';
+                document.getElementById('restart-btn').style.display = 'block';
+                document.getElementById('game-over-stats').style.display = 'block';
+                this.game.emporium.saveEmporiumUpgrades(this.game.emporiumUpgrades);
+                localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
+                
+                const timeSec = (this.game.gameTime / 60);
+                const accuracy = (this.game.shotsFired > 0) ? (this.game.shotsHit / this.game.shotsFired) : 0;
+                let mult = accuracy <= 0.5 ? 0.5 + (accuracy * 100 * 0.01) : 1.0 + ((accuracy - 0.5) * 100 * 0.02);
+                const scoreBase = (timeSec * 2) + (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned);
+                const finalScore = Math.floor(scoreBase * mult);
+                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+                if (finalScore > highScore) { highScore = finalScore; localStorage.setItem('myGameHighScore', highScore); }
+                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
+                document.getElementById('go-kills').textContent = this.game.enemiesKilled.toLocaleString();
+                document.getElementById('go-money').textContent = `$${this.game.totalMoneyEarned.toLocaleString()}`;
+                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
+                document.getElementById('go-score').textContent = finalScore.toLocaleString();
+                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
+            }
+        // --- ALL UPDATES BELOW THIS LINE RUN DURING BULLET TIME (tsf is small) BUT NOT DURING FULL PAUSE ---
+        if (!this.game.isPaused) {
+        // GEMINI_UPDATE_BLOCK_START
+        this.game.gameTime += tsf;
+        this.game.threatManager.update(tsf);
 
             if (this.game.boss) {
                 this.game.audioManager.setBossMusic(true);
@@ -54,7 +96,7 @@ export default class GameLoop {
                 this.game.shopReminderShown = true;
                 const reminder = document.getElementById('shop-o');
                 if (reminder) reminder.style.display = 'block';
-                this.game.isPaused = false;
+                // Note: we don't unpause here, only allow reminder to show
             }
 
             const pLvl = this.game.emporiumUpgrades.piggy_cooldown.level;
@@ -65,14 +107,16 @@ export default class GameLoop {
                 this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 90) + 25, 'piggy'));
                 if (!this.game.piggyBankSeen) {
                     this.game.piggyBankSeen = true;
-                    this.game.isPaused = true;
+                    // We don't pause here, this is just for the first time pop-up.
+                    // The modal itself will handle pausing if it's new.
                     const curCD = this.game.emporiumUpgrades.piggy_cooldown.values[pLvl];
                     this.game.modalManager.toggle('piggy');
                 }
             }
 
-            this.game.player.update(tsf);
-            this.game.towers.forEach(t => t.update(tsf));
+            // Individual entity updates (now all run during bullet time)
+            // this.game.player.update(tsf) is now managed by this.game.update(tsf)
+            // this.game.towers.forEach(t => t.update(tsf)) is now managed by this.game.update(tsf)
             this.game.castleHealthBar.update(tsf);
             this.game.thermometer.update(tsf);
             if (this.game.boss) this.game.boss.update(tsf);
@@ -101,6 +145,8 @@ export default class GameLoop {
 
             this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
             // document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
+        // GEMINI_UPDATE_BLOCK_END
+
 
             for (let i = this.game.projectiles.length - 1; i >= 0; i--) {
                 const p = this.game.projectiles[i];
@@ -186,30 +232,8 @@ export default class GameLoop {
             this.game.decalManager.update(tsf);
             this.game.lootPopupManager.update(deltaTime);
 
-            if (this.game.castleHealth <= 0) {
-                this.game.isGameOver = true;
-                this.game.audioManager.stopMusic('music');
-                this.game.audioManager.playMusic('gameOverMusic');
-                document.getElementById('open-emporium-btn').style.display = 'block';
-                document.getElementById('restart-btn').style.display = 'block';
-                document.getElementById('game-over-stats').style.display = 'block';
-                this.game.emporium.saveEmporiumUpgrades(this.game.emporiumUpgrades);
-                localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
-                
-                const timeSec = (this.game.gameTime / 60);
-                const accuracy = (this.game.shotsFired > 0) ? (this.game.shotsHit / this.game.shotsFired) : 0;
-                let mult = accuracy <= 0.5 ? 0.5 + (accuracy * 100 * 0.01) : 1.0 + ((accuracy - 0.5) * 100 * 0.02);
-                const scoreBase = (timeSec * 2) + (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned);
-                const finalScore = Math.floor(scoreBase * mult);
-                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
-                if (finalScore > highScore) { highScore = finalScore; localStorage.setItem('myGameHighScore', highScore); }
-                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
-                document.getElementById('go-kills').textContent = this.game.enemiesKilled.toLocaleString();
-                document.getElementById('go-money').textContent = `$${this.game.totalMoneyEarned.toLocaleString()}`;
-                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
-                document.getElementById('go-score').textContent = finalScore.toLocaleString();
-                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
-            }
+            this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
+            // document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
         }
 
         const offset = this.game.screenShake.getOffset();
@@ -270,6 +294,17 @@ export default class GameLoop {
 
 
         this.game.towers.forEach(t => t.draw(this.game.ctx));
+
+        // Draw the sell button if it's active
+        if (this.game.ui.sellButton.visible) {
+            const btn = this.game.ui.sellButton;
+            const img = this.game.sellButtonUpImage;
+            this.game.ctx.save();
+            this.game.ctx.globalAlpha = btn.alpha;
+            this.game.ctx.drawImage(img, btn.x, btn.y, btn.width, btn.height);
+            this.game.ctx.restore();
+        }
+
         this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
@@ -301,73 +336,203 @@ export default class GameLoop {
         // this.game.levelUpManagerScreen.update(tsf); // Now handled by ModalManager
         // this.game.levelUpManagerScreen.draw(this.game.ctx); // Now handled by ModalManager
 
-        this.game.ctx.restore();
+        // Draw Ghost Turret if in building mode
+        if (this.game.isBuilding && this.game.towersImage.complete) {
+            const img = this.game.towersImage;
+            const turretWidth = 137;
+            const turretHeight = 190;
+            let drawX = this.game.mouse.x - (turretWidth / 2);
+            let drawY = this.game.mouse.y - (turretHeight / 2);
+            let alpha = 0.5;
+            let tintColor = null; 
+
+            const cancelBtn = this.game.ui.cancelButton;
+            const cancelBtnCenterX = cancelBtn.x + cancelBtn.width / 2;
+            const cancelBtnCenterY = cancelBtn.y + cancelBtn.height / 2;
+            const distToCancelBtn = Math.hypot(this.game.mouse.x - cancelBtnCenterX, this.game.mouse.y - cancelBtnCenterY);
+            const SNAP_DISTANCE = 60; // Pixels to snap to cancel button
+
+            if (distToCancelBtn < SNAP_DISTANCE) {
+                // Snap to cancel button
+                drawX = cancelBtnCenterX - (turretWidth / 2);
+                drawY = cancelBtnCenterY - (turretHeight / 2);
+                tintColor = 'red';
+                alpha = 0.7; // Make it slightly more opaque when snapping
+            } else if (this.game.highlightedSlot) {
+                drawX = this.game.highlightedSlot.x - (turretWidth / 2);
+                drawY = this.game.highlightedSlot.y - (turretHeight / 2);
+                if (!this.game.highlightedSlot.canPlace) {
+                    tintColor = 'red'; 
+                }
+            }
+
+            this.game.ctx.save();
+            this.game.ctx.globalAlpha = alpha; 
+            if (tintColor === 'red') {
+                this.game.ctx.filter = 'hue-rotate(180deg) brightness(1.5)'; 
+            }
+            this.game.ctx.drawImage(img, 0, 190, turretWidth, turretHeight, drawX, drawY, turretWidth, turretHeight);
+            this.game.ctx.restore(); 
+        }
+
+        this.game.ctx.restore(); // Restore screen shake translation
 
         const ctx = this.game.ctx;
         const ui = this.game.ui;
         const game = this.game;
 
-        // 1. Draw UI Bar background (PC only)
-        if (game.MOBILE_CONTROL_ZONE_HEIGHT === 0) {
-            // Draw fixed pink bar for PC
-            ctx.fillStyle = '#eb9cbeff';
-            // PC UI bar is now 200px tall
-            ctx.fillRect(0, game.PLAYABLE_AREA_HEIGHT - game.ui.barHeight, game.width, game.ui.barHeight);
+        // BOTTOM UI BAR (All elements housed in the ground)
+        const uiBarHeight = game.ui.barHeight; 
+        const uiBarY = game.PLAYABLE_AREA_HEIGHT - 70; // The bar starts at the bottom of the playable area.
+        const uiPadding = 15;
+        const elementSpacing = 15;
+
+        // Draw UI bar background
+        if (uiBarHeight > 0) {
+            ctx.fillStyle = '#eb9cbeff'; // Pink bar
+            ctx.fillRect(0, uiBarY, game.width, uiBarHeight);
         }
-        
-        // 3. Draw UI Elements (these are drawn AFTER the ground)
-        const isMobile = game.MOBILE_CONTROL_ZONE_HEIGHT > 0;
-        const currentUIBarHeight = ui.barHeight; // Use game.ui.barHeight for both PC and Mobile
-        const barYPosition = game.PLAYABLE_AREA_HEIGHT - (currentUIBarHeight/2) - 60;
-        const barCenterY = barYPosition + (currentUIBarHeight / 2);
 
-        const gap = 70; // Define gap for positioning
-        const healthBarWidth = 525;
-        const xpBarWidth = 200;
+        const centerY = uiBarY + (uiBarHeight / 2);
+        const uiScale = 1.55; // 25% bigger
 
-        // Castle Health Bar (Center)
-        const healthBarX = (game.width - healthBarWidth) / 2;
-        game.castleHealthBar.draw(ctx, healthBarX, barCenterY - 21);
+
+        // 1. Calculate widths of all elements for precise layout
+        const xpBarTotalWidth = (game.xpBar.width * 0.5) * uiScale; 
+        const shopButtonTotalWidth = ui.shopButton.width * uiScale; 
+        ctx.font = `bold ${Math.floor(52 * uiScale)}px "VT323"`;
+        const moneyTextTotalWidth = ctx.measureText(`$${game.money}`).width;
+        const healthBarTotalWidth = (game.castleHealthBar.width * 0.35) * uiScale; 
+        ctx.font = `bold ${Math.floor(40 * uiScale)}px "VT323"`;
+        const turretCostTextTotalWidth = ctx.measureText(`$${game.getNextTurretCost()}`).width;
+        const buildButtonTotalWidth = ui.buildButton.width * uiScale; 
+        const settingsButtonTotalWidth = ui.settingsButton.width; 
+
+        // 2. Health Bar (CENTERED)
+        const healthBarX = (game.width / 2) - (healthBarTotalWidth / 2);
+        game.castleHealthBar.height = 52 * uiScale;
+        game.castleHealthBar.draw(ctx, healthBarX, centerY - (game.castleHealthBar.height / 2), healthBarTotalWidth);
+
+        // 3. Place elements to the LEFT of Health Bar (XP, Money)
+        let currentXLeft = healthBarX - elementSpacing; // Start at left edge of health bar, moving left
         
-        // XP Bar (Left-most)
-        const xpBarX = healthBarX - xpBarWidth - gap;
-        game.xpBar.draw(ctx, xpBarX, barCenterY - 14);
-        
-        // Money (Right of Health Bar)
-        const moneyX = healthBarX + healthBarWidth + gap;
-        ctx.font = 'bold 42px "VT323"';
-        ctx.textAlign = 'left';
+        // Money Display (rightmost of the left-side elements)
+        currentXLeft -= moneyTextTotalWidth; // Allocate space for money text
+        ctx.save();
+        const moneyShakeX = (Math.random() - 0.5) * game.uiShake.money;
+        const moneyShakeY = (Math.random() - 0.5) * game.uiShake.money;
+        ctx.translate(moneyShakeX, moneyShakeY);
+        game.ui.moneyTextPos.x = currentXLeft;
+        game.ui.moneyTextPos.y = centerY;
+        ctx.font = 'bold 62px "VT323"'; 
+        ctx.textAlign = 'left'; 
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'white';
         ctx.shadowColor = 'rgba(255, 238, 0, 0.5)';
-        ctx.shadowBlur = 20;
-        ctx.fillText(`$${game.money}`, moneyX, barCenterY);
+        ctx.shadowBlur = 10;
+        ctx.fillText(`$${game.money}`, currentXLeft, centerY);
+        ctx.restore();
+        ctx.shadowBlur = 0;
 
-        // Shop Button
-        const btn = ui.shopButton;
-        if (btn.img.complete && btn.width === 0) {
-            btn.width = btn.img.naturalWidth;
-        }
-        const moneyTextWidth = ctx.measureText(`$${game.money}`).width; 
-        btn.x = moneyX + moneyTextWidth + 10;
-        btn.y = barCenterY - btn.height / 2;
+        // XP Bar (to the left of the money display)
+        currentXLeft -= (elementSpacing + xpBarTotalWidth); // Move left again for the XP bar
+        game.xpBar.height = 38 * uiScale;
+        ctx.save();
+        const xpShakeX = (Math.random() - 0.5) * game.uiShake.xp;
+        const xpShakeY = (Math.random() - 0.5) * game.uiShake.xp;
+        ctx.translate(xpShakeX, xpShakeY);
+        game.ui.xpBarPos.x = currentXLeft + xpBarTotalWidth / 2;
+        game.ui.xpBarPos.y = centerY;
+        game.xpBar.draw(ctx, currentXLeft, centerY - (game.xpBar.height / 2), xpBarTotalWidth);
+        ctx.restore();
+        ctx.shadowBlur = 0;
+
+        // 4. Place elements to the RIGHT of Health Bar (Shop, Build, Settings)
+        let currentXRight = healthBarX + healthBarTotalWidth + elementSpacing; 
+
+        // Shop Button (leftmost of right group)
+        const shopBtn = ui.shopButton;
+        shopBtn.x = currentXRight;
+        shopBtn.y = centerY - (shopButtonTotalWidth / 2);
         ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
         ctx.shadowBlur = 10;
-        if (btn.img.complete) {
-            ctx.drawImage(btn.img, btn.x, btn.y, btn.width, btn.height);
-        }
-
-        // Settings Button (Right-most)
-        const settingsBtn = ui.settingsButton;
-        if (game.settingButtonImage.complete && !settingsBtn.width) {
-            settingsBtn.width = game.settingButtonImage.naturalWidth;
-        }
-        settingsBtn.x = btn.x + btn.width + 15; 
-        settingsBtn.y = barCenterY - (settingsBtn.height / 2); // Center vertically on the bar
-        if (game.settingButtonImage.complete) {
-            ctx.drawImage(game.settingButtonImage, settingsBtn.x, settingsBtn.y, settingsBtn.width, settingsBtn.height);
+        if (shopBtn.img.complete) {
+            ctx.drawImage(shopBtn.img, shopBtn.x, shopBtn.y, shopButtonTotalWidth, shopButtonTotalWidth);
         }
         ctx.shadowBlur = 0;
+        currentXRight += shopButtonTotalWidth + elementSpacing;
+
+        // Build Button (middle of right group)
+        const buildBtn = ui.buildButton;
+        const cancelBtn = ui.cancelButton;
+        buildBtn.x = currentXRight;
+        buildBtn.y = centerY - (buildButtonTotalWidth / 2);
+        cancelBtn.x = currentXRight;
+        cancelBtn.y = centerY - (buildButtonTotalWidth / 2);
+
+        ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
+        ctx.shadowBlur = 10;
+        
+        let buttonToDraw = buildBtn.img;
+
+        if (game.isBuilding) {
+            buttonToDraw = cancelBtn.img;
+            if (game.mouse.x > cancelBtn.x && game.mouse.x < cancelBtn.x + cancelBtn.width &&
+                game.mouse.y > cancelBtn.y && game.mouse.y < cancelBtn.y + cancelBtn.height) {
+                buttonToDraw = cancelBtn.activeImg;
+            }
+        }
+
+        if (buttonToDraw && buttonToDraw.complete) {
+            ctx.drawImage(buttonToDraw, buildBtn.x, buildBtn.y, buildButtonTotalWidth, buildButtonTotalWidth);
+        }
+        ctx.shadowBlur = 0;
+
+        // Draw Turret Cost Text on top of Build Button
+        if (!game.isBuilding) { // Only draw if not in build mode
+            ctx.font = `bold ${Math.floor(40 * uiScale)}px "VT323"`; 
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = this.game.turretCostTextColor;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 4;
+            const costTextY = buildBtn.y + buildButtonTotalWidth * 0.6; // Position towards the bottom of the button
+            ctx.fillText(`$${game.getNextTurretCost()}`, buildBtn.x + buildButtonTotalWidth / 2, costTextY);
+            ctx.shadowBlur = 0;
+        }
+        
+        currentXRight += buildButtonTotalWidth + elementSpacing;
+
+        // Settings Button (rightmost of right group)
+        const settingsBtn = ui.settingsButton;
+        settingsBtn.x = currentXRight;
+        settingsBtn.y = centerY - (settingsButtonTotalWidth / 2);
+        ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
+        ctx.shadowBlur = 10;
+        if (settingsBtn.img.complete) { 
+            ctx.drawImage(settingsBtn.img, settingsBtn.x, settingsBtn.y, settingsButtonTotalWidth, settingsButtonTotalWidth);
+        }
+        ctx.shadowBlur = 0;
+
+
+        // Draw "Hold" text for build button feedback
+        if (game.showHoldText) {
+            const buildBtn = ui.buildButton;
+            const textX = buildBtn.x + (buildBtn.width / 2);
+            const textY = buildBtn.y - 20 - game.holdTextBounceOffset; // 20 pixels above button, plus bounce
+
+            ctx.save();
+            ctx.globalAlpha = game.holdTextAlpha;
+            ctx.font = 'bold 28px "VT323"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'white';
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 5;
+            ctx.fillText("Hold", textX, textY);
+            ctx.restore();
+        }
+
 
         const bossHealthContainer = document.getElementById('boss-health-container');
         const bossPulseOverlay = document.getElementById('boss-pulse-overlay');
@@ -397,6 +562,10 @@ export default class GameLoop {
         } else {
             bossHealthContainer.style.display = 'none';
             bossPulseOverlay.style.display = 'none';
+        }
+
+        if (this.game.modalManager.isOpen()) {
+            this.game.modalManager.draw(this.game.ctx);
         }
 
         requestAnimationFrame((t) => this.loop(t));

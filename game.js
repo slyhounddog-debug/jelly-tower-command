@@ -1,4 +1,4 @@
-const FORCE_MOBILE_DEBUG = true;
+const FORCE_MOBILE_DEBUG = false;
 
 import Player from './player.js?v=2';
 import Tower from './tower.js';
@@ -64,10 +64,10 @@ class Game {
         this.castleImage.src = 'assets/Images/castle.png';
         this.towerImage = new Image();
         this.towerImage.src = 'assets/Images/tower.png';
-        this.armImage = new Image();
-        this.armImage.src = 'assets/Images/arm.png';
-        this.autoTurretImage = new Image();
-        this.autoTurretImage.src = 'assets/Images/auto-turret.png';
+        this.armsImage = new Image();
+        this.armsImage.src = 'assets/Images/arms.png';
+        this.towersImage = new Image();
+        this.towersImage.src = 'assets/Images/towers.png';
         this.jellybeanImages = [];
         for (let i = 1; i <= 5; i++) {
             const img = new Image();
@@ -113,11 +113,11 @@ class Game {
         this.shopUpgradeDownImage.src = 'assets/Images/shopupgradedown.png';
         this.disabledButtonImage = new Image();
         this.disabledButtonImage.src = 'assets/Images/disabledbutton.png';
-        this.sellButtonUpImage = new Image();
-        this.sellButtonUpImage.src = 'assets/Images/sellbuttonup.png';
-        this.sellButtonDownImage = new Image();
-        this.sellButtonDownImage.src = 'assets/Images/sellbuttondown.png';
-        this.restartButtonImage = new Image();
+                this.cancelButtonImage = new Image();
+                this.cancelButtonImage.src = 'assets/Images/cancelbutton.png';
+                this.cancelButtonActiveImage = new Image(); // Active state for cancel button
+                this.cancelButtonActiveImage.src = 'assets/Images/cancelbutton.png';
+                this.restartButtonImage = new Image();
         this.restartButtonImage.src = 'assets/Images/restartbutton.png';
         this.emporiumButtonImage = new Image();
         this.emporiumButtonImage.src = 'assets/Images/emporiumbutton.png';
@@ -127,11 +127,23 @@ class Game {
         this.modalConfirmUpImage.src = 'assets/Images/modalconfirmup.png';
         this.modalConfirmDownImage = new Image();
         this.modalConfirmDownImage.src = 'assets/Images/modalconfirmdown.png';
+        this.sellButtonUpImage = new Image();
+        this.sellButtonUpImage.src = 'assets/Images/sellbuttonup.png';
+        this.sellButtonDownImage = new Image();
+        this.sellButtonDownImage.src = 'assets/Images/sellbuttondown.png';
+
+        this.awaitingSellConfirmation = false; // New state variable
+
+        this.lastClickTime = 0; // For double-tap detection
+        this.lastClickedTower = null; // For double-tap detection
+        this.doubleTapThreshold = 300; // milliseconds for double-tap
+        this.doubleTapTimeoutId = null; // NEW: To manage double-tap timeout
+        this.turretCostTextColor = '#783e9eff'; // NEW: Color for turret cost text
 
         this.PASTEL_COLORS = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
         this.FROSTING_COLORS = ['#ffadc8c9', '#ffd8cc83', '#ffb6c3a8', '#ffb2bcc4', '#fccef4a6', '#ffa6c8c7', '#fca4e6d5', '#ff81aba1', '#ffb3de', '#f4acb7'];
         this.ENEMY_FROSTING_COLORS = ['#8ab0f0', '#e0e3a0', '#a8e8b3ff', '#9bf6ff', '#b894daff', '#ff9d70ff'];
-        this.DAMAGE_TIERS = [18, 25, 32, 40, 48, 58, 68, 80, 95, 110, 125, 140, 155, 170, 185, 190, 205, 225, 245, 265, 285, 305, 330, 355, 380, 405, 440];
+        this.DAMAGE_TIERS = [10, 14, 18, 23, 28, 34, 40, 46, 53, 70, 78, 86, 94, 102, 110, 118, 126, 136, 146, 156, 166, 176, 186, 197, 208, 220, 234];
         this.UPGRADE_COSTS = [75, 200, 400, 700, 1100, 1600, 2250, 3400, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 90000, 100000, 125000, 150000, 175000, 200000, 2500000, 3000000, 4000000, 5000000];
         this.LICK_DAMAGE_TIERS = [10, 13, 17, 22, 28, 35, 42, 50, 58, 67, 76, 85, 95];
         this.LICK_KNOCKBACK_TIERS = [20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 45];
@@ -162,7 +174,6 @@ class Game {
 this.glowSprite.width = 128;
 this.glowSprite.height = 128;
 const gCtx = this.glowSprite.getContext('2d');
-
 const gradient = gCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
 gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)'); // Bright white center
 gradient.addColorStop(0.3, 'rgba(255, 215, 0, 0.4)'); // Golden inner aura
@@ -199,9 +210,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.assetsReady = false;
         this.shopState = 'shop';
         this.gameTime = 0;
-        this.placementMode = null;
-        this.sellMode = null;
-        this.placementItemCost = 0;
         this.lastShopOpenTime = 0;
         this.hitStopFrames = 0;
         
@@ -218,6 +226,14 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.piggyTimer = 0;
         this.piggyBankSeen = false;
+        this.isBuilding = false;
+        this.highlightedSlot = null;
+        this.buildButtonHoldTimer = 0; // New property for tracking build button hold
+        this.showHoldText = false; // New property to control "Hold" text visibility
+        this.holdTextAlpha = 0; // New property for "Hold" text fade effect
+        this.holdTextBounceOffset = 0; // New property for "Hold" text bounce animation
+        this.holdTextStartTime = 0; // New property to track "Hold" text animation start time
+
 
         this.gummyWormSpawnThreshold = 24;
         this.gummyWormSeen = false;
@@ -245,10 +261,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
             lickLvl: 0,
             piggyLvl: 0,
             baseDamage: 10,
-            baseFireRate: 45,
-            baseRange: 375,
-            turretsBought: 0,
-            maxTurrets: 5,
+            baseFireRate: 55,
+            baseRange: 395,
+            turretsBought: 0, // This will now track auto-turrets placed
+            // maxTurrets: 5, // Removed
+            maxTurretsCap: 3, // New: initial max turrets
+            maxTurretsLvl: 0, // New: level for max turrets upgrade
             componentPointsLvl: 0, // New: Component Points Level for shop upgrade
             game: this,
             get damage() { return this.game.DAMAGE_TIERS[Math.min(this.damageLvl, this.game.DAMAGE_TIERS.length - 1)]; },
@@ -267,28 +285,29 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 chance += critComponents.length * 24;
                 return chance;
             },
-            get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; }
+            get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; },
+            get maxTurretsAvailable() { return this.maxTurretsCap + (this.maxTurretsLvl * 2); } // Current max turrets calculation
         };
 
         this.shopItems = [
             { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade', 
               getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
-              getValue: () => this.stats.damage, 
-              getNext: () => this.stats.getNextDamage(),
+              getValue: () => this.stats.damage * 0.5, 
+              getNext: () => this.stats.getNextDamage() * 0.5,
               getLevel: () => `${this.stats.damageLvl}/${this.DAMAGE_TIERS.length - 1}`,
               action: () => { if (this.stats.damageLvl < this.DAMAGE_TIERS.length - 1) this.stats.damageLvl++; }
             },
             { id: 'rate', name: 'Reload Speed', icon: '⚡', desc: 'Increases fire rate and projectile speed by 1.2.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.fireRateLvl] || 'MAX',
-              getValue: () => `${(60/this.stats.fireRate).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
-              getNext: () => `${(60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.92, this.stats.fireRateLvl + 1)))).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
+              getValue: () => `${((60/this.stats.fireRate) * 0.5).toFixed(1)}/s | ${this.stats.projectileSpeed.toFixed(1)} pps`, 
+              getNext: () => `${((60/Math.max(5, Math.floor(this.stats.baseFireRate * Math.pow(0.92, this.stats.fireRateLvl + 1)))) * 0.5).toFixed(1)}/s | ${this.stats.getNextProjectileSpeed().toFixed(1)} pps`,
               getLevel: () => `${this.stats.fireRateLvl}/${this.UPGRADE_COSTS.length -1}`,
               action: () => this.stats.fireRateLvl++ 
             },
             { id: 'range', name: 'Scope', icon: '🔭', desc: 'Increases firing range.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.rangeLvl] || 'MAX', 
-              getValue: () => this.stats.range + 'px', 
-              getNext: () => (this.stats.range + 50) + 'px',
+              getValue: () => (this.stats.range * 0.5) + 'px', 
+              getNext: () => ((this.stats.range + 50) * 0.5) + 'px',
               getLevel: () => `${this.stats.rangeLvl}/${this.UPGRADE_COSTS.length - 1}`, 
               action: () => this.stats.rangeLvl++ 
             },
@@ -332,12 +351,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 }
               }
             },
-            { id: 'buy_turret', name: 'Auto-Turret', icon: '🤖', desc: 'Buy an auto-turret.', type: 'item',
-              getCost: () => { const costs = [4500, 15000, 50000, 150000, 500000]; return this.stats.turretsBought < 5 ? costs[this.stats.turretsBought] : 'MAX'; },
-              getValue: () => `${this.stats.turretsBought}/5`,
-              getNext: () => `Place on a cloud.`,
-              getLevel: () => `${this.stats.turretsBought}/5`,
-              action: () => {}
+            { id: 'max_turrets', name: 'Max Turrets', icon: '⚙️',
+              desc: 'Increases the maximum number of turrets you can place.', type: 'upgrade',
+              getCost: () => (this.stats.maxTurretsLvl >= 10) ? 'MAX' : this.UPGRADE_COSTS[this.stats.maxTurretsLvl], // Max 10 levels for now
+              getValue: () => `${this.stats.maxTurretsAvailable}`,
+              getNext: () => (this.stats.maxTurretsLvl >= 10) ? "MAX" : `${this.stats.maxTurretsAvailable + 2}`,
+              getLevel: () => `${this.stats.maxTurretsLvl}/10`,
+              action: () => {
+                if (this.stats.maxTurretsLvl < 10) {
+                    this.stats.maxTurretsLvl++;
+                }
+              }
             }
         ];
         this.selectedShopItem = this.shopItems[0];
@@ -369,26 +393,155 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.screenShake = ScreenShake;
         this.castleHealthBar = new CastleHealthBar(this);
 
-        this.shopButtonImage = new Image();
+        this.buildButtonImage = new Image();
+        this.buildButtonImage.src = 'assets/Images/buildbutton.png';
+        this.shopButtonImage = new Image(); // NEWLY ADDED for the relocated shop button
         this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';
         this.settingButtonImage = new Image();
         this.settingButtonImage.src = 'assets/Images/settings.png';
+
         this.ui = {
-            barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 1, // 500px for mobile, 200px for PC
-            shopButton: {
+            barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0, // 500px for mobile, 0px for PC
+            buildButton: {
+                img: this.buildButtonImage, // This will be dynamically managed
+                x: 0, y: 0, width: 80, height: 80 // Set default width/height
+            },
+            cancelButton: { // New: for the cancel button during build mode
+                img: this.cancelButtonImage,
+                x: 0, y: 0, width: 80, height: 80,
+                activeImg: this.cancelButtonActiveImage,
+            },
+            shopButton: { // NEWLY ADDED for the relocated shop button
                 img: this.shopButtonImage,
-                x: 0, y: 0, width: 0, height: 80
+                x: 0, y: 0, width: 80, height: 80 // Set default width/height (smaller button for top bar, so 40 -> 80)
             },
             settingsButton: {
-                x: 0, y: 0, height: 80
+                img: this.settingButtonImage, // Added img property
+                x: 0, y: 0, width: 80, height: 80 // Set default width/height
             },
             readyButton: {
                 x: 0, y: 0, width: 0, height: 0
-            }
+            },
+            sellButton: {
+                visible: false, alpha: 0, x: 0, y: 0, width: 80, height: 80
+            },
+            moneyTextPos: { x: 0, y: 0 },
+            xpBarPos: { x: 0, y: 0 }
         };
 
+        this.uiShake = { money: 0, xp: 0 };
+
         this.initListeners();
-        this.loadSettings();
+        this.injectMobileControls();
+    }
+
+    addMoney(amount) {
+        if (amount <= 0) return;
+        this.money += amount;
+        this.totalMoneyEarned += amount;
+        this.triggerMoneyAnimation(amount);
+    }
+
+    addXp(amount) {
+        if (amount <= 0) return;
+        this.levelingManager.grantXpToPlayer(amount);
+        this.triggerXpAnimation(amount);
+    }
+
+    triggerMoneyAnimation(amount) {
+        this.uiShake.money = 15;
+        const pos = this.ui.moneyTextPos;
+        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+$${amount}`, '#fdffb6'));
+    }
+
+    triggerXpAnimation(amount) {
+        this.uiShake.xp = 15;
+        const pos = this.ui.xpBarPos;
+        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+${amount.toFixed(0)} XP`, '#9bf6ff'));
+    }
+
+    findNearestAvailableSlot(mouseX, mouseY) {
+        let nearestSlot = null;
+        let minDistance = Infinity;
+
+        const checkPlatformSlots = (platform, slots) => {
+            slots.forEach(slot => {
+                const turretWidth = 137;
+                const turretHeight = 190;
+                
+                const slotCenterX = slot.x;
+                const slotCenterY = slot.y;
+
+                const dist = Math.hypot(mouseX - slotCenterX, mouseY - slotCenterY);
+
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    let canPlace = true;
+
+                    if (slot.isOccupied) {
+                        canPlace = false;
+                    } else {
+                        const prospectiveX = slot.x - (turretWidth / 2);
+                        const prospectiveY = slot.y - (turretHeight / 2);
+                        for (const existingTurret of this.towers) {
+                            if (prospectiveX < existingTurret.x + existingTurret.width &&
+                                prospectiveX + turretWidth > existingTurret.x &&
+                                prospectiveY < existingTurret.y + existingTurret.height &&
+                                prospectiveY + turretHeight > existingTurret.y) {
+                                canPlace = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    nearestSlot = { 
+                        ...slot, 
+                        platform: platform, 
+                        canPlace: canPlace 
+                    }; 
+                }
+            });
+        };
+
+        this.platforms.forEach(platform => {
+            if (platform.slots) { 
+                checkPlatformSlots(platform, platform.slots);
+            }
+        });
+        return nearestSlot;
+    }
+
+    sellTower(tower) {
+        if (!tower) return;
+    
+        const refundAmount = this.getRefundAmount(this.towers.length - 1);
+        this.money += refundAmount;
+    
+        // Free up the platform slot
+        this.platforms.forEach(p => {
+            if (p.slots) {
+                const slot = p.slots.find(s => s.id === tower.platformSlotId);
+                if (slot) {
+                    slot.isOccupied = false;
+                }
+            }
+        });
+    
+        this.towers = this.towers.filter(t => t !== tower);
+        showNotification(`Sold +$${refundAmount}!`);
+        this.cancelSell();
+    }
+    
+    cancelSell() {
+        this.towerToSell = null;
+        this.ui.sellButton.visible = false;
+        this.awaitingSellConfirmation = false;
+        this.lastClickTime = 0; // Reset double-tap state
+        this.lastClickedTower = null; // Reset double-tap state
+        if (this.doubleTapTimeoutId) { // Clear any pending double-tap timeout
+            clearTimeout(this.doubleTapTimeoutId);
+            this.doubleTapTimeoutId = null;
+        }
     }
 
     requestUnpause() {
@@ -427,100 +580,125 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
     initListeners() {
         window.closeModal = this.modalManager.close.bind(this.modalManager);
+        this.loadSettings();
+
+        // Stage 1: Load essential UI images first.
+        Promise.all([
+            new Promise((res, rej) => { this.titlescreenImage.onload = res; this.titlescreenImage.onerror = rej; }),
+            new Promise((res, rej) => { this.loadingbuttonImage.onload = res; this.loadingbuttonImage.onerror = rej; }),
+            new Promise((res, rej) => { this.readybuttonImage.onload = res; this.readybuttonImage.onerror = rej; })
+        ]).then(() => {
+            // Once the essential UI is loaded, start the game loop.
+            this.gameLoop.loop(0);
+        }).catch(error => console.error("Critical UI could not be loaded:", error));
+
+        // Stage 2: Load all other game assets in the background.
         Promise.all([
             this.audioManager.loadingPromise,
             this.background.load(),
-            new Promise(r => this.platformImage.onload = r),
-            new Promise(r => this.groundImage.onload = r),
-            new Promise(r => this.castleImage.onload = r),
-            new Promise(r => this.towerImage.onload = r),
-            new Promise(r => this.armImage.onload = r),
-            new Promise(r => this.autoTurretImage.onload = r),
-            ...this.jellybeanImages.map(img => new Promise(r => img.onload = r)),
-            ...this.gummyclusterImages.map(img => new Promise(r => img.onload = r)),
-            ...this.gummybearImages.map(img => new Promise(r => img.onload = r)),
-            new Promise(r => this.shopButtonImage.onload = r),
-            new Promise(r => this.settingButtonImage.onload = r),
-            new Promise(r => this.lootImage.onload = r),
-            new Promise(r => this.tagCrownImage.onload = r),
-            new Promise(r => this.shopOverlayImage.onload = r),
-            new Promise(r => this.modalImage.onload = r),
-            new Promise(r => this.upgradeSlotImage.onload = r),
-            new Promise(r => this.shopUpgradeDownImage.onload = r),
-            new Promise(r => this.disabledButtonImage.onload = r),
-            new Promise(r => this.sellButtonUpImage.onload = r),
-            new Promise(r => this.sellButtonDownImage.onload = r),
-            new Promise(r => this.restartButtonImage.onload = r),
-            new Promise(r => this.emporiumButtonImage.onload = r),
-            new Promise(r => this.resetButtonImage.onload = r),
-            new Promise(r => this.modalConfirmUpImage.onload = r),
-            new Promise(r => this.modalConfirmDownImage.onload = r),
-            new Promise(r => this.titlescreenImage.onload = r),
-            new Promise(r => this.readybuttonImage.onload = r),
-            new Promise(r => this.loadingbuttonImage.onload = r),
-            new Promise(r => this.marshmallowBigImage.onload = r),
-            new Promise(r => this.marshmallowMediumImage.onload = r),
-            new Promise(r => this.marshmallowSmallImage.onload = r),
+            new Promise(r => { this.platformImage.onload = r; this.platformImage.onerror = r; }),
+            new Promise(r => { this.groundImage.onload = r; this.groundImage.onerror = r; }),
+            new Promise(r => { this.castleImage.onload = r; this.castleImage.onerror = r; }),
+            new Promise(r => { this.towerImage.onload = r; this.towerImage.onerror = r; }),
+            new Promise(r => { this.armsImage.onload = r; this.armsImage.onerror = r; }),
+            new Promise(r => { this.towersImage.onload = r; this.towersImage.onerror = r; }),
+            ...this.jellybeanImages.map(img => new Promise(r => { img.onload = r; img.onerror = r; })),
+            ...this.gummyclusterImages.map(img => new Promise(r => { img.onload = r; img.onerror = r; })),
+            ...this.gummybearImages.map(img => new Promise(r => { img.onload = r; img.onerror = r; })),
+            new Promise(r => { this.buildButtonImage.onload = r; this.buildButtonImage.onerror = r; }),
+            new Promise(r => { this.shopButtonImage.onload = r; this.shopButtonImage.onerror = r; }),
+            new Promise(r => { this.settingButtonImage.onload = r; this.settingButtonImage.onerror = r; }),
+            new Promise(r => { this.lootImage.onload = r; this.lootImage.onerror = r; }),
+            new Promise(r => { this.tagCrownImage.onload = r; this.tagCrownImage.onerror = r; }),
+            new Promise(r => { this.shopOverlayImage.onload = r; this.shopOverlayImage.onerror = r; }),
+            new Promise(r => { this.modalImage.onload = r; this.modalImage.onerror = r; }),
+            new Promise(r => { this.upgradeSlotImage.onload = r; this.upgradeSlotImage.onerror = r; }),
+            new Promise(r => { this.shopUpgradeDownImage.onload = r; this.shopUpgradeDownImage.onerror = r; }),
+            new Promise(r => { this.disabledButtonImage.onload = r; this.disabledButtonImage.onerror = r; }),
+            new Promise(r => { this.cancelButtonImage.onload = r; this.cancelButtonImage.onerror = r; }),
+            new Promise(r => { this.cancelButtonActiveImage.onload = r; this.cancelButtonActiveImage.onerror = r; }),
+            new Promise(r => { this.restartButtonImage.onload = r; this.restartButtonImage.onerror = r; }),
+            new Promise(r => { this.emporiumButtonImage.onload = r; this.emporiumButtonImage.onerror = r; }),
+            new Promise(r => { this.resetButtonImage.onload = r; this.resetButtonImage.onerror = r; }),
+            new Promise(r => { this.modalConfirmUpImage.onload = r; this.modalConfirmUpImage.onerror = r; }),
+            new Promise(r => { this.modalConfirmDownImage.onload = r; this.modalConfirmDownImage.onerror = r; }),
+            new Promise(r => { this.marshmallowBigImage.onload = r; this.marshmallowBigImage.onerror = r; }),
+            new Promise(r => { this.marshmallowMediumImage.onload = r; this.marshmallowMediumImage.onerror = r; }),
+            new Promise(r => { this.marshmallowSmallImage.onload = r; this.marshmallowSmallImage.onerror = r; }),
+            new Promise(r => { this.sellButtonUpImage.onload = r; this.sellButtonUpImage.onerror = r; }),
+            new Promise(r => { this.sellButtonDownImage.onload = r; this.sellButtonDownImage.onerror = r; }),
         ]).then(() => {
             this.assetsReady = true;
-        }).catch(error => {
-            console.error("Failed to load assets:", error);
-        });
+        }).catch(error => console.error("Failed to load game assets:", error));
 
-        // Listeners that need the DOM to be ready
+        // --- Keyboard and Mouse Listeners ---
+
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             const k = e.key.toLowerCase();
             this.keys[k] = true;
             
-            // Tower entry/exit with 'E' key
+            if (this.modalManager.isOpen() || this.isAnyModalOpen()) {
+                if (k === 'escape') {
+                    this.modalManager.close();
+                } else if (k === 'f') { // Shop key
+                    if (this.modalManager.activeModal === 'shop') {
+                        this.modalManager.close();
+                    } else {
+                        this.modalManager.open('shop');
+                    }
+                } else if (k === 'c') { // Components key
+                    if (this.modalManager.activeModal === 'components') {
+                        this.modalManager.close();
+                    } else {
+                        this.modalManager.open('components');
+                    }
+                } else if (k === 'q') { // Player/Level Up key
+                    if (this.modalManager.activeModal === 'player') {
+                        this.modalManager.close();
+                    } else {
+                        this.modalManager.open('player');
+                    }
+                }
+                return; // Block other game controls while modal is open
+            }
+
+            // --- Game Actions (Only run if no modal is open) ---
+            if (k === 'f') {
+                this.modalManager.open('shop');
+            }
+            if (k === 'c') {
+                this.modalManager.open('components');
+            }
+            if (k === 'q') {
+                this.modalManager.open('player');
+            }
+
             if (k === 'e') {
                 if (this.player.isControlling) {
                     this.player.exitTower();
                 } else {
-                    // Find the first tower in range and enter it
                     for (const tower of this.towers) {
-                        if (tower.playerInRange) {
-                            this.player.enterTower(tower);
-                            break; // Exit loop once a tower is entered
-                        }
+                        if (tower.playerInRange) { this.player.enterTower(tower); break; }
                     }
                 }
             }
-            
-            if (k === 'f') this.modalManager.toggle('shop');
-            if (k === 'q') this.modalManager.toggle('player');
-            if (k === 'c') this.modalManager.toggle('components');
 
-            if (k === 'escape') {
-                if (this.modalManager.isOpen()) {
-                    this.modalManager.close();
-                } else if (this.placementMode) {
-                    this.cancelPlacement();
-                } else if (this.sellMode) {
-                    this.cancelSell();
-                } else if (this.emporium.isEmporiumOpen) {
-                    this.emporium.toggle();
-                }
-            }
             if (k === 'a') {
                 this.lastMoveDirection = -1;
-                if (Date.now() - this.player.lastAPress < 300) {
-                    this.player.tryDash(-1);
-                }
+                if (Date.now() - this.player.lastAPress < 300) { this.player.tryDash(-1); }
                 this.player.lastAPress = Date.now();
             }
             if (k === 'd') {
                 this.lastMoveDirection = 1;
-                if (Date.now() - this.player.lastDPress < 300) {
-                    this.player.tryDash(1);
-                }
+                if (Date.now() - this.player.lastDPress < 300) { this.player.tryDash(1); }
                 this.player.lastDPress = Date.now();
             }
             if (k === 'shift') {
                 this.player.tryDash(this.lastMoveDirection);
             }
         });
+
         document.addEventListener('keyup', (e) => {
             const k = e.key.toLowerCase();
             this.keys[k] = false;
@@ -530,90 +708,204 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const rect = this.canvas.getBoundingClientRect();
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
-            this.mouse.x = (e.clientX - rect.left) * scaleX;
-            this.mouse.y = (e.clientY - rect.top) * scaleY;
-            this.mouse.aimY = this.mouse.y + 100;  // GEMINI DO NOT EVER REMOVE THIS LINE IT MATCHES THE VISUAL OFFSET FOR THE REST OF THE GAME. DO NOT REMOVE.
+            const currentMouseX = (e.clientX - rect.left) * scaleX;
+            const currentMouseY = (e.clientY - rect.top) * scaleY;
+            this.mouse.x = currentMouseX;
+            this.mouse.y = currentMouseY;
+            this.mouse.aimY = this.mouse.y + 100; // Apply the +100 offset here consistently
+
+            if (this.isBuilding) {
+                const offset = this.screenShake.getOffset();
+                const gameWorldMouseX = currentMouseX - offset.x;
+                const gameWorldMouseY = currentMouseY - (offset.y - 100);
+                this.highlightedSlot = this.findNearestAvailableSlot(gameWorldMouseX, gameWorldMouseY);
+            }
         });
-        this.canvas.addEventListener('mouseup', () => this.mouse.isDown = false);
 
         this.canvas.addEventListener('mousedown', (e) => {
             this.mouse.isDown = true;
             
-            // Check for UI buttons first
+            // If we are awaiting sell confirmation, handle click on sell button or cancel
+            if (this.awaitingSellConfirmation) {
+                const sellBtn = this.ui.sellButton;
+                if (this.mouse.x > sellBtn.x && this.mouse.x < sellBtn.x + sellBtn.width &&
+                    this.mouse.aimY > sellBtn.y && this.mouse.aimY < sellBtn.y + sellBtn.height) {
+                    this.sellTower(this.towerToSell);
+                } else {
+                    this.cancelSell();
+                }
+                return; // Consume the click
+            }
+            
+            // Handle clicks on ready button, shop, build, settings buttons
             if (!this.gameStarted && this.assetsReady) {
                 const btn = this.ui.readyButton;
-                if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width &&
-                    this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
+                if (this.mouse.x > btn.x && this.mouse.x < btn.x + btn.width && this.mouse.y > btn.y && this.mouse.y < btn.y + btn.height) {
                     this.resetGame();
                     this.gameStarted = true;
                     this.isPaused = false;
                     this.lastTime = 0;
-                    if (this.audioManager) {
-                        this.audioManager.playMusic('music');
-                    }
+                    if (this.audioManager) { this.audioManager.playMusic('music'); }
                     return;
                 }
             }
-            if (this.modalManager.isOpen()) {
-                this.modalManager.handleInput();
-                return;
-            }
-            if (this.isGameOver) {
-                const emporiumBtn = { x: (this.width / 2) - 75, y: (this.height / 2) + 100, width: 150, height: 50 };
-                if (this.mouse.x > emporiumBtn.x && this.mouse.x < emporiumBtn.x + emporiumBtn.width &&
-                    this.mouse.y > emporiumBtn.y && this.mouse.y < emporiumBtn.y + emporiumBtn.height) {
-                    this.emporium.toggle();
-                }
-            }
+            if (this.modalManager.isOpen()) { this.modalManager.handleInput(); return; } // Handle clicks within modals
+        
             const shopBtn = this.ui.shopButton;
-            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width &&
-                this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
                 this.modalManager.toggle('shop');
                 return;
             }
-
+            const buildBtn = this.ui.buildButton;
+            if (this.mouse.x > buildBtn.x && this.mouse.x < buildBtn.x + buildBtn.width && this.mouse.y > buildBtn.y && this.mouse.y < buildBtn.y + buildBtn.height) {
+                this.buildButtonHoldTimer = Date.now();
+                this.showHoldText = false;
+                // Do not return here, so the click can fall through to the lick if not held
+            }
             const settingsBtn = this.ui.settingsButton;
-            if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width &&
-                this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
+            if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width && this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
                 this.toggleSettings();
                 return;
             }
-
-            // Tower interaction
-            let clickedOnTower = false;
+            
+            // NEW DOUBLE-TAP LOGIC FOR SELLING TURRETS (Clean Implementation)
+            let clickedTower = null;
             for (const tower of this.towers) {
-                if (this.mouse.x > tower.x && this.mouse.x < tower.x + tower.width &&
-                    this.mouse.y > tower.y && this.mouse.y < tower.y + tower.height) {
-                    clickedOnTower = true;
-                    if (this.player.isControlling === tower) {
-                        this.player.exitTower();
-                        return;
-                    } else if (!this.player.isControlling && tower.playerInRange) {
-                        this.player.enterTower(tower);
-                        return;
-                    }
+                // Increase hitbox for click detection slightly
+                const clickHitboxX = tower.x - 5;
+                const clickHitboxY = tower.y - 5;
+                const clickHitboxWidth = tower.width + 10;
+                const clickHitboxHeight = tower.height + 10;
+
+                if (this.mouse.x > clickHitboxX && this.mouse.x < clickHitboxX + clickHitboxWidth &&
+                    this.mouse.aimY > clickHitboxY && this.mouse.aimY < clickHitboxY + clickHitboxHeight) {
+                    clickedTower = tower;
+                    break;
                 }
             }
-            
-            // If player is controlling a tower and clicked anywhere else, do nothing
-            if (this.player.isControlling && !clickedOnTower) {
-                return;
+
+            if (clickedTower) {
+                const currentTime = Date.now();
+                // Clear any pending single-click timeout for a new click on a tower
+                if (this.doubleTapTimeoutId) {
+                    clearTimeout(this.doubleTapTimeoutId);
+                    this.doubleTapTimeoutId = null;
+                }
+
+                // Check for double tap
+                if (this.lastClickedTower === clickedTower && (currentTime - this.lastClickTime < this.doubleTapThreshold)) {
+                    this.towerToSell = clickedTower;
+                    const sellBtn = this.ui.sellButton;
+                    
+                    // Position sell button relative to the clicked tower
+                    sellBtn.x = this.towerToSell.x + this.towerToSell.width / 2 - sellBtn.width / 2;
+                    sellBtn.y = this.towerToSell.y - sellBtn.height - 10;
+                    sellBtn.visible = true; // Make it immediately visible
+
+                    this.awaitingSellConfirmation = true;
+                    // Reset double-tap state so a triple tap doesn't register another sell request
+                    this.lastClickedTower = null;
+                    this.lastClickTime = 0;
+                    return; // Consumed by sell-initiation
+                } else {
+                    // First click of a potential double tap, or clicked a different tower
+                    this.lastClickedTower = clickedTower;
+                    this.lastClickTime = currentTime;
+                    // Set a timeout to clear the double-tap state if no second click occurs
+                    this.doubleTapTimeoutId = setTimeout(() => {
+                        this.lastClickedTower = null;
+                        this.lastClickTime = 0;
+                        this.doubleTapTimeoutId = null;
+                    }, this.doubleTapThreshold);
+
+                    // If sell button was already visible, and user clicked a different tower, cancel the previous sell intent
+                    if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
+                        this.cancelSell();
+                    }
+                }
+            } else {
+                // Clicked nowhere or not on a tower (and no sell confirmation pending from a previous double-tap)
+                // Clear any pending single-click timeout
+                if (this.doubleTapTimeoutId) {
+                    clearTimeout(this.doubleTapTimeoutId);
+                    this.doubleTapTimeoutId = null;
+                }
+                
+                // If sell button was visible, and we click elsewhere on the canvas, cancel it
+                if (this.awaitingSellConfirmation) {
+                    this.cancelSell();
+                    return; // Consumed by cancel
+                }
+
+                // Only reset double-tap state if no tower was clicked AND no sell confirmation was pending.
+                // This allows the single-click state to persist for a double-tap window.
+                this.lastClickedTower = null;
+                this.lastClickTime = 0;
             }
             
-            // If no UI element was clicked, start swipe or lick
-            if (this.sellMode) {
-                // This logic will be moved to the modal manager
-            } else if (this.placementMode) {
-                this.tryPlaceItem();
-            } else if (!this.isPaused && !this.isGameOver && !this.player.isControlling) {
+            if (this.player.isControlling) return;
+            
+            if (!this.isPaused && !this.isGameOver && !this.player.isControlling) {
                 if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
-                     // On mobile, mousedown starts a swipe
-                    handleSwipeStart(e);
+                     handleSwipeStart(e);
                 } else {
-                    // On PC, mousedown triggers a lick immediately
                     this.player.tryLick();
                 }
             }
+        });
+        
+        this.canvas.addEventListener('mouseup', () => {
+            this.mouse.isDown = false;
+            
+            // 3. Handle building logic
+            if (this.isBuilding) {
+                const cancelBtn = this.ui.cancelButton;
+                // Check if the build button (now cancel button) was clicked to start building.
+                // If so, we don't want to immediately cancel on mouseup.
+                if (Date.now() - this.buildButtonHoldTimer < 100) {
+                    // This was a quick click, not a hold. Treat as a lick.
+                    this.player.tryLick();
+                }
+                if (this.mouse.x > cancelBtn.x && this.mouse.x < cancelBtn.x + cancelBtn.width && this.mouse.y > cancelBtn.y && this.mouse.y < cancelBtn.y + cancelBtn.height) {
+                    this.isBuilding = false;
+                    this.highlightedSlot = null;
+                    this.isPaused = false;
+                    this.ui.buildButton.img = this.buildButtonImage;
+                    this.buildButtonHoldTimer = 0;
+                    return;
+                }
+
+                if (this.highlightedSlot && this.highlightedSlot.canPlace) {
+                    const cost = this.getNextTurretCost();
+                    if (this.towers.length >= this.stats.maxTurretsAvailable) {
+                        showNotification("Max turrets reached!");
+                    } else if (this.money < cost) {
+                        showNotification("Not enough money!");
+                    } else {
+                        const turretWidth = 137;
+                        const turretHeight = 190;
+                        const turretX = this.highlightedSlot.x - (turretWidth / 2); 
+                        const turretY = this.highlightedSlot.y - turretHeight + (turretHeight / 2);
+                        const newTurret = new Tower(this, turretX, turretY, true, this.highlightedSlot.id); 
+                        this.towers.push(newTurret);
+                        this.stats.turretsBought++; 
+                        this.money -= cost; 
+
+                        const placedSlotId = this.highlightedSlot.id;
+                        const platform = this.highlightedSlot.platform;
+                        const originalSlot = platform.slots.find(s => s.id === placedSlotId);
+                        if (originalSlot) { originalSlot.isOccupied = true; }
+                        
+                        // showNotification("Turret placed!"); // Removed per user request
+                    }
+                }
+                this.highlightedSlot = null;
+                this.isBuilding = false;
+                this.isPaused = false;
+                this.showHoldText = false;
+                this.ui.buildButton.img = this.buildButtonImage;
+                this.buildButtonHoldTimer = 0;
+            } 
         });
 
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
@@ -628,29 +920,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const scaleY = this.canvas.height / rect.height;
             const clientX = e.touches ? e.touches[0].clientX : (e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
             const clientY = e.touches ? e.touches[0].clientY : (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
-            return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY,
-            };
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         };
 
         const handleSwipeStart = (e) => {
             const { x, y } = getCanvasCoords(e);
-            
-            // Check for tower interaction on touch
             for (const tower of this.towers) {
-                if (x > tower.x && x < tower.x + tower.width &&
-                    y > tower.y && y < tower.y + tower.height) {
-                    if (this.player.isControlling === tower) {
-                        this.player.exitTower();
-                        return;
-                    } else if (!this.player.isControlling && tower.playerInRange) {
-                        this.player.enterTower(tower);
-                        return;
-                    }
+                if (x > tower.x && x < tower.x + tower.width && y > tower.y && y < tower.y + tower.height) {
+                    if (this.player.isControlling === tower) { this.player.exitTower(); return; }
+                    else if (!this.player.isControlling && tower.playerInRange) { this.player.enterTower(tower); return; }
                 }
             }
-
             isSwiping = true;
             this.swipeTrail = [];
             swipePath = [{ x, y }];
@@ -662,43 +942,26 @@ Object.entries(colors).forEach(([name, rgb]) => {
             if (!isSwiping) return;
             e.preventDefault();
             const { x, y } = getCanvasCoords(e);
-
             if (Date.now() - swipeStartTime <= 1500) {
                 this.swipeTrail.push({ x, y: y + 100, life: 60 });
-                for (let i = 0; i < 2; i++) {
-                    this.swipeParticles.push(new SwipeParticle(this, x, y + 100));
-                }
-                if (swipePath) {
-                    swipePath.push({ x, y });
-                }
+                for (let i = 0; i < 2; i++) { this.swipeParticles.push(new SwipeParticle(this, x, y + 100)); }
+                if (swipePath) { swipePath.push({ x, y }); }
             }
         };
 
         const handleSwipeEnd = (e) => {
             if (!isSwiping) return;
             isSwiping = false;
-
-            if (!swipePath || swipePath.length < 2) {
-                swipePath = [];
-                return;
-            }
-
+            if (!swipePath || swipePath.length < 2) { swipePath = []; return; }
             const startPoint = swipePath[0];
             const endPoint = swipePath[swipePath.length - 1];
-
             const dx = endPoint.x - startPoint.x;
             const dy = endPoint.y - startPoint.y;
-
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-
-            if (Math.max(absDx, absDy) > 30) { // Swipe threshold
+            if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) {
                 const swipeAngle = Math.atan2(dy, dx);
-                if (!this.player.isControlling) {
-                    this.player.tryLick(swipeAngle);
-                }
+                if (!this.player.isControlling) { this.player.tryLick(swipeAngle); }
             }
-            swipePath = []; // Clear for next swipe
+            swipePath = [];
         };
 
         this.canvas.addEventListener('touchstart', handleSwipeStart, { passive: true });
@@ -709,12 +972,39 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.canvas.addEventListener('mousedown', handleSwipeStart);
             this.canvas.addEventListener('mousemove', handleSwipeMove);
             this.canvas.addEventListener('mouseup', handleSwipeEnd);
-            this.canvas.addEventListener('mouseleave', () => { 
-                if (isSwiping) {
-                    handleSwipeEnd({});
-                }
-            });
+            this.canvas.addEventListener('mouseleave', () => { if (isSwiping) { handleSwipeEnd({}); } });
         }
+
+        const soundSlider = document.getElementById('sound-effects-slider');
+        const musicSlider = document.getElementById('music-slider');
+        const soundValue = document.getElementById('sound-effects-value');
+        const musicValue = document.getElementById('music-value');
+
+        if (soundSlider) {
+            soundSlider.oninput = (e) => {
+                const volume = e.target.value;
+                soundValue.textContent = `${volume}%`;
+                this.audioManager.setSoundVolume(volume / 100);
+                this.saveSettings();
+            };
+        }
+        if (musicSlider) {
+            musicSlider.oninput = (e) => {
+                const volume = e.target.value;
+                musicValue.textContent = `${volume}%`;
+                this.audioManager.setMusicVolume(volume / 100);
+                this.saveSettings();
+            };
+        }
+
+        const settingsCloseBtn = document.getElementById('settings-close-btn');
+        if (settingsCloseBtn) { settingsCloseBtn.onclick = () => this.toggleSettings(); }
+
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) { restartBtn.addEventListener('click', () => { this.resetGame(); }); }
+
+        const emporiumBtn = document.getElementById('open-emporium-btn');
+        if (emporiumBtn) { emporiumBtn.addEventListener('click', () => { this.emporium.toggle(); }); }
     }
 
     drawSwipeTrail(ctx) {
@@ -860,23 +1150,95 @@ Object.entries(colors).forEach(([name, rgb]) => {
         const iceCreamChances = this.emporium.getIceCreamChance();
         document.getElementById('stat-ice-cream-chance').innerText = `${iceCreamChances[0]}% / ${iceCreamChances[1]}%`;
     }
-    
-    cancelPlacement() { 
-        this.placementMode = null; 
-        this.modalManager.toggle('shop');
+    getRefundAmount(index) {
+        return this.calculateTurretPlacementCost(index);
     }
-    cancelSell() { this.sellMode = null; this.requestUnpause(); }
 
-    tryPlaceItem() {
-        if (this.money < this.placementItemCost) return;
-        if (this.placementMode === 'turret') { this.towers.push(new Tower(this, this.mouse.x - 23, this.mouse.y - 23, true)); this.stats.turretsBought++; }
-        this.money -= this.placementItemCost; this.placementMode = null;
-        showNotification("Turret placed!");
-        this.modalManager.toggle('shop');
+    // This will return the cost for the *next* turret to be placed
+    getNextTurretCost() {
+        return this.calculateTurretPlacementCost(this.towers.length);
+    }
+
+    calculateTurretPlacementCost(turretCount) {
+        const baseCost = 100;
+        const totalTurrets = 25;
+        const endCost = 100000;
+
+        // C(n) = A * B^(n-1)
+        // A = baseCost (100)
+        // B = (endCost / baseCost)^(1 / (totalTurrets - 1))
+        // B = (100000 / 100)^(1 / (25 - 1))
+        // B = 1000^(1/24) approx 1.32046
+        const multiplier = Math.pow((endCost / baseCost), (1 / (totalTurrets - 1)));
+        
+        // turretCount is 0-indexed for number of turrets already placed
+        // For the first turret (turretCount = 0), cost is baseCost
+        // For the 25th turret (turretCount = 24), cost should be endCost
+        const cost = baseCost * Math.pow(multiplier, turretCount);
+        return Math.round(cost / 10) * 10; // Round to nearest 10 for cleaner numbers
+    }
+
+    updateHoldText(tsf) {
+        if (!this.showHoldText) return;
+
+        const animationDuration = 60; // Total duration of one bounce in frames
+        const timeSinceStart = (this.gameTime - this.holdTextStartTime) * tsf;
+
+        // Fade in and out
+        const fadeDuration = animationDuration * 0.8;
+        if (timeSinceStart < fadeDuration) {
+            this.holdTextAlpha = Math.min(1, timeSinceStart / (fadeDuration * 0.2));
+        } else {
+            this.holdTextAlpha = Math.max(0, 1 - (timeSinceStart - fadeDuration) / (fadeDuration * 0.8));
+        }
+
+        // Bouncing effect
+        const bounceProgress = (timeSinceStart % animationDuration) / animationDuration;
+        this.holdTextBounceOffset = Math.sin(bounceProgress * Math.PI) * 10; // 10px bounce height
+
+        if (this.holdTextAlpha <= 0) {
+            this.showHoldText = false;
+        }
+    }
+
+    update(tsf) { // tsf is time scale factor, passed from gameloop
+        // UI Shake animations
+        if (this.uiShake.money > 0) this.uiShake.money *= 0.9;
+        if (this.uiShake.xp > 0) this.uiShake.xp *= 0.9;
+
+        this.updateHoldText(tsf);
+
+        // Sell button fade in/out logic
+        const sellBtn = this.ui.sellButton;
+        if (sellBtn.visible) {
+            sellBtn.alpha = Math.min(1, sellBtn.alpha + 0.1);
+        } else { // Fading out
+            sellBtn.alpha = Math.max(0, sellBtn.alpha - 0.1);
+        }
+
+        // Logic to activate build mode after a hold duration
+        if (this.buildButtonHoldTimer > 0 && !this.isBuilding) {
+            if (Date.now() - this.buildButtonHoldTimer >= 100) {
+                this.isBuilding = true;
+                this.showHoldText = false;
+                this.buildButtonHoldTimer = 0;
+                this.isPaused = true; // Pause the game for building
+                this.ui.buildButton.img = this.ui.cancelButton.img;
+            }
+        }
+
+        // Other game-level updates can go here if needed later
+        if (!this.isPaused) {
+            this.player.update(tsf);
+            this.towers.forEach(t => t.update(tsf));
+        }
     }
 
     handlePiggyDeath(bonus) {
-        showNotification(`PIGGY SMASHED! +$${bonus}`);
+        // This can be used for special effects when a piggy dies
+        const pos = this.ui.moneyTextPos;
+        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+${bonus} BONUS!`, 'gold', 10));
+        this.uiShake.money = 25; // Extra big shake for piggy bonus
     }
 
     getNewId() {
@@ -904,9 +1266,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
     start() {
         window.closeModal = this.modalManager.close.bind(this.modalManager);
-
-        // All event listeners are now correctly handled in initListeners().
-        // This start() method is now only responsible for binding the global closeModal function.
     }
 
     beginGame() {
@@ -1106,7 +1465,5 @@ window.addEventListener('DOMContentLoaded', () => {
     if (canvas) {
         const game = new Game(canvas);
         window.gameInstance = game;
-        game.start();
-        game.beginGame();
     }
 });

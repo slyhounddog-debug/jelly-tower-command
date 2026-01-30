@@ -178,6 +178,19 @@ export default class ModalManager {
     handleInput() {
         if (!this.isOpen()) return;
 
+        const config = this.getModalConfig(this.activeModal);
+        if (config) { // Only check if config exists for the active modal
+            // Check if click is outside the modal's main content area
+            const mouseX = this.game.mouse.x;
+            const mouseY = this.game.mouse.y;
+
+            if (!(mouseX >= config.x && mouseX <= config.x + config.width &&
+                  mouseY >= config.y && mouseY <= config.y + config.height)) {
+                this.close(); // Clicked outside the modal
+                return; // Consume the click
+            }
+        }
+
         // Check button clicks for modal navigation
         for (const button of this.buttons) {
             if (this.game.mouse.x > button.x && this.game.mouse.x < button.x + button.width &&
@@ -230,7 +243,7 @@ export default class ModalManager {
 
         // Draw darkened background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.27)';
-        ctx.fillRect(0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT-100); // Only darken playable area
+        ctx.fillRect(0, 0, this.game.width, this.game.height);
 
         const config = this.getModalConfig(this.activeModal);
         if (!config || !config.image) {
