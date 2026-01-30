@@ -406,7 +406,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
             barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0, // 500px for mobile, 0px for PC
             buildButton: {
                 img: this.buildButtonImage, // This will be dynamically managed
-                x: 0, y: 0, width: 80, height: 80 // Set default width/height
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
             },
             cancelButton: { // New: for the cancel button during build mode
                 img: this.cancelButtonImage,
@@ -415,11 +418,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
             },
             shopButton: { // NEWLY ADDED for the relocated shop button
                 img: this.shopButtonImage,
-                x: 0, y: 0, width: 80, height: 80 // Set default width/height (smaller button for top bar, so 40 -> 80)
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
             },
             settingsButton: {
                 img: this.settingButtonImage, // Added img property
-                x: 0, y: 0, width: 80, height: 80 // Set default width/height
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
             },
             readyButton: {
                 x: 0, y: 0, width: 0, height: 0
@@ -771,6 +780,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
                 this.modalManager.toggle('shop');
+                shopBtn.isAnimating = true;
+                shopBtn.animTimer = 0;
+                this.audioManager.playSound('lick'); // Use a generic UI sound
                 return;
             }
             const buildBtn = this.ui.buildButton;
@@ -780,6 +792,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     this.audioManager.setBuildMode(true, false); // In build mode, not just muffled
                     this.ui.buildButton.img = this.ui.cancelButton.img;
                     this.timeScale = 0.05; // Game will be slowed
+                    buildBtn.isAnimating = true;
+                    buildBtn.animTimer = 0;
                     this.highlightedSlot = null; // Clear any previous highlighted slot
                 } else { // If already in build mode, clicking the build button acts as cancel
                     this.isBuilding = false;
@@ -794,12 +808,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
             // Check for the new shop button position on the right
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
                 this.modalManager.toggle('shop');
+                shopBtn.isAnimating = true;
+                shopBtn.animTimer = 0;
+                this.audioManager.playSound('lick');
                 return;
             }
 
             const settingsBtn = this.ui.settingsButton;
             if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width && this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
                 this.toggleSettings();
+                settingsBtn.isAnimating = true;
+                settingsBtn.animTimer = 0;
                 return;
             }
             
@@ -1242,6 +1261,20 @@ Object.entries(colors).forEach(([name, rgb]) => {
         else if (sellBtn.isAnimatingOut) sellBtn.alpha = 1 - fadeProgress;
         else if (sellBtn.visible) sellBtn.alpha = 1;
         else sellBtn.alpha = 0;
+
+        // Generic button press animation updater
+        const updateButtonAnimation = (button) => {
+            if (button.isAnimating) {
+                button.animTimer += tsf;
+                if (button.animTimer >= button.animDuration) {
+                    button.isAnimating = false;
+                }
+            }
+        };
+
+        updateButtonAnimation(this.ui.shopButton);
+        updateButtonAnimation(this.ui.buildButton);
+        updateButtonAnimation(this.ui.settingsButton);
 
         // Only update game entities if the game is not paused for any reason.
         if (!this.isPaused) {

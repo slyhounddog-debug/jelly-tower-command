@@ -15,8 +15,14 @@ export default class Shop {
         this.gridSlots = [];
         this.detailPanel = {};
         this.buyButton = {};
-        this.sellButton = {};
 
+        this.buyButton = {
+            isAnimating: false,
+            isShaking: false,
+            animTimer: 0,
+            animDuration: 12
+        };
+        
         this.layout();
     }
 
@@ -33,10 +39,10 @@ export default class Shop {
         this.detailPanel.width = modalConfig.width - (padding * 2) + 100;
         this.detailPanel.height = panelHeight;
 
-        this.buyButton.width = 105;
+        this.buyButton.width = 105; // Keep dimensions on the object
         this.buyButton.height = 90;
-        this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 480;
-        this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2;
+        this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 480; // Position
+        this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2; // Position
 
         const gridStartY = this.detailPanel.y + this.detailPanel.height + 40 + (modalConfig.height * 0.02);
         
@@ -60,6 +66,9 @@ export default class Shop {
                 y: gridStartY + row * (slotHeight + rowGap), // Use rowGap
                 width: slotWidth,
                 height: slotHeight,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
             };
             this.gridSlots.push(slot);
         });
@@ -71,6 +80,8 @@ export default class Shop {
                 this.game.mouse.y > slot.y && this.game.mouse.y < slot.y + slot.height) {
                 if (this.selectedShopItem !== slot.item) {
                     this.selectedShopItem = slot.item;
+                    slot.isAnimating = true;
+                    slot.animTimer = 0;
                     this.game.audioManager.playSound('lick');
                 }
                 return;
@@ -94,13 +105,30 @@ export default class Shop {
             this.game.money -= cost;
             item.action();
             this.game.audioManager.playSound('purchase');
+            this.buyButton.isAnimating = true;
+            this.buyButton.animTimer = 0;
         } else {
             this.game.audioManager.playSound('pop');
+            this.buyButton.isShaking = true;
+            this.buyButton.animTimer = 0;
         }
     }
 
     update(tsf) {
         this.layout();
+        this.gridSlots.forEach(slot => {
+            if (slot.isAnimating) {
+                slot.animTimer += tsf;
+                if (slot.animTimer >= slot.animDuration) slot.isAnimating = false;
+            }
+        });
+        if (this.buyButton.isAnimating || this.buyButton.isShaking) {
+            this.buyButton.animTimer += tsf;
+            if (this.buyButton.animTimer >= this.buyButton.animDuration) {
+                this.buyButton.isAnimating = false;
+                this.buyButton.isShaking = false;
+            }
+        }
     }
 
     draw(ctx) {
@@ -114,7 +142,7 @@ export default class Shop {
         ctx.textAlign = 'center';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 10;
-        ctx.fillText(`$${Math.floor(this.game.money)}`, modalConfig.x + modalConfig.width / 2, modalConfig.y + 180);
+        ctx.fillText(`$${Math.floor(this.game.money)}`, modalConfig.x + modalConfig.width / 2, modalConfig.y + 210);
         ctx.restore();
 
         this.drawDetailPanel(ctx);
@@ -132,25 +160,32 @@ export default class Shop {
             if (isSelected) {
                 ctx.filter = 'brightness(1.2)';
             }
+            
+            const slotCenterX = slot.x + slot.width / 2;
+            const slotCenterY = slot.y + slot.height / 2;
+            ctx.translate(slotCenterX, slotCenterY);
+            if (slot.isAnimating) {
+                const progress = slot.animTimer / slot.animDuration;
+                const scale = 1 - Math.sin(progress * Math.PI) * 0.1; // Smaller boing for slots
+                const squish = 1 + Math.sin(progress * Math.PI) * 0.05;
+                ctx.scale(squish, scale);
+            }
+            ctx.translate(-slotCenterX, -slotCenterY);
 
             if (upgradeSlotImage && upgradeSlotImage.complete) {
                 ctx.drawImage(upgradeSlotImage, slot.x, slot.y, slot.width, slot.height);
             }
 
             const centerX = slot.x + slot.width / 2;
-            let currentY = slot.y + 85;
+            let currentY = slot.y + 155; // Move icon down
 
             ctx.fillStyle = COLORS.DARK_GRAY;
-            ctx.font = '54px "Fredoka One"';
+            ctx.font = '78px "Fredoka One"'; // Double icon size
             ctx.textAlign = 'center';
             ctx.fillText(slot.item.icon, centerX, currentY);
-            currentY += 50;
-
-            ctx.font = '26px "Fredoka One"';
-            currentY = this.wrapText(ctx, slot.item.name, centerX, currentY, slot.width - 20, 32);
-            currentY += 35;
+            currentY += 70; // Adjust for larger icon
             
-            ctx.font = '38px "VT323"';
+            ctx.font = '56px "VT323"'; // Double cost text size
             const cost = slot.item.getCost();
             ctx.fillStyle = (typeof cost === 'number' && this.game.money >= cost) ? COLORS.DARK_LILAC : COLORS.LIGHT_GRAY;
             ctx.fillText(cost === 'MAX' ? 'MAX' : `$${cost}`, centerX, currentY);
@@ -164,26 +199,27 @@ export default class Shop {
         const item = this.selectedShopItem;
         const alignmentX = this.detailPanel.x + 240;
 
-        ctx.font = '115px "Fredoka One"';
+        ctx.font = '135px "Fredoka One"';
         ctx.textAlign = 'center';
+        ctx.fillStyle = COLORS.DARK_GRAY; // Set the icon color to be solid
         ctx.fillText(item.icon, this.detailPanel.x + 120, this.detailPanel.y + 220);
 
         ctx.fillStyle = "#9c536cff";
-        ctx.font = '48px "Titan One"';
+        ctx.font = '48px "Titan One"'; // Increase title size by ~20%
         ctx.textAlign = 'left';
         ctx.fillText(item.name, alignmentX, this.detailPanel.y + 100);
 
-        ctx.font = '26px "Nunito"';
+        ctx.font = '36px "Nunito"'; // Double description size
         ctx.fillStyle = COLORS.DARK_GRAY;
-        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 500, 30);
+        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 500, 60); // Double line height
         
-        newY += 35;
-        ctx.font = '36px "VT323"';
+        newY += 35; // Double spacing
+        ctx.font = '48px "VT323"'; // Double stat text size
         const nextValue = item.getNext();
         const currentValue = item.getValue();
         ctx.textAlign = 'left'
         ctx.fillText('Current: ' + currentValue, alignmentX, newY);
-        newY += 38;
+        newY += 38; // Double spacing
         if (nextValue !== "MAX") {
             ctx.fillStyle = COLORS.DARK_PINK;
             ctx.fillText('Next: ' + nextValue, alignmentX, newY);
@@ -191,10 +227,10 @@ export default class Shop {
              ctx.fillStyle = COLORS.LIGHT_GRAY;
             ctx.fillText('MAX LEVEL', alignmentX, newY);
         }
-        newY += 38;
+        newY += 38; // Double spacing
         
         ctx.fillStyle = COLORS.DARK_GRAY;
-        ctx.font = '32px "VT323"';
+        ctx.font = '44px "VT323"'; // Double level text size
         ctx.fillText(item.getLevel(), alignmentX, newY);
 
         this.drawBuyButton(ctx, item);
@@ -216,18 +252,37 @@ export default class Shop {
             buttonImage = this.game.disabledButtonImage;
         }
         
-        if (buttonImage && buttonImage.complete) {
-            ctx.drawImage(buttonImage, this.buyButton.x, this.buyButton.y, this.buyButton.width, this.buyButton.height);
+        ctx.save();
+        const btnCenterX = this.buyButton.x + this.buyButton.width / 2;
+        const btnCenterY = this.buyButton.y + this.buyButton.height / 2;
+        ctx.translate(btnCenterX, btnCenterY);
+
+        if (this.buyButton.isAnimating) {
+            const progress = this.buyButton.animTimer / this.buyButton.animDuration;
+            const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
+            const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+            ctx.scale(squish, scale);
+        } else if (this.buyButton.isShaking) {
+            const progress = this.buyButton.animTimer / this.buyButton.animDuration;
+            const shakeOffset = Math.sin(progress * Math.PI * 4) * 8; // 4 shakes
+            ctx.translate(shakeOffset, 0);
         }
 
+        if (buttonImage && buttonImage.complete) {
+            ctx.drawImage(buttonImage, -this.buyButton.width / 2, -this.buyButton.height / 2, this.buyButton.width, this.buyButton.height);
+        }
+
+        ctx.translate(-btnCenterX, -btnCenterY); // Untranslate before drawing text
+        
         ctx.fillStyle = COLORS.DARK_GRAY;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
         if (!isMax) {
-            ctx.font = '32px "VT323"';
+            ctx.font = '64px "VT323"'; // Double cost text on button
             ctx.fillText(`$${cost}`, this.buyButton.x + this.buyButton.width / 2, this.buyButton.y + this.buyButton.height / 2);
         }
+        ctx.restore();
     }
     
     wrapText(context, text, x, y, maxWidth, lineHeight) {

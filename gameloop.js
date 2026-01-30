@@ -327,7 +327,7 @@ export default class GameLoop {
         // Draw pulsing placement slots if in building mode
         if (this.game.isBuilding) {
             // Animation is 20x faster to compensate for the 1/20 slowdown in build mode.
-            const pulse = (Math.sin(this.game.gameTime * (0.1 * 20)) + 1) / 2; // 0 to 1 pulse
+            const pulse = (Math.sin(this.game.gameTime * (0.1 * 25)) + 1) / 2; // 0 to 1 pulse
             this.game.platforms.forEach(p => {
                 if (p.slots) {
                     p.slots.forEach(slot => { // line 332
@@ -352,7 +352,7 @@ export default class GameLoop {
                         this.game.ctx.beginPath();
                         this.game.ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 10);
                         
-                        // If a turret is already there, show a faint red. Otherwise, pulse white.
+                        // If a turret is already there, show a faint red. Otherwise, pulse white, but extra juicy.
                         this.game.ctx.fillStyle = `rgba(255, 255, 255, ${0.38 + pulse * 0.5})`;
                         
                         this.game.ctx.fill();
@@ -494,12 +494,27 @@ export default class GameLoop {
         // Draw the moved shop button
         ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
         ctx.shadowBlur = 10;
-        if (shopBtn.img.complete) {
-            ctx.drawImage(shopBtn.img, shopBtn.x, shopBtn.y, shopButtonTotalWidth, shopButtonTotalWidth);
+        ctx.save();
+        const shopBtnCenterX = shopBtn.x + shopButtonTotalWidth / 2;
+        const shopBtnCenterY = shopBtn.y + shopButtonTotalWidth / 2;
+        ctx.translate(shopBtnCenterX, shopBtnCenterY);
+
+        if (shopBtn.isAnimating) {
+            const progress = shopBtn.animTimer / shopBtn.animDuration;
+            // This creates a "boing" effect: shrinks then returns to normal size.
+            const scale = 1 - Math.sin(progress * Math.PI) * 0.2; 
+            const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+            ctx.scale(squish, scale);
         }
+
+        if (shopBtn.img.complete) {
+            ctx.drawImage(shopBtn.img, -shopButtonTotalWidth / 2, -shopButtonTotalWidth / 2, shopButtonTotalWidth, shopButtonTotalWidth);
+        }
+        ctx.restore();
         ctx.shadowBlur = 0;
 
         // Draw the Build/Cancel button
+
         ctx.shadowBlur = 10;
         
         let buttonToDraw = buildBtn.img; // Default to build button
@@ -515,7 +530,18 @@ export default class GameLoop {
         }
 
         if (buttonToDraw && buttonToDraw.complete) {
-            ctx.drawImage(buttonToDraw, buildBtn.x, buildBtn.y, buildButtonTotalWidth, buildButtonTotalWidth);
+            ctx.save();
+            const buildBtnCenterX = buildBtn.x + buildButtonTotalWidth / 2;
+            const buildBtnCenterY = buildBtn.y + buildButtonTotalWidth / 2;
+            ctx.translate(buildBtnCenterX, buildBtnCenterY);
+            if (buildBtn.isAnimating) {
+                const progress = buildBtn.animTimer / buildBtn.animDuration;
+                const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
+                const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+                ctx.scale(squish, scale);
+            }
+            ctx.drawImage(buttonToDraw, -buildButtonTotalWidth / 2, -buildButtonTotalWidth / 2, buildButtonTotalWidth, buildButtonTotalWidth);
+            ctx.restore();
         }
         ctx.shadowBlur = 0;
         currentXRight += buildButtonTotalWidth + elementSpacing;
@@ -526,9 +552,20 @@ export default class GameLoop {
         settingsBtn.y = centerY - (settingsButtonTotalWidth / 2);
         ctx.shadowColor = 'rgba(0, 183, 255, 0.5)';
         ctx.shadowBlur = 10;
-        if (settingsBtn.img.complete) { 
-            ctx.drawImage(settingsBtn.img, settingsBtn.x, settingsBtn.y, settingsButtonTotalWidth, settingsButtonTotalWidth);
+        ctx.save();
+        const settingsBtnCenterX = settingsBtn.x + settingsButtonTotalWidth / 2;
+        const settingsBtnCenterY = settingsBtn.y + settingsButtonTotalWidth / 2;
+        ctx.translate(settingsBtnCenterX, settingsBtnCenterY);
+        if (settingsBtn.isAnimating) {
+            const progress = settingsBtn.animTimer / settingsBtn.animDuration;
+            const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
+            const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+            ctx.scale(squish, scale);
         }
+        if (settingsBtn.img.complete) {
+            ctx.drawImage(settingsBtn.img, -settingsButtonTotalWidth / 2, -settingsButtonTotalWidth / 2, settingsButtonTotalWidth, settingsButtonTotalWidth);
+        }
+        ctx.restore();
         ctx.shadowBlur = 0;
 
 

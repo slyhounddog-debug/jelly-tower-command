@@ -135,11 +135,10 @@ export default class ModalManager {
             const totalButtonWidth = 3 * BUTTON_WIDTH + 2 * 10; // 3 buttons, 2 gaps
             const startX = (this.game.width - totalButtonWidth) / 2;
 
-            this.buttons = [
-                { name: 'shop', x: startX, y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT },
-                { name: 'components', x: startX + BUTTON_WIDTH + 10, y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT },
-                { name: 'player', x: startX + 2 * (BUTTON_WIDTH + 10), y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT },
-            ];
+            this.buttons = ['shop', 'components', 'player'].map((name, index) => ({
+                name: name, x: startX + index * (BUTTON_WIDTH + 10), y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT,
+                isAnimating: false, animTimer: 0, animDuration: 12
+            }));
         } else {
             this.buttons = []; // No navigation buttons for these simple modals
         }
@@ -195,6 +194,8 @@ export default class ModalManager {
         for (const button of this.buttons) {
             if (this.game.mouse.x > button.x && this.game.mouse.x < button.x + button.width &&
                 this.game.mouse.y > button.y && this.game.mouse.y < button.y + button.height) {
+                button.isAnimating = true;
+                button.animTimer = 0;
                 this.toggle(button.name);
                 return; // Navigation click handled, stop processing.
             }
@@ -221,6 +222,15 @@ export default class ModalManager {
     update(tsf) {
         if (!this.isOpen()) return;
 
+        // Update button animations
+        this.buttons.forEach(button => {
+            if (button.isAnimating) {
+                button.animTimer += tsf;
+                if (button.animTimer >= button.animDuration) {
+                    button.isAnimating = false;
+                }
+            }
+        });
         switch (this.activeModal) {
             case 'shop':
                 this.game.shop.update(tsf);
@@ -292,7 +302,20 @@ export default class ModalManager {
                 const isSelected = button.name === this.activeModal;
                 const sx = index * BUTTON_WIDTH;
                 const sy = isSelected ? BUTTON_HEIGHT : 0;
-                ctx.drawImage(this.uiButtonsImage, sx, sy, BUTTON_WIDTH, BUTTON_HEIGHT, button.x, button.y, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+                ctx.save();
+                const btnCenterX = button.x + button.width / 2;
+                const btnCenterY = button.y + button.height / 2;
+                ctx.translate(btnCenterX, btnCenterY);
+
+                if (button.isAnimating) {
+                    const progress = button.animTimer / button.animDuration;
+                    const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
+                    const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+                    ctx.scale(squish, scale);
+                }
+                ctx.drawImage(this.uiButtonsImage, sx, sy, BUTTON_WIDTH, BUTTON_HEIGHT, -button.width / 2, -button.height / 2, BUTTON_WIDTH, BUTTON_HEIGHT);
+                ctx.restore();
             });
         }
     }
