@@ -55,6 +55,7 @@ export default class Shop {
         
         const slotWidth = (effectiveGridContainerWidth - (3 * columnGap)) / 4; 
         const slotHeight = 220 * 1.25; // Keep original slot height calculation
+        const gridStartX = modalConfig.x + padding + (effectiveInnerModalWidth - effectiveGridContainerWidth) / 2;
 
         this.gridSlots = [];
         this.shopItems.forEach((item, index) => {
@@ -62,7 +63,7 @@ export default class Shop {
             const col = index % 4;
             const slot = {
                 item: item,
-                x: modalConfig.x + padding + col * (slotWidth + columnGap), // Use columnGap
+                x: gridStartX + col * (slotWidth + columnGap), // Use centered start X
                 y: gridStartY + row * (slotHeight + rowGap), // Use rowGap
                 width: slotWidth,
                 height: slotHeight,
