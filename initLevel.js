@@ -19,16 +19,16 @@ export default class initLevel {
 
         // Pre-calculate ground slots
         const groundSlots = [];
-        const turretWidth = 46; // Assuming auto-turret width
-        const turretHeight = 70.4;
-        const slotSpacing = 90; // Every 90 pixels
+        const turretWidth = 137; // Width of the turret sprite
+        const turretHeight = 190; // Height of the turret sprite
+        const slotSpacing = 118; // Space slots out by the width of a turret
         const startX = groundPlatform.x + turretWidth / 2; // Start half a turret width in
-        
+
         for (let i = startX; i < groundPlatform.x + groundPlatform.width - turretWidth / 2; i += slotSpacing) {
             groundSlots.push({
                 id: nextSlotId++,
                 x: i,
-                y: game.PLAYABLE_AREA_HEIGHT - 142 + (turretHeight / 2), // Adjusted to be on top of visible ground
+                y: game.PLAYABLE_AREA_HEIGHT - 142 + (turretHeight / 2) - 100, // Adjusted to be on top of visible ground, accounting for global -100 offset
                 isOccupied: false
             });
         }
@@ -38,7 +38,7 @@ export default class initLevel {
         const castlePlatforms = [
             { 
                 x: game.width - 1100, 
-                y: game.PLAYABLE_AREA_HEIGHT - 20, // Move castle up by 90px
+                y: game.PLAYABLE_AREA_HEIGHT - 50, // Move castle up by 90px
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, 
                 width: 150,   
@@ -49,14 +49,34 @@ export default class initLevel {
                 slots: [
                     { 
                         id: nextSlotId++,
-                        x: (game.width - 1100) + (350 / 2), // Center X on vWidth
-                        y: (game.PLAYABLE_AREA_HEIGHT - 20) + (20 - 250) + (70.4 / 2) - 30, // Adjust Y to be on top of castle visually
-                        isOccupied: false 
+                        // Slot position is now relative to the platform's position and visual dimensions.
+                        x: (game.width - 1100) + (350 / 2),
+                        y: (game.PLAYABLE_AREA_HEIGHT - 50) + (20 - 250) - 30, // platform.y + yOffset + visualCenter
+                        isOccupied: false
                     }
                 ]
             },
             { 
                 x: game.width - 425, 
+                y: game.PLAYABLE_AREA_HEIGHT - 50, // Move castle up by 90px
+                hitboxOffsetX: 100,
+                hitboxOffsetY: -200, 
+                width: 150, 
+                height: 20, 
+                vWidth: 350, 
+                vHeight: 250, 
+                type: 'castle',
+                slots: [
+                    { 
+                        id: nextSlotId++,
+                        x: (game.width - 425) + (350 / 2),
+                        y: (game.PLAYABLE_AREA_HEIGHT - 50) + (20 - 250) -30,
+                        isOccupied: false 
+                    }
+                ]
+            },
+            { 
+                x: game.width - 760,
                 y: game.PLAYABLE_AREA_HEIGHT - 20, // Move castle up by 90px
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, 
@@ -68,27 +88,8 @@ export default class initLevel {
                 slots: [
                     { 
                         id: nextSlotId++,
-                        x: (game.width - 425) + (350 / 2), 
-                        y: (game.PLAYABLE_AREA_HEIGHT - 20) + (20 - 250) + (70.4 / 2) - 30, 
-                        isOccupied: false 
-                    }
-                ]
-            },
-            { 
-                x: game.width - 760,
-                y: game.PLAYABLE_AREA_HEIGHT + 30, // Move castle up by 90px
-                hitboxOffsetX: 100,
-                hitboxOffsetY: -200, 
-                width: 150, 
-                height: 20, 
-                vWidth: 350, 
-                vHeight: 250, 
-                type: 'castle',
-                slots: [
-                    { 
-                        id: nextSlotId++,
-                        x: (game.width - 760) + (350 / 2), 
-                        y: (game.PLAYABLE_AREA_HEIGHT + 30) + (20 - 250) + (70.4 / 2) - 30, 
+                        x: (game.width - 760) + (350 / 2),
+                        y: (game.PLAYABLE_AREA_HEIGHT - 20) + (20 - 250) -30,
                         isOccupied: false 
                     }
                 ]
@@ -98,12 +99,12 @@ export default class initLevel {
 
         // Cloud Platforms logic
         const floatingConfigs = [
-            { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 580, width: 280, height: 65 },
-            { x: 900, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 290, height: 65 },
-            { x: 500, y: game.PLAYABLE_AREA_HEIGHT - 850, width: 300, height: 69 },
-            { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 1050, width: 275, height: 60 },
-            { x: 800, y: game.PLAYABLE_AREA_HEIGHT - 1150, width: 285, height: 60 },
-            { x: 450, y: game.PLAYABLE_AREA_HEIGHT - 1400, width: 295, height: 65 }
+            { x: 80, y: game.PLAYABLE_AREA_HEIGHT - 580, width: 280, height: 75 },
+            { x: 820, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 290, height: 75 },
+            { x: 500, y: game.PLAYABLE_AREA_HEIGHT - 850, width: 300, height: 79 },
+            { x: 120, y: game.PLAYABLE_AREA_HEIGHT - 1050, width: 275, height: 70 },
+            { x: 760, y: game.PLAYABLE_AREA_HEIGHT - 1150, width: 285, height: 70 },
+            { x: 450, y: game.PLAYABLE_AREA_HEIGHT - 1400, width: 295, height: 75 }
         ];
 
         floatingConfigs.forEach(cfg => {

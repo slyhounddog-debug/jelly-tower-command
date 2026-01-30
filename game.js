@@ -477,22 +477,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 if (dist < minDistance) {
                     minDistance = dist;
                     let canPlace = true;
-
-                    if (slot.isOccupied) {
-                        canPlace = false;
-                    } else {
-                        const prospectiveX = slot.x - (turretWidth / 2);
-                        const prospectiveY = slot.y - (turretHeight / 2);
-                        for (const existingTurret of this.towers) {
-                            if (prospectiveX < existingTurret.x + existingTurret.width &&
-                                prospectiveX + turretWidth > existingTurret.x &&
-                                prospectiveY < existingTurret.y + existingTurret.height &&
-                                prospectiveY + turretHeight > existingTurret.y) {
-                                canPlace = false;
-                                break;
-                            }
-                        }
-                    }
+                    if (slot.isOccupied) canPlace = false;
                     
                     nearestSlot = { 
                         ...slot, 
@@ -1206,9 +1191,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
         if (this.uiShake.money > 0) this.uiShake.money *= 0.9;
         if (this.uiShake.xp > 0) this.uiShake.xp *= 0.9;
 
-        this.updateHoldText(tsf);
-
-        // Sell button fade in/out logic
         const sellBtn = this.ui.sellButton;
         if (sellBtn.visible) {
             sellBtn.alpha = Math.min(1, sellBtn.alpha + 0.1);
@@ -1216,10 +1198,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
             sellBtn.alpha = Math.max(0, sellBtn.alpha - 0.1);
         }
 
-        // Logic to activate build mode after a hold duration
         if (this.buildButtonHoldTimer > 0 && !this.isBuilding) {
             if (Date.now() - this.buildButtonHoldTimer >= 100) {
                 this.isBuilding = true;
+                this.audioManager.setBuildMode(true, false); // In build mode, not just muffled
                 this.showHoldText = false;
                 this.buildButtonHoldTimer = 0;
                 this.isPaused = true; // Pause the game for building
@@ -1227,8 +1209,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
         }
 
-        // Other game-level updates can go here if needed later
-        if (!this.isPaused) {
+        // Only update game entities if the game is not paused for any reason.
+        if (!this.isPaused && !this.isBuilding) {
             this.player.update(tsf);
             this.towers.forEach(t => t.update(tsf));
         }

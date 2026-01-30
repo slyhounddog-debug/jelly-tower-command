@@ -26,7 +26,7 @@ export default class Tower extends BaseStructure {
 
         // Offsets to correctly draw the original sprite frame relative to the new, smaller hitbox
         // The drawn image will still be the original scaled size (0.9), but its top-left will be offset.
-        this.drawOffsetX = (this.width + 80 - Tower.SPRITE_FRAME_WIDTH * 0.9) / 2;
+        this.drawOffsetX = (this.width + 85 - Tower.SPRITE_FRAME_WIDTH * 0.9) / 2;
         this.drawOffsetY = (this.height + 80 - Tower.SPRITE_FRAME_HEIGHT * 0.9);
         
         // Ensure the new sprite index is different from the last one
@@ -50,6 +50,11 @@ export default class Tower extends BaseStructure {
         let fireRate = this.game.stats.fireRate; // No longer checking isAuto here for fireRate
         if (sniperCount > 0) {
             fireRate *= (1 + sniperCount * 0.1); 
+        }
+
+        // Apply Sugar Rush fire rate buff
+        if (this.game.player.sugarRushTimer > 0) {
+            fireRate *= 0.75; // 25% faster fire rate (cooldown is 75% of normal)
         }
 
         this.recoil *= 0.9;
@@ -103,17 +108,9 @@ export default class Tower extends BaseStructure {
             const tx = visualCx + Math.cos(angle) * 30;
             const ty = visualCy + Math.sin(angle) * 30;
             let damage = this.game.stats.damage * 0.5; // Always auto-turret damage
-            if (this.game.player.sugarRushTimer > 0) {
-                damage *= 1.2;
-            }
             const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
-            if (sniperCount > 0) {
-                damage *= (1 + sniperCount * 0.25); // +25% damage per stack
-            }
+            if (sniperCount > 0) damage *= (1 + sniperCount * 0.25);
             let projectileSpeed = this.game.stats.projectileSpeed;
-            if (this.game.player.sugarRushTimer > 0) {
-                projectileSpeed *= 1.2;
-            }
             const radius = 15 //+ (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2); // Always auto-turret radius
             
             const gummyImpactCount = this.game.player.getEquippedComponentCount('Gummy Impact');
@@ -160,6 +157,44 @@ export default class Tower extends BaseStructure {
                           -sWidth * 0.9 / 2, -sHeight * 0.9 / 2, // Center the image
                           Tower.SPRITE_FRAME_WIDTH * 0.9, Tower.SPRITE_FRAME_HEIGHT * 0.9); // Draw at original scaled size
         }
+        ctx.restore(); // Restore from body shake
+
+        // --- Sugar Rush Animation ---
+        if (this.game.player.sugarRushTimer > 0) {
+            ctx.save();
+            // Create a clipping mask from the tower sprite
+            ctx.beginPath();
+            const sWidth = 137, sHeight = 190;
+            const drawWidth = sWidth * 0.9, drawHeight = sHeight * 0.9;
+            ctx.rect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            ctx.clip();
+
+            const waveCount = 3;
+            const slowSpeed = 0.05; 
+            const colorSpeed = 2; 
+            const arcHeight = -10;
+            
+            for (let i = 0; i < waveCount; i++) {
+                const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
+                
+                const minY = -drawHeight / 2;
+                const maxY = drawHeight / 2;
+                const yPos = minY + ((maxY - minY) * progress);
+                
+                const alpha = Math.sin(progress * Math.PI);
+                const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
+                
+                ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
+                ctx.lineWidth = 11;
+
+                ctx.beginPath();
+                ctx.moveTo(-drawWidth / 2, yPos);
+                ctx.quadraticCurveTo(0, yPos - arcHeight, drawWidth / 2, yPos);
+                ctx.stroke();
+            }
+            ctx.restore(); // Restore from clipping mask
+        }
+        // --- End Sugar Rush ---
 
         ctx.save();
         ctx.translate(0, -30); // Barrel pivot point relative to tower center
@@ -196,8 +231,6 @@ export default class Tower extends BaseStructure {
         // Muzzle Flash
         ctx.fillStyle = (this.cooldown > this.game.stats.fireRate - 3) ? '#e67e22' : 'transparent';
         ctx.beginPath(); ctx.arc(100, 0, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-
         ctx.restore();
     }
 }

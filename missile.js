@@ -95,6 +95,7 @@ export default class Missile {
         this.totalSlow = 0; // Initialize total slow effect
         this.slowParticleTimer = 0; // Timer for emitting slow particles
         this.isJellyTagged = false;
+        this.slowTrailTimer = 0;
         this.id = this.game.getNewId(); // Unique ID for each missile
         this.lastDamageSource = null;
     }
@@ -196,6 +197,22 @@ export default class Missile {
                     const py = this.y + (Math.random() * this.height);
                     this.game.particles.push(new Particle(this.game, px, py, 'rgba(100, 150, 255, 0.7)', 'spark')); // Bluish particles
                 }
+            }
+        }
+
+        // --- NEW: Slow Trail Visual ---
+        const isSlowedByTongue = this.slowEffects.some(e => e.source === 'tongue');
+        if (isSlowedByTongue) {
+            this.slowTrailTimer += tsf;
+            if (this.slowTrailTimer >= 9) { // Every 9 frames
+                this.slowTrailTimer = 0;
+                const particleX = this.x + this.width / 2;
+                const particleY = this.y; // Spawn at the top
+                const color1 = 'rgba(100, 150, 255, 0.8)';
+                const color2 = 'rgba(173, 216, 230, 0.8)';
+                const particleColor = Math.random() < 0.5 ? color1 : color2;
+                // Create a particle that doesn't move and fades out
+                this.game.particles.push(new Particle(this.game, particleX, particleY, particleColor, 'spark', 1.28 * 60, 0, 0));
             }
         }
 
@@ -648,7 +665,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         this.game.enemiesKilled++;
 
         if (this.game.wasLickKill && this.game.player.upgrades['Sugar Rush'] > 0) {
-            this.game.player.sugarRushTimer = 600; // 10 seconds
+            this.game.player.sugarRushTimer = 300; // 5 seconds
         }
 
         // Spawn homing 'soul' particle

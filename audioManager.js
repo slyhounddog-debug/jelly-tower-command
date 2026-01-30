@@ -110,6 +110,25 @@ class AudioManager {
         this.muffleFilter.frequency.setTargetAtTime(targetFreq, this.context.currentTime, 0.1);
     }
 
+    setBuildMode(isBuilding, isMuffled = false) {
+        if (this.context.state === 'suspended') this.context.resume();
+
+        let targetFreq = 22000;
+        let targetRate = 1.0;
+
+        if (isBuilding) {
+            targetFreq = 800; // Build mode muffle
+            targetRate = 0.3; // Build mode slowdown
+        } else if (isMuffled) {
+            targetFreq = 600; // Standard menu muffle
+        }
+
+        this.muffleFilter.frequency.setTargetAtTime(targetFreq, this.context.currentTime, 0.2);
+        if (this.musicSources.music) {
+            this.musicSources.music.playbackRate.setTargetAtTime(targetRate, this.context.currentTime, 0.2);
+        }
+    }
+
     setBossMusic(active) {
         if (this.context.state === 'suspended') this.context.resume();
 

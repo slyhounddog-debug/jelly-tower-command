@@ -377,18 +377,17 @@ export default class GameLoop {
             ctx.drawImage(img, 0, 190, 137, 190, drawX, drawY, turretWidth, turretHeight);
             this.game.ctx.restore(); 
         }
-
+        
         this.game.ctx.restore(); // Restore screen shake translation
 
         // Apply screen shake to the entire UI bar
         ctx.save();
         ctx.translate(offset.x, offset.y);
 
-        // BOTTOM UI BAR (All elements housed in the ground)
         const uiBarHeight = game.ui.barHeight; 
         const uiBarY = game.PLAYABLE_AREA_HEIGHT - 70; // The bar starts at the bottom of the playable area.
         const uiPadding = 15;
-        const elementSpacing = 15;
+        const elementSpacing = 15; // Spacing between UI elements
 
         // Draw UI bar background
         if (uiBarHeight > 0) {
@@ -540,39 +539,44 @@ export default class GameLoop {
         // Restore the UI bar screen shake translation
         ctx.restore();
 
+        // --- POST-PROCESSING AND FINAL UI DRAW ---
+        if (game.isBuilding) {
+            game.updateHoldText(tsf); // Moved here to only run when building
+            // 1. Chromatic Aberration
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = game.width;
+            tempCanvas.height = game.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(game.canvas, 0, 0);
 
-        const bossHealthContainer = document.getElementById('boss-health-container');
-        const bossPulseOverlay = document.getElementById('boss-pulse-overlay');
-        if (this.game.boss) {
-            bossHealthContainer.style.display = 'block';
-            bossPulseOverlay.style.display = 'block';
-            const bossHealthFill = document.getElementById('boss-health-bar-fill');
-            const bossHealthText = document.getElementById('boss-health-text');
-            const bossHealthPercentage = (this.game.boss.health / this.game.boss.maxHealth) * 100;
-            bossHealthFill.style.width = `${bossHealthPercentage}%`;
-            bossHealthText.innerText = `BOSS: ${Math.ceil(this.game.boss.health)}`;
-            
-            // Rainbow color effect
-            const hue = (this.game.gameTime * 0.5) % 360;
-            bossHealthFill.style.background = `linear-gradient(to right, hsl(${hue}, 100%, 50%), hsl(${(hue + 60) % 360}, 100%, 50%))`;
+            const shift = 3;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.05;
+            ctx.drawImage(tempCanvas, -shift, 0);
+            ctx.drawImage(tempCanvas, shift, 0);
+            ctx.restore();
 
-            // Glass tube background (assuming bossHealthContainer is the outer container)
-            bossHealthContainer.style.background = 'rgba(255, 255, 255, 0.3)'; // Semi-transparent white
-            bossHealthContainer.style.border = '2px solid rgba(255, 255, 255, 0.7)'; // Shiny border
-            bossHealthContainer.style.boxShadow = 'inset 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px rgba(255, 255, 255, 0.3)'; // Inner and outer glow
-
-
-            // Pulse effect
-            const pulse = (Math.sin(this.game.gameTime * 0.05) + 1) / 2;
-            bossPulseOverlay.style.opacity = 0.1 + (pulse * 0.2);
-
-        } else {
-            bossHealthContainer.style.display = 'none';
-            bossPulseOverlay.style.display = 'none';
+            // 2. Available Slot Indicators (Drawn AFTER Chromatic Aberration)
+            ctx.save();
+            ctx.translate(offset.x, offset.y - 100); // Re-apply game world offset
+            game.platforms.forEach(p => {
+                if (!p.slots) return;
+                p.slots.forEach(slot => {
+                    if (slot.isOccupied || (game.highlightedSlot && game.highlightedSlot.id === slot.id)) return;
+                    const newWidth = 85, newHeight = 110;
+                    ctx.save();
+                    ctx.globalAlpha = 0.25 + Math.sin(game.gameTime * 2.0) * 0.3;
+                    ctx.fillStyle = 'white'; ctx.shadowColor = 'white'; ctx.shadowBlur = 15;
+                    ctx.fillRect(slot.x - (newWidth / 2), slot.y - (newHeight / 2) + 20, newWidth, newHeight);
+                    ctx.restore();
+                });
+            });
+            ctx.restore();
         }
 
-        if (this.game.modalManager.isOpen()) {
-            this.game.modalManager.draw(this.game.ctx);
+        if (game.modalManager.isOpen()) {
+            game.modalManager.draw(ctx);
         }
 
         requestAnimationFrame((t) => this.loop(t));

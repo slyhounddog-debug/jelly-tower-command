@@ -89,8 +89,11 @@ export default class Drop {
             this.vy *= -0.3; 
         }
 
-        if (Math.abs(this.game.player.x - (this.x + this.width/2)) < this.game.player.pickupRange && 
-            Math.abs(this.game.player.y - (this.y + this.width/2)) < this.game.player.pickupRange) {
+        const playerCenterX = this.game.player.x + this.game.player.width / 2;
+        const playerCenterY = this.game.player.y + this.game.player.height / 2;
+        const dropCenterX = this.x + this.width / 2;
+        const dropCenterY = this.y + this.width / 2;
+        if (Math.hypot(playerCenterX - dropCenterX, playerCenterY - dropCenterY) < this.game.player.pickupRange) {
             this.collect();
             this.life = 0;
             for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff'));

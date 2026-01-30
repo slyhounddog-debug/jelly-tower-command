@@ -73,7 +73,7 @@ export default class Gumball {
                 
                 // Gumball damage counts towards sugar rush
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
-                    this.game.player.sugarRushTimer = 600; // Reset sugar rush timer
+                    this.game.player.sugarRushTimer = 300; // Reset sugar rush timer to 5 seconds
                 }
 
                 // If Gumball Volley is active, this hit also spawns gumballs
@@ -100,7 +100,7 @@ export default class Gumball {
                 }
 
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
-                    this.game.player.sugarRushTimer = 600;
+                    this.game.player.sugarRushTimer = 300;
                 }
                  if (this.canSpawn && this.game.player.upgrades['Gumball Volley'] > 0 && this.game.boss) {
                     this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss, 1, false);

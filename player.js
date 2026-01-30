@@ -208,7 +208,7 @@ export default class Player {
                         m.kill();
                     }
                     if (this.upgrades['Ice Tongue'] > 0) {
-                        m.applySlow(180, 0.5, 'tongue'); // 3 seconds, 50% slow
+                        m.applySlow(300, 0.5, 'tongue'); // 5 seconds, 50% slow
                     }
                 }
             });
@@ -297,7 +297,7 @@ export default class Player {
                     }
                     this.game.wasLickKill = false;
                     if (this.upgrades['Ice Tongue'] > 0) {
-                        m.applySlow(180, 0.5, 'tongue');
+                        m.applySlow(300, 0.5, 'tongue');
                     }
                     m.kbVy = -this.game.stats.lickKnockback * 0.2;
                     this.game.screenShake.trigger(2, 10);

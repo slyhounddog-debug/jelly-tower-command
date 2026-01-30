@@ -28,7 +28,7 @@ export default class LevelingManager {
                 { name: "Ice Tongue", description: "Lick slows enemies by 20% for 3 seconds.", icon: "❄️", rarity: "rare" },
                 { name: "Jelly Tag", description: "Licked enemies drop another instance of loot.", icon: "🎯", rarity: "rare" },
                 { name: "Squishy Butt", description: "Landing creates a damaging shockwave (AOE affected by tongue range)", icon: "💥", rarity: "rare" },
-                { name: "Sugar Rush", description: "+20% tower dmg & fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
+                { name: "Sugar Rush", description: "+25% tower fire rate for 10 sec on tongue kill.", icon: "🧁", rarity: "rare" }
             ],
             legendary: [
                 { name: "Dash Flash", description: "Ouchie dash wave dealing 200% lick damage.", icon: "🛡️", rarity: "legendary" },
