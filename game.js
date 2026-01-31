@@ -231,6 +231,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.isCancelingBuild = false;
         this.cancelAnimTimer = 0;
         this.cancelAnimDuration = 20; // Match tower sell duration
+        this.vignetteAlpha = 0; // For build mode vignette fade
         this.cancelAnimData = { x: 0, y: 0, width: 0, height: 0 };
 
 
@@ -447,7 +448,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             xpBarPos: { x: 0, y: 0 }
         };
 
-        this.uiShake = { money: 0, xp: 0 };
+        this.uiShake = { money: 0, xp: 0, turretCost: 0 };
 
         this.initListeners();
         this.injectMobileControls();
@@ -477,6 +478,11 @@ Object.entries(colors).forEach(([name, rgb]) => {
         const pos = this.ui.xpBarPos;
         this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+${amount.toFixed(0)} XP`, '#9bf6ff'));
     }
+
+    triggerTurretCostAnimation() {
+        this.uiShake.turretCost = 15;
+    }
+
 
     findNearestAvailableSlot(mouseX, mouseY) {
         let nearestSlot = null;
@@ -552,6 +558,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
     
         tower.sell(); // Trigger the sell animation
         showNotification(`Sold +$${refundAmount}!`);
+        this.triggerTurretCostAnimation();
         this.cancelSell();
     }
     
@@ -953,6 +960,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         }
                         if (!foundSlot) console.error("Could not find and occupy slot with ID:", this.highlightedSlot.id);
                     }
+                    this.triggerTurretCostAnimation();
                 }
                 // If not starting a cancel animation, exit build mode immediately
                 if (!this.isCancelingBuild) {
@@ -1239,6 +1247,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         // UI Shake animations
         if (this.uiShake.money > 0) this.uiShake.money *= 0.9;
         if (this.uiShake.xp > 0) this.uiShake.xp *= 0.9;
+        if (this.uiShake.turretCost > 0) this.uiShake.turretCost *= 0.9;
 
         // Sell button fade animation
         const sellBtn = this.ui.sellButton;

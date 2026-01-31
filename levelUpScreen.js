@@ -16,11 +16,11 @@ export default class LevelUpScreen {
         }, 1000);
         this.upgradeChoices = choices;
         this.cards = this.upgradeChoices.map((choice, index) => {
-            const cardWidth = 225; // 150 * 1.5
-            const cardHeight = 330; // 220 * 1.5
+            const cardWidth = 337.5; // 225 * 1.5
+            const cardHeight = 495; // 330 * 1.5
             return {
                 x: this.game.width / 2 - (cardWidth * 1.5 + 20) + (index * (cardWidth + 20)),
-                y: this.game.height + 100, // Start below screen
+                y: this.game.PLAYABLE_AREA_HEIGHT + 100, // Start below screen
                 targetY: this.game.PLAYABLE_AREA_HEIGHT / 2 - cardHeight / 2,
                 width: cardWidth,
                 height: cardHeight,
@@ -65,11 +65,11 @@ export default class LevelUpScreen {
         ctx.fillRect(0, 0, this.game.width, this.game.PLAYABLE_AREA_HEIGHT);
 
         ctx.fillStyle = 'white';
-        ctx.font = '80px "Titan One"';
+        ctx.font = '96px "Titan One"'; // 20% bigger
         ctx.textAlign = 'center';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 10;
-        ctx.fillText('Level Up!', this.game.width / 2, this.titleY);
+        ctx.fillText('Level Up!', this.game.width / 2, this.titleY - 200);
         ctx.restore();
 
         this.cards.forEach(card => {
@@ -109,13 +109,13 @@ export default class LevelUpScreen {
         ctx.lineWidth = 3;
 
         ctx.beginPath();
-        ctx.roundRect(card.x, card.y, card.width, card.height, 30);
+        ctx.roundRect(card.x, card.y, card.width, card.height, 45); // 50% bigger
         ctx.fill();
         ctx.stroke();
 
         // Draw card content
-        ctx.fillStyle = color;
-        ctx.font = '32px "Fredoka One"'; // Slightly smaller font
+        ctx.fillStyle = 'white'; // Use white for better contrast on the new gradient
+        ctx.font = '48px "Fredoka One"'; // 50% bigger
         ctx.textAlign = 'center';
         
         const title = card.choice.name.toUpperCase();
@@ -126,19 +126,19 @@ export default class LevelUpScreen {
         if (textWidth > maxWidth) {
             const scaleFactor = maxWidth / textWidth;
             ctx.translate(card.x + card.width / 2, card.y + 45);
-            ctx.scale(scaleFactor, 1);
+            ctx.scale(scaleFactor, 1.5); // Scale Y as well
             ctx.fillText(title, 0, 0);
         } else {
-            ctx.fillText(title, card.x + card.width / 2, card.y + 45);
+            ctx.fillText(title, card.x + card.width / 2, card.y + 67.5); // 50% bigger
         }
         ctx.restore();
 
-        ctx.font = '60px "Fredoka One"';
-        ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 120);
+        ctx.font = '90px "Fredoka One"'; // 50% bigger
+        ctx.fillText(card.choice.icon, card.x + card.width / 2, card.y + 180); // 50% bigger
 
         ctx.fillStyle = 'white';
-        ctx.font = '21px "Nunito"';
-        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 180, card.width - 30, 24);
+        ctx.font = '31.5px "Nunito"'; // 50% bigger
+        this.wrapText(ctx, card.choice.description, card.x + card.width / 2, card.y + 270, card.width - 45, 36); // 50% bigger
 
         // --- NEW SECTION FOR CURRENT/TOTAL STATS ---
         let currentStatText = '';
@@ -172,16 +172,16 @@ export default class LevelUpScreen {
 
         if (showStat) {
             ctx.fillStyle = 'white'; // Always white for choice cards
-            ctx.font = `18px "Nunito"`; // Slightly larger font than manager screen
+            ctx.font = `27px "Nunito"`; // 50% bigger
             ctx.textAlign = 'center';
-            const statY = card.y + 220 + (isTotal ? 5 : 0); // Adjust Y position
+            const statY = card.y + 330 + (isTotal ? 7.5 : 0); // 50% bigger
             ctx.fillText(currentStatText, card.x + card.width / 2, statY);
         }
         // --- END NEW SECTION ---
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = color;
-        ctx.font = '24px "Fredoka One"';
+        ctx.font = '36px "Fredoka One"'; // 50% bigger
         ctx.fillText(rarity.toUpperCase(), card.x + card.width / 2, card.y + card.height - 30);
 
 

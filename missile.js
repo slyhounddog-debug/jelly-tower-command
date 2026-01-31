@@ -204,7 +204,7 @@ export default class Missile {
         const isSlowedByTongue = this.slowEffects.some(e => e.source === 'tongue');
         if (isSlowedByTongue) {
             this.slowTrailTimer += tsf;
-            if (this.slowTrailTimer >= 9) { // Every 9 frames
+            if (this.slowTrailTimer >= 4.5) { // Doubled particle rate (was 9)
                 this.slowTrailTimer = 0;
                 const particleX = this.x + this.width / 2;
                 const particleY = this.y; // Spawn at the top
@@ -212,7 +212,7 @@ export default class Missile {
                 const color2 = 'rgba(173, 216, 230, 0.8)';
                 const particleColor = Math.random() < 0.5 ? color1 : color2;
                 // Create a particle that doesn't move and fades out
-                this.game.particles.push(new Particle(this.game, particleX, particleY, particleColor, 'spark', 1.28 * 60, 0, 0));
+                this.game.particles.push(new Particle(this.game, particleX, particleY, particleColor, 'spark', 2.5, 300, 0, 0)); // Doubled size, 5-second life (300 frames)
             }
         }
 

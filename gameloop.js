@@ -397,6 +397,11 @@ export default class GameLoop {
         const ui = this.game.ui;
         const game = this.game;
 
+        // Apply screen shake to the entire bottom UI bar
+        const uiShakeOffset = game.screenShake.getOffset();
+        ctx.save();
+        ctx.translate(uiShakeOffset.x, uiShakeOffset.y);
+
         // BOTTOM UI BAR (All elements housed in the ground)
         const uiBarHeight = game.ui.barHeight; 
         const uiBarY = game.PLAYABLE_AREA_HEIGHT - 70; // The bar starts at the bottom of the playable area.
@@ -414,7 +419,7 @@ export default class GameLoop {
 
 
         // 1. Calculate widths of all elements for precise layout
-        const xpBarTotalWidth = (game.xpBar.width * 0.45) * uiScale; 
+        const xpBarTotalWidth = (game.xpBar.width * 0.6) * uiScale; 
         const shopButtonTotalWidth = ui.shopButton.width * uiScale; 
         ctx.font = `bold ${Math.floor(52 * uiScale)}px "VT323"`;
         const moneyTextTotalWidth = ctx.measureText(`$${game.money}`).width;
@@ -481,14 +486,20 @@ export default class GameLoop {
         cancelBtn.y = centerY - (buildButtonTotalWidth / 2);
         // Draw Next Turret Cost above the build button, but only when not in build mode
         if (!game.isBuilding) {
-            ctx.font = `bold ${Math.floor(30 * uiScale)}px "VT323"`;
+            ctx.save();
+            const turretCostShakeX = (Math.random() - 0.5) * game.uiShake.turretCost;
+            const turretCostShakeY = (Math.random() - 0.5) * game.uiShake.turretCost;
+            ctx.translate(turretCostShakeX, turretCostShakeY);
+
+            ctx.font = `bold ${Math.floor(45 * uiScale)}px "VT323"`; // 50% bigger
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             ctx.fillStyle = game.turretCostTextColor;
             ctx.shadowColor = 'rgba(255, 0, 191, 0.5)';
             ctx.shadowBlur = 10;
-            ctx.fillText(`$${game.getNextTurretCost()}`, buildBtn.x + (buildButtonTotalWidth / 2), buildBtn.y - 10);
+            ctx.fillText(`$${game.getNextTurretCost()}`, buildBtn.x + (buildButtonTotalWidth / 2), buildBtn.y + 15);
             ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
         // Draw the moved shop button
@@ -568,6 +579,8 @@ export default class GameLoop {
         ctx.restore();
         ctx.shadowBlur = 0;
 
+        ctx.restore(); // Restore from UI bar shake
+
 
 
         // Draw "Hold" text for build button feedback
@@ -594,7 +607,7 @@ export default class GameLoop {
             const turretWidth = 137 * 0.9; // Scale down by 10%
             const turretHeight = 190 * 0.9;
             let drawX = this.game.mouse.x - (turretWidth / 2);
-            let drawY = this.game.mouse.y - (turretHeight / 2);
+            let drawY = this.game.mouse.aimY - (turretHeight / 2); // Use aimY to account for offset
             let alpha = 0.5;
             let tintColor = null;
 
@@ -602,12 +615,12 @@ export default class GameLoop {
                 // If it's the cancel slot
                 if (this.game.highlightedSlot.id === 'cancel') {
                     drawX = this.game.highlightedSlot.x - (turretWidth / 2);
-                    drawY = this.game.highlightedSlot.y - (turretHeight / 2);
+                    drawY = this.game.highlightedSlot.y - (turretHeight / 2) - 10;
                     tintColor = 'red';
                     alpha = 0.7;
                 } else { // It's a regular build slot
-                    drawX = this.game.highlightedSlot.x - (turretWidth / 2);
-                    drawY = this.game.highlightedSlot.y - (turretHeight / 2) - 80; // 80px higher to match spawn
+                    drawX = this.game.highlightedSlot.x - (turretWidth / 2) - 5;
+                    drawY = this.game.highlightedSlot.y - (turretHeight / 2) - 180; // Match initial spawn height
                     if (this.game.highlightedSlot.isOccupied) {
                         tintColor = 'red';
                     }
@@ -620,7 +633,7 @@ export default class GameLoop {
                 ctx.filter = 'hue-rotate(180deg) brightness(1.5)';
             } 
             // Draw the ghost turret relative to the main canvas, not the UI bar
-            ctx.drawImage(img, 0, 190, 137, 190, drawX, drawY - 100, turretWidth, turretHeight);
+            ctx.drawImage(img, 0, 190, 137, 190, drawX, drawY, turretWidth, turretHeight);
             ctx.restore();
         }
 
@@ -646,6 +659,30 @@ export default class GameLoop {
             const img = this.game.towersImage;
             ctx.drawImage(img, 0, 190, 137, 190, -animData.width / 2, -animData.height, animData.width, animData.height);
 
+            ctx.restore();
+        }
+
+        // --- Vignette Fade Logic ---
+        const vignetteFadeOutSpeed = 0.01; // Normal speed for fading out
+        const vignetteFadeInSpeed = .50; // 20x faster to compensate for bullet time (0.05 * 20 = 1.0 effective speed)
+
+        if (this.game.isBuilding && this.game.vignetteAlpha < 0.25) {
+            this.game.vignetteAlpha = Math.min(0.6, this.game.vignetteAlpha + vignetteFadeInSpeed * tsf);
+        } else if (!this.game.isBuilding && this.game.vignetteAlpha > 0) {
+            this.game.vignetteAlpha = Math.max(0, this.game.vignetteAlpha - vignetteFadeOutSpeed * tsf);
+        }
+
+        // Draw Vignette in Build Mode
+        if (this.game.vignetteAlpha > 0) {
+            ctx.save();
+            const gradient = ctx.createRadialGradient(
+                this.game.width / 2, this.game.height / 2, this.game.width * 0.3,
+                this.game.width / 2, this.game.height / 2, this.game.width * 0.8
+            );
+            gradient.addColorStop(0, 'rgba(45, 16, 82, 0)');
+            gradient.addColorStop(1, `rgba(100,10,100,${this.game.vignetteAlpha})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, this.game.width, this.game.height);
             ctx.restore();
         }
 

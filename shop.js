@@ -39,8 +39,8 @@ export default class Shop {
         this.detailPanel.width = modalConfig.width - (padding * 2) + 100;
         this.detailPanel.height = panelHeight;
 
-        this.buyButton.width = 105; // Keep dimensions on the object
-        this.buyButton.height = 90;
+        this.buyButton.width = 135; // Keep dimensions on the object
+        this.buyButton.height = 120;
         this.buyButton.x = this.detailPanel.x + this.detailPanel.width - this.buyButton.width - 480; // Position
         this.buyButton.y = this.detailPanel.y + 150 + this.detailPanel.height / 2 - this.buyButton.height / 2; // Position
 

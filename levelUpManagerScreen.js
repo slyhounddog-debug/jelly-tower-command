@@ -186,13 +186,13 @@ export default class LevelUpManagerScreen {
         ctx.fill();
         ctx.stroke();
 
-        
-        ctx.fillStyle = 'white';
+        // Use rarity color for the title
+        ctx.fillStyle = this.rarityColors[rarity] || 'white';
         ctx.font = `${20 * scale}px "Titan One"`;
         ctx.textAlign = 'center';
         
         const title = card.choice.name.toUpperCase();
-        ctx.fillText(title, card.width / 2, 30 * scale);
+        ctx.fillText(title, card.width / 2, 35 * scale); // Moved down slightly
 
         ctx.font = `${40 * scale}px "Fredoka One"`;
         ctx.fillText(card.choice.icon, card.width / 2, 80 * scale);
@@ -214,9 +214,9 @@ export default class LevelUpManagerScreen {
 
         if (showStat) {
             ctx.fillStyle = '#f1c40f';
-            ctx.font = `bold ${14 * scale}px "Nunito"`;
+            ctx.font = `bold ${16 * scale}px "Nunito"`; // Matched font size to description
             ctx.textAlign = 'center';
-            ctx.fillText(currentStatText, card.width / 2, 185 * scale);
+            ctx.fillText(currentStatText, card.width / 2, (205 * scale) + 100); // Added more padding
         }
 
         ctx.font = `${16 * scale}px "Titan One"`;
