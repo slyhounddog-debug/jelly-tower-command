@@ -295,10 +295,12 @@ export default class GameLoop {
 
         this.game.towers.forEach(t => t.draw(this.game.ctx));
 
-        // Draw the sell button if it's active
+        // Draw synergy lines once per frame, after missiles but before projectiles
         this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
         this.game.missiles.forEach(m => m.draw(this.game.ctx));
+        // Draw synergy lines once per frame, after missiles but before projectiles
+        this.game.synergyLines.forEach(line => line.draw(this.game.ctx));
         this.game.projectiles.forEach(p => p.draw(this.game.ctx));
         this.game.drops.filter(d => !d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.particles.forEach(p => p.draw(this.game.ctx));

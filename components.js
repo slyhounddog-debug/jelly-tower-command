@@ -27,9 +27,9 @@ export const COMPONENTS = {
         cost: 2,
         description: "Shots bounce off the tower's range. Each stack adds one bounce."
     },
-    "Critical Hit": {
+    "Turret Synergy": {
         cost: 1,
-        description: "Adds a 24% chance to deal 200% damage."
+        description: "Boosts Dmg/Rate by 1% and Range by 3% for each other tower. Stacks."
     }
 };
 

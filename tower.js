@@ -62,7 +62,7 @@ export default class Tower extends BaseStructure {
         
         const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
         let fireRate = this.game.stats.fireRate; // No longer checking isAuto here for fireRate
-        if (sniperCount > 0) {
+        if (sniperCount > 0) { // Sniper penalty
             fireRate *= (1 + sniperCount * 0.1); 
         }
 
@@ -70,6 +70,9 @@ export default class Tower extends BaseStructure {
         if (this.game.player.sugarRushTimer > 0) {
             fireRate *= 0.75; // 25% faster fire rate (cooldown is 75% of normal)
         }
+
+        // Apply Synergy fire rate buff
+        fireRate *= this.game.stats.turretSynergyFireRateBonus;
 
         if (this.isSelling) {
             this.sellAnimTimer += tsf;
@@ -107,7 +110,7 @@ export default class Tower extends BaseStructure {
         }
 
         this.recoil *= 0.9;
-        this.range = this.game.stats.range * 0.5; // Always auto-turret range
+        this.range = (this.game.stats.range * 0.5) * this.game.stats.turretSynergyRangeBonus; // Apply synergy bonus
         if (sniperCount > 0) {
             this.range *= (1 + sniperCount * 0.2); 
         }
@@ -154,8 +157,8 @@ export default class Tower extends BaseStructure {
         for (let i = 0; i < numShots; i++) {
             const angle = startAngle + i * (totalSpread / (numShots > 1 ? numShots - 1 : 1));
             const tx = visualCx + Math.cos(angle) * 30;
-            const ty = visualCy + Math.sin(angle) * 30;
-            let damage = this.game.stats.damage * 0.5; // Always auto-turret damage
+            const ty = visualCy + Math.sin(angle) * 30; 
+            let damage = (this.game.stats.damage * 0.5) * this.game.stats.turretSynergyDamageBonus; // Apply synergy bonus
             const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
             if (sniperCount > 0) damage *= (1 + sniperCount * 0.25);
             let projectileSpeed = this.game.stats.projectileSpeed;

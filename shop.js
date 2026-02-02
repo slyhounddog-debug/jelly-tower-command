@@ -212,7 +212,7 @@ export default class Shop {
 
         ctx.font = '36px "Nunito"'; // Double description size
         ctx.fillStyle = COLORS.DARK_GRAY;
-        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 500, 60); // Double line height
+        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 350, 33); // Double line height
         
         newY += 35; // Double spacing
         ctx.font = '48px "VT323"'; // Double stat text size
@@ -233,6 +233,13 @@ export default class Shop {
         ctx.fillStyle = COLORS.DARK_GRAY;
         ctx.font = '44px "VT323"'; // Double level text size
         ctx.fillText(item.getLevel(), alignmentX, newY);
+
+        // Draw "Current Total" if the function exists
+        if (item.getCurrentTotal) {
+            newY += 42; // Add some space
+            ctx.fillStyle = '#3498db'; // A nice blue color for the total
+            ctx.fillText(item.getCurrentTotal(), alignmentX, newY);
+        }
 
         this.drawBuyButton(ctx, item);
 

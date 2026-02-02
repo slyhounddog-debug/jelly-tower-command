@@ -677,6 +677,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         p.homingStrength = 4;
         this.game.particles.push(p);
 
+        // NEW: Component drop chance tied to Luck
+        if (this.type !== 'piggy') {
+            const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
+            if (Math.random() * 100 < componentDropChance) {
+                this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
+            }
+        }
+
         const dropsToCreate = [];
         
         let lootMultiplier = 1;

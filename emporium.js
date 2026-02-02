@@ -333,7 +333,7 @@ export default class Emporium {
 
         ctx.font = '26px "Nunito"';
         ctx.fillStyle = COLORS.DARK_GRAY;
-        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 500, 30);
+        let newY = this.wrapText(ctx, item.desc, alignmentX, this.detailPanel.y + 150, this.detailPanel.width - 350, 33);
         
         newY += 35;
         ctx.font = '36px "VT323"';

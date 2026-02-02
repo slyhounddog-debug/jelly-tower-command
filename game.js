@@ -1,6 +1,7 @@
 const FORCE_MOBILE_DEBUG = false;
 
 import Player from './player.js?v=2';
+import SynergyLine from './SynergyLine.js';
 import Tower from './tower.js';
 import Missile from './missile.js?v=25';
 import ThreatManager from './threatManager.js';
@@ -262,6 +263,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             luckLvl: 0,
             lickLvl: 0,
             piggyLvl: 0,
+            criticalHitLvl: 0,
             baseDamage: 10,
             baseFireRate: 55,
             baseRange: 395,
@@ -281,14 +283,22 @@ Object.entries(colors).forEach(([name, rgb]) => {
             get luckHeart() { return Math.min(45, 3 + (this.luckLvl * 2)); },
             get lickDamage() { return this.game.LICK_DAMAGE_TIERS[Math.min(this.lickLvl, this.game.LICK_DAMAGE_TIERS.length - 1)]; },
             get lickKnockback() { return 10 + (this.game.player.upgrades['Sugar Shove'] * 5); },
-            get criticalHitChance() { // Reworked for Critical Hit component
-                let chance = 1; // Base 1%
-                const critComponents = this.game.player.equippedComponents.filter(c => c.name === 'Critical Hit');
-                chance += critComponents.length * 24;
-                return chance;
+            get criticalHitChance() {
+                return Math.min(85, 1 + (this.criticalHitLvl * 3));
             },
             get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; },
-            get maxTurretsAvailable() { return this.maxTurretsCap + (this.maxTurretsLvl * 2); } // Current max turrets calculation
+            get turretSynergyDamageBonus() { 
+                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
+                return 1 + (synergyComponentCount * 0.01 * this.game.towers.length); 
+            },
+            get turretSynergyFireRateBonus() { 
+                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
+                return 1 - (synergyComponentCount * 0.01 * this.game.towers.length); 
+            },
+            get turretSynergyRangeBonus() { 
+                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
+                return 1 + (synergyComponentCount * 0.03 * this.game.towers.length); 
+            },
         };
 
         this.shopItems = [
@@ -313,10 +323,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
               getLevel: () => `${this.stats.rangeLvl}/${this.UPGRADE_COSTS.length - 1}`, 
               action: () => this.stats.rangeLvl++ 
             },
-            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance of heart and big coin.', type: 'upgrade', 
+            { id: 'luck', name: 'Luck', icon: '🍀', desc: 'Increases drop chance of hearts, big coins, and components.', type: 'upgrade', 
               getCost: () => this.UPGRADE_COSTS[this.stats.luckLvl] || 'MAX', 
-              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}%`, 
-              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7+ (this.stats.luckLvl+1)*3)}%`, 
+              getValue: () => `❤️${this.stats.luckHeart}% 💰${this.stats.luckCoin}% 🧩${(0.5 + this.stats.luckLvl * 0.25).toFixed(2)}%`, 
+              getNext: () => `❤️${Math.min(45, 3 + (this.stats.luckLvl+1)*2)}% 💰${Math.min(55, 7 + (this.stats.luckLvl+1)*3)}% 🧩${(0.5 + (this.stats.luckLvl + 1) * 0.25).toFixed(2)}%`, 
               getLevel: () => `${this.stats.luckLvl}/${this.UPGRADE_COSTS.length - 1}`,
               action: () => this.stats.luckLvl++ 
             },
@@ -353,16 +363,14 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 }
               }
             },
-            { id: 'max_turrets', name: 'Max Turrets', icon: '⚙️',
-              desc: 'Increases the maximum number of turrets you can place.', type: 'upgrade',
-              getCost: () => (this.stats.maxTurretsLvl >= 10) ? 'MAX' : this.UPGRADE_COSTS[this.stats.maxTurretsLvl], // Max 10 levels for now
-              getValue: () => `${this.stats.maxTurretsAvailable}`,
-              getNext: () => (this.stats.maxTurretsLvl >= 10) ? "MAX" : `${this.stats.maxTurretsAvailable + 2}`,
-              getLevel: () => `${this.stats.maxTurretsLvl}/10`,
+            { id: 'crit_chance', name: 'Critical Chance', icon: '🎯',
+              desc: 'Increases the chance to deal a critical hit for 200% damage.', type: 'upgrade',
+              getCost: () => (this.stats.criticalHitLvl >= 28) ? 'MAX' : this.UPGRADE_COSTS[this.stats.criticalHitLvl],
+              getValue: () => `${this.stats.criticalHitChance}%`,
+              getNext: () => (this.stats.criticalHitLvl >= 28) ? "MAX" : `${Math.min(85, 1 + ((this.stats.criticalHitLvl + 1) * 3))}%`,
+              getLevel: () => `${this.stats.criticalHitLvl}/28`,
               action: () => {
-                if (this.stats.maxTurretsLvl < 10) {
-                    this.stats.maxTurretsLvl++;
-                }
+                  if (this.stats.criticalHitLvl < 28) this.stats.criticalHitLvl++;
               }
             }
         ];
@@ -377,6 +385,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.missiles = [];
         this.projectiles = [];
         this.particles = [];
+        this.synergyLines = [];
         this.drops = [];
         this.floatingTexts = [];
         this.damageSpots = [];
@@ -927,15 +936,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     this.audioManager.playSound('reset'); // Play a cancel sound
                 } else if (this.highlightedSlot && this.highlightedSlot.canPlace) {
                     const cost = this.getNextTurretCost();
-                    if (this.towers.length >= this.stats.maxTurretsAvailable) {
-                        showNotification("Max turrets reached!");
-                        // Poof effect for failed placement
-                        const poofX = this.highlightedSlot.x;
-                        const poofY = this.highlightedSlot.y - 80;
-                        for (let i = 0; i < 25; i++) {
-                            this.particles.push(new Particle(this, poofX, poofY, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
-                        }
-                    } else if (this.money < cost) {
+                    if (this.money < cost) {
                         showNotification("Not enough money!");
                     } else {
                         const turretWidth = 137;
@@ -944,6 +945,34 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         const turretY = this.highlightedSlot.y - turretHeight + (turretHeight / 2);
                         const newTurret = new Tower(this, turretX, turretY, true, this.highlightedSlot.id); 
                         this.towers.push(newTurret);
+
+                        // --- Trigger Synergy Line Animation ---
+                        if (this.towers.length > 1 && this.player.getEquippedComponentCount('Turret Synergy') > 0) {
+                            // 1. Guaranteed synergy line from the new turret
+                            const otherTowers = this.towers.filter(t => t !== newTurret);
+                            if (otherTowers.length > 0) {
+                                const randomTargetTower = otherTowers[Math.floor(Math.random() * otherTowers.length)];
+                                const guaranteedDelay = Math.random() * 1000;
+                                setTimeout(() => {
+                                    this.synergyLines.push(new SynergyLine(this, newTurret, randomTargetTower));
+                                }, guaranteedDelay);
+                            }
+
+                            // 2. Subsequent random synergies for all pairs (A -> B and B -> A)
+                            for (const towerA of this.towers) {
+                                for (const towerB of this.towers) {
+                                    if (towerA === towerB) continue; // Don't create a synergy with itself
+
+                                    // Check the 25% chance for each potential connection
+                                    if (Math.random() < 0.6) { // Stagger animations
+                                        const delay = Math.random() * 1000; // Stagger animations
+                                        setTimeout(() => {
+                                            this.synergyLines.push(new SynergyLine(this, towerA, towerB));
+                                        }, delay);
+                                    }
+                                }
+                            }
+                        }
                         this.money -= cost; 
 
                         // Mark the slot as occupied
@@ -1172,6 +1201,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.stats.damageLvl = 0; this.stats.fireRateLvl = 0; this.stats.rangeLvl = 0;
         this.stats.luckLvl = 0;
         this.stats.lickLvl = 0; this.stats.piggyLvl = 0; this.stats.componentPointsLvl = 0;
+        this.stats.criticalHitLvl = 0;
         this.stats.turretsBought = 0;
 
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.floatingTexts = []; this.waveAttacks = [];
@@ -1291,6 +1321,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.towers.forEach(t => t.update(tsf));
         }
 
+        for (let i = this.synergyLines.length - 1; i >= 0; i--) { this.synergyLines[i].update(tsf); if (this.synergyLines[i].dead) this.synergyLines.splice(i, 1); }
         // Update logic for the build-cancel animation
         if (this.isCancelingBuild) {
             this.cancelAnimTimer += tsf;
