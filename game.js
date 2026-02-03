@@ -212,6 +212,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.shopState = 'shop';
         this.gameTime = 0;
         this.lastShopOpenTime = 0;
+        this.lastOpenedMenu = 'shop';
         this.hitStopFrames = 0;
         
 
@@ -287,18 +288,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 return Math.min(85, 1 + (this.criticalHitLvl * 3));
             },
             get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; },
-            get turretSynergyDamageBonus() { 
-                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
-                return 1 + (synergyComponentCount * 0.01 * this.game.towers.length); 
-            },
-            get turretSynergyFireRateBonus() { 
-                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
-                return 1 - (synergyComponentCount * 0.01 * this.game.towers.length); 
-            },
-            get turretSynergyRangeBonus() { 
-                const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
-                return 1 + (synergyComponentCount * 0.03 * this.game.towers.length); 
-            },
         };
 
         this.shopItems = [
@@ -407,9 +396,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.buildButtonImage = new Image();
         this.buildButtonImage.src = 'assets/Images/buildbutton.png';
-        this.shopButtonImage = new Image(); // NEWLY ADDED for the relocated shop button
-        this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';
-        this.settingButtonImage = new Image();
+        this.shopButtonImage = new Image();
+        this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';        this.settingButtonImage = new Image();
         this.settingButtonImage.src = 'assets/Images/settings.png';
 
         this.ui = {
@@ -426,7 +414,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 x: 0, y: 0, width: 80, height: 80,
                 activeImg: this.cancelButtonActiveImage,
             },
-            shopButton: { // NEWLY ADDED for the relocated shop button
+            shopButton: {
                 img: this.shopButtonImage,
                 x: 0, y: 0, width: 80, height: 80,
                 isAnimating: false,
@@ -792,10 +780,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 }
             }
             if (this.modalManager.isOpen()) { this.modalManager.handleInput(); return; } // Handle clicks within modals
-        
             const shopBtn = this.ui.shopButton;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
-                this.modalManager.toggle('shop');
+                this.modalManager.toggle(this.lastOpenedMenu);
                 shopBtn.isAnimating = true;
                 shopBtn.animTimer = 0;
                 this.audioManager.playSound('lick'); // Use a generic UI sound
@@ -821,14 +808,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 return; // Consume the click
             }
 
-            // Check for the new shop button position on the right
-            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
-                this.modalManager.toggle('shop');
-                shopBtn.isAnimating = true;
-                shopBtn.animTimer = 0;
-                this.audioManager.playSound('lick');
-                return;
-            }
 
             const settingsBtn = this.ui.settingsButton;
             if (this.mouse.x > settingsBtn.x && this.mouse.x < settingsBtn.x + settingsBtn.width && this.mouse.y > settingsBtn.y && this.mouse.y < settingsBtn.y + settingsBtn.height) {
@@ -947,25 +926,16 @@ Object.entries(colors).forEach(([name, rgb]) => {
                         this.towers.push(newTurret);
 
                         // --- Trigger Synergy Line Animation ---
-                        if (this.towers.length > 1 && this.player.getEquippedComponentCount('Turret Synergy') > 0) {
-                            // 1. Guaranteed synergy line from the new turret
-                            const otherTowers = this.towers.filter(t => t !== newTurret);
-                            if (otherTowers.length > 0) {
-                                const randomTargetTower = otherTowers[Math.floor(Math.random() * otherTowers.length)];
-                                const guaranteedDelay = Math.random() * 1000;
-                                setTimeout(() => {
-                                    this.synergyLines.push(new SynergyLine(this, newTurret, randomTargetTower));
-                                }, guaranteedDelay);
-                            }
-
-                            // 2. Subsequent random synergies for all pairs (A -> B and B -> A)
+                        if (this.player.getEquippedComponentCount('Turret Synergy') > 0) {
+                            // All turrets check for synergy with all other turrets
                             for (const towerA of this.towers) {
                                 for (const towerB of this.towers) {
-                                    if (towerA === towerB) continue; // Don't create a synergy with itself
+                                    if (towerA === towerB) continue;
 
-                                    // Check the 25% chance for each potential connection
-                                    if (Math.random() < 0.6) { // Stagger animations
-                                        const delay = Math.random() * 1000; // Stagger animations
+                                    const dist = Math.hypot(towerA.x - towerB.x, towerA.y - towerB.y);
+                                    if (dist < towerA.range) {
+                                        // 100% chance to create a synergy line
+                                        const delay = Math.random() * 500; // Stagger animations slightly
                                         setTimeout(() => {
                                             this.synergyLines.push(new SynergyLine(this, towerA, towerB));
                                         }, delay);

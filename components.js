@@ -9,7 +9,7 @@ export const COMPONENTS = {
     },
     "Sniper": {
         cost: 1,
-        description: "Each stack adds +20% range, +25% damage, and -10% fire rate."
+        description: "Each stack adds +20% range and +10% damage."
     },
     "Chain Bounce": {
         cost: 2,
@@ -29,7 +29,7 @@ export const COMPONENTS = {
     },
     "Turret Synergy": {
         cost: 1,
-        description: "Boosts Dmg/Rate by 1% and Range by 3% for each other tower. Stacks."
+        description: "Boosts Dmg/Rate/Crit by 2% for each other tower in range. Stacks."
     }
 };
 

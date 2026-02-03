@@ -98,6 +98,7 @@ export default class Missile {
         this.slowTrailTimer = 0;
         this.id = this.game.getNewId(); // Unique ID for each missile
         this.lastDamageSource = null;
+        this.knockbackImmunityTimer = 0;
     }
 
     applyFire(damage, stacks) {
@@ -119,8 +120,9 @@ export default class Missile {
     takeDamage(amount, isCritical = false, source = null) {
         if (source) {
             this.lastDamageSource = source;
-            if (source.gummyImpactStacks > 0) {
+            if (source.gummyImpactStacks > 0 && this.knockbackImmunityTimer <= 0) {
                 this.kbVy -= this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
+                this.knockbackImmunityTimer = 5; // Set a brief immunity
             }
         }
         this.game.hitStopFrames = 0;
@@ -152,6 +154,7 @@ export default class Missile {
     }
 
     update(tsf) {
+        if (this.knockbackImmunityTimer > 0) this.knockbackImmunityTimer -= tsf;
         if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
 
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
@@ -163,7 +166,7 @@ export default class Missile {
                 this.fireStacks.splice(i, 1);
             } else {
                 if (Math.floor(stack.timer) % 60 === 0) { // Every second
-                    this.takeDamage(stack.damage, false, this.lastDamageSource);
+                    this.takeDamage(stack.damage, false, null);
                     this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
                     this.fireFlashTimer = 10;
                 }

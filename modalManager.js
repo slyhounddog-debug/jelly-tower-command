@@ -1,5 +1,6 @@
 import { drawNineSlice } from './utils.js';
 import ComponentQuarters from './componentQuarters.js';
+import Particle from './particle.js';
 
 const BUTTON_WIDTH = 256;
 const BUTTON_HEIGHT = 112;
@@ -8,6 +9,10 @@ export default class ModalManager {
     constructor(game) {
         this.game = game;
         this.activeModal = null; // 'shop', 'components', 'player', 'emporium', or null
+        this.isOpening = false;
+        this.isClosing = false;
+        this.animationProgress = 0;
+        this.animationDuration = 15; // In frames/ticks
 
         this.uiButtonsImage = new Image();
         this.uiButtonsImage.src = 'assets/Images/uibuttons.png';
@@ -103,12 +108,24 @@ export default class ModalManager {
     }
     
     isOpen() {
-        return this.activeModal !== null;
+        return this.activeModal !== null || this.isClosing;
     }
 
     open(modalName) {
+        if (this.isOpening || this.isClosing || this.activeModal === modalName) return;
+
+        // If another modal is already open, close it first before opening the new one.
+        if (this.activeModal && this.activeModal !== modalName) {
+            this.close();
+        }
+
         if (!this.game.gameStarted || this.game.isGameOver) return;
+
         this.activeModal = modalName;
+        this.isOpening = true;
+        this.isClosing = false;
+        this.animationProgress = 0; // Start animation from the beginning
+
         this.game.isPaused = true;
         this.game.audioManager.setMuffled(true);
         this.game.audioManager.playSound('purchase');
@@ -131,6 +148,7 @@ export default class ModalManager {
 
         // Define buttons based on the new spec. Only for top-level navigation modals.
         if (['shop', 'components', 'player', 'emporium'].includes(modalName)) {
+            this.game.lastOpenedMenu = modalName; // Remember the last opened menu
             const buttonY = config.y + 20;
             const totalButtonWidth = 3 * BUTTON_WIDTH + 2 * 10; // 3 buttons, 2 gaps
             const startX = (this.game.width - totalButtonWidth) / 2;
@@ -145,31 +163,47 @@ export default class ModalManager {
     }
 
     close() {
-        if (!this.isOpen()) return;
-        const closedModalName = this.activeModal;
-        this.activeModal = null;
-        this.game.isPaused = false;
-        this.game.audioManager.setMuffled(false);
-        this.game.audioManager.playSound('reset');
-        this.game.lastTime = 0; // Prevent time jump
+        if (!this.isOpen() || this.isClosing) return;
         
-        // Ensure specific modals are closed via their JS if they weren't managed by modalManager
-        if (['piggy', 'component_modal', 'boss'].includes(closedModalName)) {
-            const modalId = closedModalName === 'component_modal' ? 'component-modal' : `${closedModalName}-modal`;
-            document.getElementById(modalId).style.display = 'none';
-        } else if (closedModalName === 'player') {
-            this.game.levelUpManagerScreen.resetMagnifiedCard();
+        this.isClosing = true;
+        this.isOpening = false;
+        this.animationProgress = 0; // Start closing animation
+
+        this.game.audioManager.playSound('reset');
+        // The rest of the cleanup will happen in update() after the animation finishes
+    }
+
+    switch_to(modalName) {
+        this.activeModal = modalName;
+        this.game.lastOpenedMenu = modalName;
+
+        const config = this.getModalConfig(modalName);
+        if (!config) return;
+
+        if (modalName === 'player') {
+            this.game.levelUpManagerScreen.organizeCards(config);
+        }
+
+        if (['shop', 'components', 'player', 'emporium'].includes(modalName)) {
+            const buttonY = config.y + 20;
+            const totalButtonWidth = 3 * BUTTON_WIDTH + 2 * 10;
+            const startX = (this.game.width - totalButtonWidth) / 2;
+
+            this.buttons = ['shop', 'components', 'player'].map((name, index) => ({
+                name: name, x: startX + index * (BUTTON_WIDTH + 10), y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT,
+                isAnimating: false, animTimer: 0, animDuration: 12
+            }));
+        } else {
+            this.buttons = [];
         }
     }
 
     toggle(modalName) {
         if (this.activeModal === modalName) {
             this.close();
+        } else if (this.activeModal) {
+            this.switch_to(modalName);
         } else {
-            // Close any currently active modal before opening a new one
-            if (this.activeModal) {
-                this.close();
-            }
             this.open(modalName);
         }
     }
@@ -220,7 +254,37 @@ export default class ModalManager {
     }
     
     update(tsf) {
-        if (!this.isOpen()) return;
+        if (!this.isOpen() && !this.isOpening && !this.isClosing) return;
+
+        // Handle animation logic
+        if (this.isOpening || this.isClosing) {
+            this.animationProgress = Math.min(this.animationDuration, this.animationProgress + tsf);
+            this.createSparks();
+
+            if (this.animationProgress >= this.animationDuration) {
+                if (this.isOpening) {
+                    this.isOpening = false;
+                }
+                if (this.isClosing) {
+                    this.isClosing = false;
+                    const closedModalName = this.activeModal;
+                    this.activeModal = null;
+
+                    // Perform the actual close operations now
+                    this.game.isPaused = false;
+                    this.game.audioManager.setMuffled(false);
+                    this.game.lastTime = 0; // Prevent time jump
+
+                    if (['piggy', 'component_modal', 'boss'].includes(closedModalName)) {
+                        const modalId = closedModalName === 'component_modal' ? 'component-modal' : `${closedModalName}-modal`;
+                        document.getElementById(modalId).style.display = 'none';
+                    } else if (closedModalName === 'player') {
+                        this.game.levelUpManagerScreen.resetMagnifiedCard();
+                    }
+                }
+            }
+        }
+
 
         // Update button animations
         this.buttons.forEach(button => {
@@ -248,75 +312,127 @@ export default class ModalManager {
         }
     }
 
+    createSparks() {
+        const shopButton = this.game.ui.shopButton;
+        const x = shopButton.x + shopButton.width / 2;
+        const y = shopButton.y + shopButton.height / 2;
+
+        const themedColors = {
+            shop: ['#fdffb6', '#ffd6a5'],
+            components: ['#caffbf', '#9bf6ff'],
+            player: ['#a0c4ff', '#bdb2ff'],
+            emporium: ['#ffadad', '#ffd6a5'],
+        };
+
+        const colors = themedColors[this.activeModal] || ['#ffffff'];
+
+        for (let i = 0; i < 2; i++) {
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            this.game.particles.push(new Particle(this.game, x, y, color, 'spark'));
+        }
+    }
+
     draw(ctx) {
-        if (!this.isOpen()) return;
+        if (!this.isOpen() && !this.isOpening && !this.isClosing) return;
+
+        // --- Easing Function ---
+        const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        let progress = this.animationProgress / this.animationDuration;
+        const easedProgress = easeInOutCubic(progress);
 
         // Draw darkened background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.27)';
+        const bgAlpha = this.isClosing ? (1 - easedProgress) * 0.27 : easedProgress * 0.27;
+        ctx.fillStyle = `rgba(0, 0, 0, ${bgAlpha})`;
         ctx.fillRect(0, 0, this.game.width, this.game.height);
 
         const config = this.getModalConfig(this.activeModal);
-        if (!config || !config.image) {
-            // If no specific image, draw a generic modal background (or just the dimmed background)
-            // For now, let's just return if no image is found for simple modals like piggy, boss, etc.
-            if (!['shop', 'components', 'player'].includes(this.activeModal)) {
-                // If it's one of the simple modals, just draw a basic background if no image is configured
-                ctx.fillStyle = 'rgba(50, 50, 50, 0.9)'; // A generic modal background
-                ctx.fillRect(config.x, config.y, config.width, config.height);
+        if (!config) return;
+
+        const shopButton = this.game.ui.shopButton;
+        const startX = shopButton.x;
+        const startY = shopButton.y;
+        const startWidth = shopButton.width;
+        const startHeight = shopButton.height;
+
+        const endX = config.x;
+        const endY = config.y;
+        const endWidth = config.width;
+        const endHeight = config.height;
+
+        const animMultiplier = this.isClosing ? 1 - easedProgress : easedProgress;
+
+        const currentWidth = startWidth + (endWidth - startWidth) * animMultiplier;
+        const currentHeight = startHeight + (endHeight - startHeight) * animMultiplier;
+        const currentX = startX + (endX - startX) * animMultiplier;
+        const currentY = startY + (endY - startY) * animMultiplier;
+
+        // --- Rotation ---
+        const rotation = (1 - animMultiplier) * -Math.PI / 8; // Rotate up to -22.5 degrees
+
+        // --- Skew ---
+        const skewAmount = Math.sin(progress * Math.PI) * 0.2;
+
+        ctx.save();
+        ctx.translate(currentX + currentWidth / 2, currentY + currentHeight / 2);
+        ctx.rotate(rotation);
+        ctx.translate(-(currentX + currentWidth / 2), -(currentY + currentHeight / 2));
+        
+        ctx.save();
+        ctx.translate(currentX, currentY);
+        ctx.transform(1, skewAmount, skewAmount, 1, 0, 0);
+
+        // --- Fade In/Out for Modal Content ---
+        const contentAlpha = Math.sin(animMultiplier * Math.PI / 2);
+        ctx.globalAlpha = contentAlpha;
+
+        if (config.image && config.image.complete) {
+            drawNineSlice(ctx, config.image, 0, 0, currentWidth, currentHeight, 30);
+        }
+        
+        ctx.restore();
+        ctx.restore();
+
+        // Only draw modal contents if fully open
+        if (!this.isOpening && !this.isClosing && this.activeModal) {
+            ctx.globalAlpha = 1.0; // Ensure full opacity when static
+            switch (this.activeModal) {
+                case 'shop':
+                    this.game.shop.draw(ctx);
+                    break;
+                case 'emporium':
+                    this.game.emporium.draw(ctx);
+                    break;
+                case 'components':
+                    this.componentQuarters.draw(ctx);
+                    break;
+                case 'player':
+                    this.game.levelUpManagerScreen.draw(ctx);
+                    break;
             }
-        }
 
+            // Draw UI buttons
+            if (['shop', 'components', 'player', 'emporium'].includes(this.activeModal)) {
+                this.buttons.forEach((button, index) => {
+                    const isSelected = button.name === this.activeModal;
+                    const sx = index * BUTTON_WIDTH;
+                    const sy = isSelected ? BUTTON_HEIGHT : 0;
 
-        // Draw modal background
-        switch (this.activeModal) {
-            case 'shop':
-                if (config.image && config.image.complete) {
-                    drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
-                }
-                this.game.shop.draw(ctx);
-                break;
-            case 'emporium':
-                if (config.image && config.image.complete) {
-                    drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
-                }
-                this.game.emporium.draw(ctx);
-                break;
-            case 'components':
-                if (config.image && config.image.complete) {
-                    drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
-                }
-                this.componentQuarters.draw(ctx);
-                break;
-            case 'player':
-                 if (config.image && config.image.complete) {
-                    drawNineSlice(ctx, config.image, config.x, config.y, config.width, config.height, 30);
-                }
-                this.game.levelUpManagerScreen.draw(ctx);
-                break;
+                    ctx.save();
+                    const btnCenterX = button.x + button.width / 2;
+                    const btnCenterY = button.y + button.height / 2;
+                    ctx.translate(btnCenterX, btnCenterY);
 
-        }
-
-        // Draw UI buttons (only if active modal is one of the navigation modals)
-        if (['shop', 'components', 'player', 'emporium'].includes(this.activeModal)) {
-            this.buttons.forEach((button, index) => {
-                const isSelected = button.name === this.activeModal;
-                const sx = index * BUTTON_WIDTH;
-                const sy = isSelected ? BUTTON_HEIGHT : 0;
-
-                ctx.save();
-                const btnCenterX = button.x + button.width / 2;
-                const btnCenterY = button.y + button.height / 2;
-                ctx.translate(btnCenterX, btnCenterY);
-
-                if (button.isAnimating) {
-                    const progress = button.animTimer / button.animDuration;
-                    const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
-                    const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
-                    ctx.scale(squish, scale);
-                }
-                ctx.drawImage(this.uiButtonsImage, sx, sy, BUTTON_WIDTH, BUTTON_HEIGHT, -button.width / 2, -button.height / 2, BUTTON_WIDTH, BUTTON_HEIGHT);
-                ctx.restore();
-            });
+                    if (button.isAnimating) {
+                        const progress = button.animTimer / button.animDuration;
+                        const scale = 1 - Math.sin(progress * Math.PI) * 0.2;
+                        const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
+                        ctx.scale(squish, scale);
+                    }
+                    ctx.drawImage(this.uiButtonsImage, sx, sy, BUTTON_WIDTH, BUTTON_HEIGHT, -button.width / 2, -button.height / 2, BUTTON_WIDTH, BUTTON_HEIGHT);
+                    ctx.restore();
+                });
+            }
         }
     }
 }

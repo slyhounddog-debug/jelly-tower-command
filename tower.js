@@ -57,22 +57,50 @@ export default class Tower extends BaseStructure {
         this.placementGravity = 1.5;
         this.squashTimer = 0;
     }
+    calculateSynergyBonus() {
+        const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
+        if (synergyComponentCount === 0) {
+            return { damage: 1, fireRate: 1, critChance: 0, critDamage: 0 };
+        }
+
+        const towersInRange = this.game.towers.filter(otherTower => {
+            if (otherTower === this) return false;
+            const dist = Math.hypot(this.x - otherTower.x, this.y - otherTower.y);
+            return dist < this.range;
+        });
+
+        const bonusPerTower = 0.02 * synergyComponentCount;
+        const damageBonus = 1 + (towersInRange.length * bonusPerTower);
+        const fireRateBonus = 1 - (towersInRange.length * bonusPerTower); // Fire rate is a cooldown, so we decrease it
+        let critChanceBonus = towersInRange.length * bonusPerTower * 100; // As a percentage
+
+        let finalCritChance = this.game.stats.criticalHitChance + critChanceBonus;
+        let critDamageBonus = 0;
+
+        if (finalCritChance > 100) {
+            critDamageBonus = (finalCritChance - 100) / 100;
+            finalCritChance = 100;
+        }
+
+        return {
+            damage: damageBonus,
+            fireRate: fireRateBonus,
+            critChance: finalCritChance,
+            critDamage: critDamageBonus
+        };
+    }
+
     update(tsf) {
+        const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
         // Player-controlled range indicator logic and player control checks removed
         
-        const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
-        let fireRate = this.game.stats.fireRate; // No longer checking isAuto here for fireRate
-        if (sniperCount > 0) { // Sniper penalty
-            fireRate *= (1 + sniperCount * 0.1); 
-        }
+        const synergyBonus = this.calculateSynergyBonus();
+        let fireRate = this.game.stats.fireRate * synergyBonus.fireRate;
 
         // Apply Sugar Rush fire rate buff
         if (this.game.player.sugarRushTimer > 0) {
             fireRate *= 0.75; // 25% faster fire rate (cooldown is 75% of normal)
         }
-
-        // Apply Synergy fire rate buff
-        fireRate *= this.game.stats.turretSynergyFireRateBonus;
 
         if (this.isSelling) {
             this.sellAnimTimer += tsf;
@@ -110,7 +138,7 @@ export default class Tower extends BaseStructure {
         }
 
         this.recoil *= 0.9;
-        this.range = (this.game.stats.range * 0.5) * this.game.stats.turretSynergyRangeBonus; // Apply synergy bonus
+        this.range = (this.game.stats.range * 0.5);
         if (sniperCount > 0) {
             this.range *= (1 + sniperCount * 0.2); 
         }
@@ -154,13 +182,21 @@ export default class Tower extends BaseStructure {
         const totalSpread = spread;
         const startAngle = this.barrelAngle - totalSpread / 2;
 
+        const synergyBonus = this.calculateSynergyBonus();
+
         for (let i = 0; i < numShots; i++) {
             const angle = startAngle + i * (totalSpread / (numShots > 1 ? numShots - 1 : 1));
             const tx = visualCx + Math.cos(angle) * 30;
             const ty = visualCy + Math.sin(angle) * 30; 
-            let damage = (this.game.stats.damage * 0.5) * this.game.stats.turretSynergyDamageBonus; // Apply synergy bonus
+            let damage = (this.game.stats.damage * 0.5) * synergyBonus.damage;
             const sniperCount = this.game.player.getEquippedComponentCount('Sniper');
-            if (sniperCount > 0) damage *= (1 + sniperCount * 0.25);
+            if (sniperCount > 0) damage *= (1 + sniperCount * 0.1);
+
+            const isCrit = (Math.random() * 100 < synergyBonus.critChance);
+            if (isCrit) {
+                damage *= (2 + synergyBonus.critDamage);
+            }
+
             let projectileSpeed = this.game.stats.projectileSpeed;
             const radius = 15 //+ (this.game.stats.damageLvl * 0.1) + (this.game.stats.fireRateLvl * 0.1) + (this.game.stats.rangeLvl * 0.2); // Always auto-turret radius
             
@@ -170,7 +206,7 @@ export default class Tower extends BaseStructure {
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
             const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: visualCx, y: visualCy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true); // Always auto-turret
+            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: visualCx, y: visualCy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true, isCrit); // Always auto-turret
             this.game.projectiles.push(projectile);
         }
     }

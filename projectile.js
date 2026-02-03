@@ -2,7 +2,7 @@ import Particle from './particle.js';
 import { calculateChainBounceDamage } from './utils.js';
 
 export default class Projectile {
-    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, gummyImpactCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0, isAutoTurret = false) {
+    constructor(game, x, y, angle, damage, range, origin, speed, radius = 15, gummyImpactCount = 0, popRockCount = 0, bubbleGumCount = 0, fireDamageCount = 0, chainBounceCount = 0, isAutoTurret = false, isCrit = false) {
         this.game = game;
         this.x = x; this.y = y; this.damage = damage; this.range = range; this.origin = origin;
         this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
@@ -16,6 +16,7 @@ export default class Projectile {
         this.fireDamageCount = fireDamageCount;
         this.chainBounceCount = chainBounceCount;
         this.isAutoTurret = isAutoTurret;
+        this.isCrit = isCrit;
         this.bounceDamageFalloff = calculateChainBounceDamage(this.chainBounceCount);
         this.hitEnemies = [];
     }
@@ -62,7 +63,7 @@ export default class Projectile {
                 }
                 
                 if (this.popRockStacks <= 0) {
-                    if (m.takeDamage(damage, false, this)) {}
+                    if (m.takeDamage(damage, this.isCrit, this)) {}
                 }
                 this.hitEnemies.push(m);
                 this.hasHit = true;
