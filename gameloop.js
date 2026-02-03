@@ -2,6 +2,7 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import { darkenColor } from './utils.js';
 import Gumball from './gumball.js';
+import FrostingParticle from './frostingParticle.js';
 
 
 export default class GameLoop {
@@ -136,7 +137,26 @@ export default class GameLoop {
                     m.dead = true;
                     this.game.hitStopFrames = 5;
                     this.game.screenShake.trigger(5, 10);
-                    for (let k = 0; k < 15; k++) this.game.particles.push(new Particle(this.game, m.x, m.y, '#e74c3c', 'smoke'));
+                    // Old smoke particles removed
+
+                    // Ground impact particles
+                    const particleCount = 10 + Math.floor(Math.random() * 10); // 10-19 particles (doubled)
+                    for (let k = 0; k < particleCount; k++) {
+                        const colorChoice = Math.random();
+                        let color;
+                        if (colorChoice < 0.5) {
+                            color = this.game.ENEMY_FROSTING_COLORS[Math.floor(Math.random() * this.game.ENEMY_FROSTING_COLORS.length)];
+                        } else {
+                            color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                        }
+                        
+                        const vx = (Math.random() - 0.5) * 8; // Outward horizontal burst
+                        const vy = -Math.random() * 10 - 2; // Mostly upward velocity
+                        const radius = Math.random() * 5 + 2;
+                        const lifespan = 40 + Math.random() * 20;
+
+                        this.game.particles.push(new FrostingParticle(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan));
+                    }
                     
                     const castlePlats = this.game.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
                 }
@@ -228,6 +248,7 @@ export default class GameLoop {
             for (let i = this.game.swipeParticles.length - 1; i >= 0; i--) { this.game.swipeParticles[i].update(tsf); if (this.game.swipeParticles[i].life <= 0) this.game.swipeParticles.splice(i, 1); }
             for (let i = this.game.particlesBehind.length - 1; i >= 0; i--) { this.game.particlesBehind[i].update(tsf); if (this.game.particlesBehind[i].lifespan <= 0) this.game.particlesBehind.splice(i, 1); }
             for (let i = this.game.particlesInFront.length - 1; i >= 0; i--) { this.game.particlesInFront[i].update(tsf); if (this.game.particlesInFront[i].lifespan <= 0) this.game.particlesInFront.splice(i, 1); }
+            for (let i = this.game.debris.length - 1; i >= 0; i--) { this.game.debris[i].update(tsf); if (this.game.debris[i].dead) this.game.debris.splice(i, 1); }
 
             this.game.decalManager.update(tsf);
             this.game.lootPopupManager.update(deltaTime);
@@ -315,6 +336,7 @@ export default class GameLoop {
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));
         this.game.particlesInFront.forEach(p => p.draw(this.game.ctx));
+        this.game.debris.forEach(d => d.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
 
         this.game.lootPopupManager.draw(this.game.ctx);

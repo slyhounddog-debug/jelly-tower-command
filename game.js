@@ -132,6 +132,8 @@ class Game {
         this.sellButtonUpImage.src = 'assets/Images/sellbuttonup.png';
         this.sellButtonDownImage = new Image();
         this.sellButtonDownImage.src = 'assets/Images/sellbuttondown.png';
+        this.piggybankImage = new Image();
+        this.piggybankImage.src = 'assets/Images/piggybank.png';
 
         this.awaitingSellConfirmation = false; // New state variable
 
@@ -384,6 +386,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.gumballs = [];
         this.particlesBehind = [];
         this.particlesInFront = [];
+        this.debris = [];
 
         this.levelingManager = new LevelingManager(this);
         this.levelingManager.initializePlayer(this.player);
@@ -657,6 +660,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => { this.marshmallowSmallImage.onload = r; this.marshmallowSmallImage.onerror = r; }),
             new Promise(r => { this.sellButtonUpImage.onload = r; this.sellButtonUpImage.onerror = r; }),
             new Promise(r => { this.sellButtonDownImage.onload = r; this.sellButtonDownImage.onerror = r; }),
+            new Promise(r => { this.piggybankImage.onload = r; this.piggybankImage.onerror = r; }),
         ]).then(() => {
             this.assetsReady = true;
         }).catch(error => console.error("Failed to load game assets:", error));

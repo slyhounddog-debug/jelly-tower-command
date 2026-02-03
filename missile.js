@@ -5,6 +5,7 @@ import FloatingText from './floatingText.js';
 import SpriteAnimation from './SpriteAnimation.js';
 import FrostingParticle from './frostingParticle.js';
 import Player from './player.js';
+import EnemyDebris from './EnemyDebris.js';
 
 export default class Missile {
     constructor(game, x, type = 'missile', y = -60) {
@@ -26,8 +27,8 @@ export default class Missile {
             
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
-                frameWidth: 64,
-                frameHeight: 64,
+                frameWidth: 165,
+                frameHeight: 175,
                 totalFrames: 8,
                 fps: 0,
                 row: 0
@@ -72,6 +73,7 @@ export default class Missile {
             this.height = 86;
             this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * 1.3;
             this.baseSpeed = 0.5;
+            this.image = this.game.piggybankImage;
         }
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
@@ -420,43 +422,30 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
         if (this.type === 'piggy') {
             const piggyLevel = this.game.stats.piggyLvl;
-            const sizeMultiplier = 1.6 + (piggyLevel * 0.11);
+            const sizeMultiplier = 1.0 + (piggyLevel * 0.1);
             const cx = this.x + this.width / 2;
-            const cy = this.y + 1 + this.height / 2;
-
-            ctx.save();
-            ctx.fillStyle = shadowColor;
-            ctx.translate(cx, cy + shadowOffset);
-            ctx.scale(1.1 * this.squash * sizeMultiplier * 1.1, 1.1 * this.stretch * sizeMultiplier * 1.1);
-            ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
+            const cy = this.y + this.height / 2;
 
             ctx.save();
             ctx.translate(cx, cy);
-            ctx.scale(1.1 * this.squash * sizeMultiplier, 1.1 * this.stretch * sizeMultiplier);
-            ctx.fillStyle = this.color;
-            ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
-            ctx.fillStyle = '#ffb7b2';
-            ctx.beginPath(); ctx.arc(0, 0, 4.8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'black';
-            ctx.beginPath(); ctx.arc(-2, -2, 1, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(2, -2, 1, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = this.color;
-            ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-15, -20); ctx.lineTo(-5, -15); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(15, -20); ctx.lineTo(5, -15); ctx.fill();
-
+            ctx.scale(this.squash * sizeMultiplier, this.stretch * sizeMultiplier);
+            
+            // Glowing aura effect
             if (piggyLevel > 0) {
                 ctx.globalAlpha = 0.6 + Math.sin(this.game.gameTime / 8) * 0.4;
                 ctx.fillStyle = 'gold';
-                for (let i = 0; i < piggyLevel * 2; i++) {
-                    const shimmerAngle = (this.game.gameTime / 15) + (i * Math.PI * 2 / (piggyLevel * 2));
-                    const shimmerX = Math.cos(shimmerAngle) * 12;
-                    const shimmerY = Math.sin(shimmerAngle) * 8;
-                    ctx.beginPath(); ctx.arc(shimmerX, shimmerY, 2.5, 0, Math.PI * 2); ctx.fill();
-                }
+                const auraSize = this.width * 1.2;
+                ctx.beginPath();
+                ctx.arc(0, 0, auraSize / 2, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.globalAlpha = 1.0;
             }
+
+            // Draw the piggy bank image
+            if (this.game.piggybankImage && this.game.piggybankImage.complete) {
+                ctx.drawImage(this.game.piggybankImage, -this.width / 2, -this.height / 2, this.width, this.height);
+            }
+            
             ctx.restore();
         } else if (this.type === 'gummy_worm') {
             const segments = 10;
@@ -551,6 +540,35 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
        kill() { 
         if (this.dead) return;
         this.dead = true;
+
+        let numDebris = 0;
+        switch (this.type) {
+            case 'gummy_worm':
+                numDebris = 2 + Math.floor(Math.random() * 2); // 2-3
+                break;
+            case 'missile': // Jelly bean
+                numDebris = 4 + Math.floor(Math.random() * 3); // 4-6
+                break;
+            case 'marshmallow_large':
+            case 'marshmallow_medium':
+            case 'marshmallow_small':
+                numDebris = 2 + Math.floor(Math.random() * 2); // 2-3
+                break;
+            case 'piggy':
+                numDebris = 2 + Math.floor(Math.random() * 5 + (this.game.stats.piggyLvl / 5)); // 2-6+, scaled
+                break;
+        }
+
+        for (let i = 0; i < numDebris; i++) {
+            let spriteWidth = this.width;
+            let spriteHeight = this.height;
+
+            if (this.type === 'missile' && this.sprite) {
+                spriteWidth = this.sprite.frameWidth;
+                spriteHeight = this.sprite.frameHeight;
+            }
+            this.game.debris.push(new EnemyDebris(this.game, this, spriteWidth, spriteHeight));
+        }
         
         const numParticles = 10 + Math.floor(this.maxHealth / 15);
         const source = this.lastDamageSource;
