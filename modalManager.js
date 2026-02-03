@@ -28,6 +28,8 @@ export default class ModalManager {
         this.componentModalImage.src = 'assets/Images/componentmodal.png';
         this.bossModalImage = new Image();
         this.bossModalImage.src = 'assets/Images/bossmodal.png';
+        this.modalConfirmUpImage = new Image();
+        this.modalConfirmUpImage.src = 'assets/Images/modalconfirmup.png';
 
         // Dynamically calculate MODAL_CONFIG based on game dimensions
         this.MODAL_CONFIG = {
@@ -81,22 +83,52 @@ export default class ModalManager {
         // For other modals, calculate fixed dimensions and center them
         switch (modalName) {
             case 'piggy': {
-                const width = this.game.width * 0.35; // 0.5 * 0.7
-                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.42; // 0.6 * 0.7
+                const width = this.game.width * 0.6;
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.5;
                 const { x, y } = calculateCenteredPosition(width, height);
-                return { x, y, width, height, image: this.piggyModalImage };
+                const buttonWidth = 100;
+                const buttonHeight = 65;
+                return { 
+                    x, y, width, height, image: this.piggyModalImage,
+                    confirmButton: {
+                        x: x + (width - buttonWidth) / 2,
+                        y: y + height - buttonHeight - 20,
+                        width: buttonWidth,
+                        height: buttonHeight
+                    }
+                };
             }
-            case 'component_modal': { // Corrected name for clarity
-                const width = this.game.width * 0.35; // 0.5 * 0.7
-                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.42; // 0.6 * 0.7
+            case 'component_modal': {
+                const width = this.game.width * 0.6;
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.5;
                 const { x, y } = calculateCenteredPosition(width, height);
-                return { x, y, width, height, image: this.componentModalImage };
+                const buttonWidth = 108;
+                const buttonHeight = 70;
+                return { 
+                    x, y, width, height, image: this.componentModalImage,
+                    confirmButton: {
+                        x: x + (width - buttonWidth) / 2,
+                        y: y + height - buttonHeight - 20,
+                        width: buttonWidth,
+                        height: buttonHeight
+                    }
+                };
             }
             case 'boss': {
-                const width = this.game.width * 0.42;
-                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.49;
+                const width = this.game.width * 0.7;
+                const height = this.game.PLAYABLE_AREA_HEIGHT * 0.6;
                 const { x, y } = calculateCenteredPosition(width, height);
-                return { x, y, width, height, image: this.bossModalImage };
+                const buttonWidth = 116;
+                const buttonHeight = 75;
+                return { 
+                    x, y, width, height, image: this.bossModalImage,
+                    confirmButton: {
+                        x: x + (width - buttonWidth) / 2,
+                        y: y + height - buttonHeight - 20,
+                        width: buttonWidth,
+                        height: buttonHeight
+                    }
+                };
             }
             default:
                 return null;
@@ -135,16 +167,7 @@ export default class ModalManager {
 
         if (modalName === 'player') {
             this.game.levelUpManagerScreen.organizeCards(config);
-        } else if (['piggy', 'component_modal', 'boss'].includes(modalName)) { // These are HTML modals
-            const modalId = modalName === 'component_modal' ? 'component-modal' : `${modalName}-modal`;
-            document.getElementById(modalId).style.display = 'block';
-            // Adjust button position dynamically since it's an HTML modal
-            const confirmButton = document.querySelector(`#${modalId} .modal-confirm-button`);
-            if (confirmButton) {
-                confirmButton.style.position = 'absolute';
-                confirmButton.style.setProperty('top', '85%', 'important');
-            }
-        }
+        } 
 
         // Define buttons based on the new spec. Only for top-level navigation modals.
         if (['shop', 'components', 'player', 'emporium'].includes(modalName)) {
@@ -212,6 +235,20 @@ export default class ModalManager {
         if (!this.isOpen()) return;
 
         const config = this.getModalConfig(this.activeModal);
+        
+        // Handle confirm button click
+        if (config && config.confirmButton) {
+            const btn = config.confirmButton;
+            const mouseX = this.game.mouse.x;
+            const mouseY = this.game.mouse.y;
+
+            if (mouseX >= btn.x && mouseX <= btn.x + btn.width &&
+                mouseY >= btn.y && mouseY <= btn.y + btn.height) {
+                this.close();
+                return; // Consume the click
+            }
+        }
+
         if (config) { // Only check if config exists for the active modal
             // Check if click is outside the modal's main content area
             const mouseX = this.game.mouse.x;
@@ -275,10 +312,7 @@ export default class ModalManager {
                     this.game.audioManager.setMuffled(false);
                     this.game.lastTime = 0; // Prevent time jump
 
-                    if (['piggy', 'component_modal', 'boss'].includes(closedModalName)) {
-                        const modalId = closedModalName === 'component_modal' ? 'component-modal' : `${closedModalName}-modal`;
-                        document.getElementById(modalId).style.display = 'none';
-                    } else if (closedModalName === 'player') {
+                    if (closedModalName === 'player') {
                         this.game.levelUpManagerScreen.resetMagnifiedCard();
                     }
                 }
@@ -409,6 +443,12 @@ export default class ModalManager {
                 case 'player':
                     this.game.levelUpManagerScreen.draw(ctx);
                     break;
+            }
+
+            // Draw confirm button for specific modals
+            if (config.confirmButton && this.modalConfirmUpImage && this.modalConfirmUpImage.complete) {
+                const btn = config.confirmButton;
+                ctx.drawImage(this.modalConfirmUpImage, btn.x, btn.y, btn.width, btn.height);
             }
 
             // Draw UI buttons

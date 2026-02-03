@@ -566,7 +566,13 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             if (this.type === 'missile' && this.sprite) {
                 spriteWidth = this.sprite.frameWidth;
                 spriteHeight = this.sprite.frameHeight;
+            } else if (this.type === 'piggy') {
+                const piggyLevel = this.game.stats.piggyLvl;
+                const sizeMultiplier = 1.0 + (piggyLevel * 0.1);
+                spriteWidth = this.width * sizeMultiplier;
+                spriteHeight = this.height * sizeMultiplier;
             }
+            
             this.game.debris.push(new EnemyDebris(this.game, this, spriteWidth, spriteHeight));
         }
         
