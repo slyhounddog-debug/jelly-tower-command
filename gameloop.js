@@ -128,11 +128,7 @@ export default class GameLoop {
                 if (m.dead) continue;
                 if (m.health <= 0) { m.kill(); continue; }
                 if (m.y > this.game.PLAYABLE_AREA_HEIGHT - 110) {  // enemy death vertical threshold 
-                    if (m.type === 'gummy_bear') {
-                        this.game.castleHealth -= 10;
-                    } else {
-                        this.game.castleHealth -= 10;
-                    }
+                    this.game.castleHealth -= m.damage || 10;
                     this.game.castleHealthBar.triggerHit();
                     m.dead = true;
                     this.game.hitStopFrames = 5;

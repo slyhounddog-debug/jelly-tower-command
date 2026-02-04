@@ -4,35 +4,68 @@ import GummyCluster from './boss.js';
 export default class ThreatManager {
     constructor(game) {
         this.game = game;
+        this.threatWallet = 0;
+        this.directorMultiplier = 1;
+        this.directorTimer = 0;
+        this.diffTimer = 0;
+        this.logTimer = 0;
+        this.targetEnemy = null;
+
+        this.enemyData = [
+            { name: 'missile', cost: 2, hpMultiplier: 1, threshold: 0, baseWeight: 80 },
+            { name: 'gummy_worm', cost: 3, hpMultiplier: 0.5, threshold: 15, baseWeight: 75 },
+            { name: 'donut', cost: 4, hpMultiplier: 1.5, threshold: 25, baseWeight: 60 },
+            { name: 'heartenemy', cost: 5, hpMultiplier: 1, threshold: 30, baseWeight: 40 },
+            { name: 'ice_cream', cost: 6, hpMultiplier: 2.5, threshold: 35, baseWeight: 40 },
+            { name: 'component_enemy', cost: 7, hpMultiplier: 2.5, threshold: 40, baseWeight: 30 },
+            { name: 'marshmallow_large', cost: 8, hpMultiplier: 3.5, threshold: 55, baseWeight: 35 },
+            { name: 'jelly_pudding', cost: 9, hpMultiplier: 5.5, threshold: 70, baseWeight: 26 },
+            { name: 'jaw_breaker', cost: 12, hpMultiplier: 7.5, threshold: 80, baseWeight: 25 },
+        ];
+
         this.reset();
     }
     reset() {
-        this.spawnTimer = (3600 / this.game.currentRPM) - 60;
-        this.diffTimer = 0;
+        this.threatWallet = 2;
+        this.directorTimer = 0;
         this.bossWarningTimer = 0;
         this.bossWarningActive = false;
+        this.logTimer = 0;
+        this.targetEnemy = null;
     }
+
     update(tsf) {
         this.diffTimer += tsf;
-        if (this.diffTimer >= 120) { // Lower increases threatRPM more quickly
+        if (this.diffTimer >= 120) {
             this.game.currentRPM += 0.1;
             this.diffTimer = 0;
         }
 
         this.threatRPM = Math.min(240, 9.25 + this.game.gameTime / 240);
 
-       if (Math.floor(this.game.gameTime) % 480 === 0) {
-    console.log("Current Threat RPM:", this.threatRPM);
-}
+        this.logTimer += tsf;
+        if (this.logTimer >= 600) {
+            this.logTimer = 0;
+            const unlockedEnemies = this.enemyData
+                .filter(enemy => this.threatRPM >= enemy.threshold)
+                .map(enemy => enemy.name)
+                .join(', ');
+            console.log(`ThreatRPM: ${this.threatRPM.toFixed(2)}, Unlocked Enemies: [${unlockedEnemies || 'None'}]`);
+        }
 
-        // Check if it's time to spawn the boss
+        this.directorTimer += tsf;
+        const cycleDuration = (45 + Math.random() * 45) * 60;
+        this.directorMultiplier = 1 + Math.sin(this.directorTimer / cycleDuration * 2 * Math.PI) * 0.25;
+
+        this.threatWallet += (this.threatRPM / 1800) * this.directorMultiplier * tsf;
+        this.threatWallet = Math.min(this.threatWallet, 30);
+
         if (!this.game.boss && !this.bossWarningActive && this.game.killsSinceLastBoss >= this.game.killsForNextBoss) {
             this.bossWarningActive = true;
-            this.bossWarningTimer = 180; // 3 seconds warning
-            this.game.audioManager.playSound('bossSpawn'); 
+            this.bossWarningTimer = 180;
+            this.game.audioManager.playSound('bossSpawn');
         }
-        
-        // Handle the boss spawn warning
+
         if (this.bossWarningActive) {
             this.bossWarningTimer -= tsf;
             this.game.thermometer.pulse = true;
@@ -46,34 +79,69 @@ export default class ThreatManager {
                 this.game.thermometer.pulse = false;
                 this.game.boss = new GummyCluster(this.game);
                 if (this.game.bossesKilled === 0) {
-                    // Show boss modal
                     this.game.modalManager.toggle('boss');
                     this.game.isPaused = true;
                 }
             }
         }
+        
+        // Target Enemy Spawning Logic
+        if (this.targetEnemy === null) {
+            this.targetEnemy = this.getRandomEnemy();
+        }
 
-        this.spawnTimer += tsf;
-        if (this.spawnTimer >= 3600 / this.game.currentRPM) {
-            this.spawnTimer = 0;
+        if (this.targetEnemy && this.threatWallet >= this.targetEnemy.cost) {
+            this.threatWallet -= this.targetEnemy.cost;
             const spawnX = Math.random() * (this.game.width - 350) + 175;
-
-            // Marshmallow spawn logic
-            if (this.game.currentRPM >= this.game.marshmallowSpawnThreshold && Math.random() < 0.10) {
-                this.game.missiles.push(new Missile(this.game, spawnX, 'marshmallow_large'));
-                if (!this.game.marshmallowSeen) {
-                    this.game.marshmallowSeen = true;
-                }
-            }
-            // Gummy Worm spawn logic
-            else if (this.game.currentRPM >= this.game.gummyWormSpawnThreshold && Math.random() < 0.3) {
-                this.game.missiles.push(new Missile(this.game, spawnX, 'gummy_worm'));
-                if (!this.game.gummyWormSeen) {
-                    this.game.gummyWormSeen = true;
-                }
-            } else {
-                this.game.missiles.push(new Missile(this.game, spawnX, 'missile'));
+            this.game.missiles.push(new Missile(this.game, spawnX, this.targetEnemy.name, undefined, this.targetEnemy.hpMultiplier));
+            this.targetEnemy = null;
+            
+            // Optional Burst Chance
+            if (this.threatRPM > 60 && Math.random() < 0.1) {
+                this.targetEnemy = this.getRandomEnemy();
             }
         }
+    }
+
+    getRandomEnemy() {
+        const availableEnemies = this.enemyData.filter(enemy => this.threatRPM >= enemy.threshold);
+        if (availableEnemies.length === 0) {
+            return null;
+        }
+        
+        const weightedEnemies = availableEnemies.map(enemy => {
+            const dynamicWeight = enemy.threshold > 0 ? enemy.baseWeight * (this.threatRPM / enemy.threshold) : enemy.baseWeight;
+            return { ...enemy, dynamicWeight };
+        });
+
+        const totalWeight = weightedEnemies.reduce((sum, enemy) => sum + enemy.dynamicWeight, 0);
+        let random = Math.random() * totalWeight;
+
+        for (const enemy of weightedEnemies) {
+            if (random < enemy.dynamicWeight) {
+                return enemy;
+            }
+            random -= enemy.dynamicWeight;
+        }
+        return weightedEnemies[weightedEnemies.length - 1];
+    }
+    
+    debugSpawn() {
+        const spawnX = Math.random() * (this.game.width - 350) + 175;
+        const spawnIf = (debugFlag, enemyName) => {
+            if (debugFlag) {
+                const enemy = this.enemyData.find(e => e.name === enemyName);
+                if (enemy) {
+                    this.game.missiles.push(new Missile(this.game, spawnX, enemy.name, undefined, enemy.hpMultiplier));
+                }
+            }
+        };
+
+        spawnIf(this.game.debugSpawnJawBreaker, 'jaw_breaker');
+        spawnIf(this.game.debugSpawnJellyPudding, 'jelly_pudding');
+        spawnIf(this.game.debugSpawnDonut, 'donut');
+        spawnIf(this.game.debugSpawnIceCream, 'ice_cream');
+        spawnIf(this.game.debugSpawnComponentEnemy, 'component_enemy');
+        spawnIf(this.game.debugSpawnHeartEnemy, 'heartenemy');
     }
 }

@@ -8,23 +8,21 @@ import Player from './player.js';
 import EnemyDebris from './EnemyDebris.js';
 
 export default class Missile {
-    constructor(game, x, type = 'missile', y = -60) {
+    constructor(game, x, type = 'missile', y = -50, hpMultiplier = 1) {
         this.game = game;
         this.x = x; 
         this.y = y + 90;
         this.baseSpeed = (type === 'piggy') ? 0.4 : .8;
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.type = type;
         this.groundProximity = false;
         this.dead = false;
 
+        this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * hpMultiplier;
+
        if (type === 'missile') {
             this.width = 74; 
             this.height = 74;
-            this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1));
-            
             const variantIndex = Math.floor(Math.random() * 8);
-            
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
                 frameWidth: 165,
@@ -42,13 +40,11 @@ export default class Missile {
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
-            this.health = 15 + (((this.game.currentRPM * 1.8) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 1; 
         } else if (type === 'marshmallow_large') {
             this.width = 76.5 * 1.4;
             this.height = 76.5 * 1.4;
             this.color = '#F8F8FF';
-            this.health = 50 + (((this.game.currentRPM * 2.3) + (this.game.enemiesKilled * 0.1)) * 1.4);
             this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowBigImage;
@@ -56,7 +52,6 @@ export default class Missile {
             this.width = 45 * 1.6;
             this.height = 45 * 1.6;
             this.color = '#F8F8FF';
-            this.health = 25 + (((this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * 0.5);
             this.baseSpeed = 0.5;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowMediumImage;
@@ -64,16 +59,62 @@ export default class Missile {
             this.width = 22 * 2.5;
             this.height = 22 * 2.5;
             this.color = '#F8F8FF';
-            this.health = 10 + (((this.game.currentRPM * 1) + (this.game.enemiesKilled * 0.01)) * 0.5);
             this.baseSpeed = 0.5;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowSmallImage;
         } else if (type === 'piggy') {
             this.width = 84;
             this.height = 86;
-            this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * 1.3;
             this.baseSpeed = 0.5;
             this.image = this.game.piggybankImage;
+        } else if (type === 'jaw_breaker') {
+            this.width = 76.5 * 1.4; // as big as a marshmallow
+            this.height = 76.5 * 1.4;
+            this.baseSpeed = 0.6; // slower than a jelly bean
+            this.image = this.game.jawbreakerenemyImage;
+            this.color = '#FF00FF'; // Placeholder color
+            this.isJawBreaker = true; // For knockback immunity
+            this.damage = 18;
+        } else if (type === 'jelly_pudding') {
+            this.width = 90; // between jelly bean and marshmallow
+            this.height = 90;
+            this.baseSpeed = 0.6; // between jelly bean and marshmallow
+            this.image = this.game.jellypuddingenemyImage;
+            this.color = '#00FFFF'; // Placeholder color
+            this.isJellyPudding = true; // For double knockback
+            this.damage = 14;
+        } else if (type === 'donut') {
+            this.width = 80; // slightly bigger than a jelly bean
+            this.height = 80;
+            this.baseSpeed = 1; // as fast as a gummy worm
+            this.image = this.game.donutenemyImage;
+            this.color = '#FFFF00'; // Placeholder color
+            this.isDonut = true; // For dodge chance
+            this.damage = 10;
+        } else if (type === 'ice_cream') {
+            this.width = 85; // slightly smaller than a jelly pudding but bigger than a jelly bean
+            this.height = 85;
+            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.image = this.game.icecreamenemyImage;
+            this.color = '#FFFFFF'; // Placeholder color
+            this.isIceCream = true; // For speed boost on hit and loot
+            this.damage = 8;
+        } else if (type === 'component_enemy') {
+            this.width = 78; // slightly bigger than a jelly bean
+            this.height = 78;
+            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.image = this.game.componentenemyImage;
+            this.color = '#888888'; // Placeholder color
+            this.isComponentEnemy = true; // For teleport on hit and loot
+            this.damage = 9;
+        } else if (type === 'heartenemy') {
+            this.width = 68; // slightly smaller than a jelly bean
+            this.height = 68;
+            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.image = this.game.heartenemyImage;
+            this.color = '#FFC0CB'; // Pink
+            this.isHeartEnemy = true;
+            this.damage = 5;
         }
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
@@ -101,6 +142,7 @@ export default class Missile {
         this.id = this.game.getNewId(); // Unique ID for each missile
         this.lastDamageSource = null;
         this.knockbackImmunityTimer = 0;
+        this.speedBoostTimer = 0;
     }
 
     applyFire(damage, stacks) {
@@ -120,13 +162,31 @@ export default class Missile {
     }
 
     takeDamage(amount, isCritical = false, source = null) {
+        if (this.isDonut && Math.random() < 0.5) {
+            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, 'Miss', 'white'));
+            return false;
+        }
+
         if (source) {
             this.lastDamageSource = source;
-            if (source.gummyImpactStacks > 0 && this.knockbackImmunityTimer <= 0) {
-                this.kbVy -= this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
+            if (source.gummyImpactStacks > 0 && this.knockbackImmunityTimer <= 0 && !this.isJawBreaker) {
+                let knockbackAmount = this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
+                if (this.isJellyPudding) {
+                    knockbackAmount *= 2;
+                }
+                this.kbVy -= knockbackAmount;
                 this.knockbackImmunityTimer = 5; // Set a brief immunity
             }
         }
+
+        if (this.isIceCream) {
+            this.speedBoostTimer = 60; // 1 second speed boost
+        }
+
+        if (this.isComponentEnemy) {
+            this.x = Math.random() * (this.game.width - this.width);
+        }
+
         this.game.hitStopFrames = 0;
         const player = this.game.player;
         if (player.upgrades['Sweet Aura'] > 0) {
@@ -221,7 +281,11 @@ export default class Missile {
             }
         }
 
-        const currentSpeed = this.speed * (1 - this.totalSlow);
+        let currentSpeed = this.speed * (1 - this.totalSlow);
+        if (this.speedBoostTimer > 0) {
+            this.speedBoostTimer -= tsf;
+            currentSpeed *= 1.5;
+        }
 
         if (this.hitTimer > 0) this.hitTimer -= tsf;
         if (this.damageTextTimer > 0) this.damageTextTimer -= tsf;
@@ -753,6 +817,16 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                     }
                 }
             }
+        }
+
+        if (this.isIceCream) {
+            dropsToCreate.push({ type: 'ice_cream_scoop' });
+        }
+        if (this.isComponentEnemy) {
+            dropsToCreate.push({ type: 'component' });
+        }
+        if (this.isHeartEnemy) {
+            dropsToCreate.push({ type: 'heart' });
         }
 
         dropsToCreate.forEach((dropData, i) => {

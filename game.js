@@ -135,6 +135,19 @@ class Game {
         this.piggybankImage = new Image();
         this.piggybankImage.src = 'assets/Images/piggybank.png';
 
+        this.jawbreakerenemyImage = new Image();
+        this.jawbreakerenemyImage.src = 'assets/Images/jawbreakerenemy.png';
+        this.jellypuddingenemyImage = new Image();
+        this.jellypuddingenemyImage.src = 'assets/Images/jellypuddingenemy.png';
+        this.donutenemyImage = new Image();
+        this.donutenemyImage.src = 'assets/Images/donutenemy.png';
+        this.icecreamenemyImage = new Image();
+        this.icecreamenemyImage.src = 'assets/Images/icecreamenemy.png';
+        this.componentenemyImage = new Image();
+        this.componentenemyImage.src = 'assets/Images/componentenemy.png';
+        this.heartenemyImage = new Image();
+        this.heartenemyImage.src = 'assets/Images/heartenemy.png';
+
         this.awaitingSellConfirmation = false; // New state variable
 
         this.lastClickTime = 0; // For double-tap detection
@@ -248,6 +261,13 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.killsForNextBoss = 50;
         this.groundProximityThreshold = 400;
         this.wasLickKill = false;
+
+        this.debugSpawnJawBreaker = false;
+        this.debugSpawnJellyPudding = false;
+        this.debugSpawnDonut = false;
+        this.debugSpawnIceCream = false;
+        this.debugSpawnComponentEnemy = false;
+        this.debugSpawnHeartEnemy = false;
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
@@ -661,6 +681,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => { this.sellButtonUpImage.onload = r; this.sellButtonUpImage.onerror = r; }),
             new Promise(r => { this.sellButtonDownImage.onload = r; this.sellButtonDownImage.onerror = r; }),
             new Promise(r => { this.piggybankImage.onload = r; this.piggybankImage.onerror = r; }),
+            new Promise(r => { this.jawbreakerenemyImage.onload = r; this.jawbreakerenemyImage.onerror = r; }),
+            new Promise(r => { this.jellypuddingenemyImage.onload = r; this.jellypuddingenemyImage.onerror = r; }),
+            new Promise(r => { this.donutenemyImage.onload = r; this.donutenemyImage.onerror = r; }),
+            new Promise(r => { this.icecreamenemyImage.onload = r; this.icecreamenemyImage.onerror = r; }),
+            new Promise(r => { this.componentenemyImage.onload = r; this.componentenemyImage.onerror = r; }),
+            new Promise(r => { this.heartenemyImage.onload = r; this.heartenemyImage.onerror = r; }),
         ]).then(() => {
             this.assetsReady = true;
         }).catch(error => console.error("Failed to load game assets:", error));
@@ -1190,6 +1216,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         document.getElementById('game-over-stats').style.display = 'none';
                         this.levelManager = new initLevel(this);
                         this.threatManager.reset();
+                        this.threatManager.debugSpawn();
                         this.background.init();
                     }
     
