@@ -3,6 +3,7 @@ import Missile from './missile.js';
 import Particle from './particle.js';
 import Drop from './drop.js';
 import FloatingText from './floatingText.js';
+import EnemyDebris from './EnemyDebris.js';
 
 export class GummyBear {
     constructor(game, x, y) {

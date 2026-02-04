@@ -19,6 +19,8 @@ export default class Projectile {
         this.isCrit = isCrit;
         this.bounceDamageFalloff = calculateChainBounceDamage(this.chainBounceCount);
         this.hitEnemies = [];
+        this.hasHitBoss = false;
+        this.hasHitBoss = false; // ADDED THIS LINE
     }
     update(tsf) {
         this.x += this.vx * tsf; this.y += this.vy * tsf;

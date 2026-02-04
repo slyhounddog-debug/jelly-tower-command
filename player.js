@@ -42,6 +42,7 @@ export default class Player {
         this.tongueTipX = 0;
         this.tongueTipY = 0;
         this.shockwaveAnimations = [];
+        this.whirlwindBossHitId = null;
         this.reset();
     }
     reset() {

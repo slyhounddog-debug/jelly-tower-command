@@ -179,7 +179,7 @@ export default class GameLoop {
                     continue;
                 }
                 
-                if (this.game.boss &&
+                if (this.game.boss && !p.hasHitBoss &&
                     p.x > this.game.boss.x + this.game.boss.hitboxOffsetX &&
                     p.x < this.game.boss.x + this.game.boss.hitboxOffsetX + this.game.boss.hitboxWidth &&
                     p.y > this.game.boss.y + this.game.boss.hitboxOffsetY &&
@@ -189,10 +189,14 @@ export default class GameLoop {
                     this.game.boss.takeDamage(dmg, isCrit);
                     this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
                     if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
+                    p.hasHitBoss = true;
                     if (p.popRockStacks > 0) {
                         p.createExplosion();
                     }
-                    this.game.projectiles.splice(i, 1);
+                    // Only remove non-piercing projectiles. Piercing projectiles continue.
+                    if (!p.chainBounceCount) { // If it's not a chain bounce projectile, remove it
+                        this.game.projectiles.splice(i, 1);
+                    }
                     continue;
                 }
 

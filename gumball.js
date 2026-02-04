@@ -20,6 +20,7 @@ export default class Gumball {
         this.knockback = this.game.stats.lickKnockback * 0.01;
         this.collisionDelay = 5; // 5 frames delay before collision is active
         this.canSpawn = canSpawn; // Keep this for clarity, but its impact on recursive spawning is removed here
+        this.bossHit = false; // New property to track if this gumball has hit the boss
     }
 
     update(tsf) {
@@ -80,13 +81,13 @@ export default class Gumball {
         });
 
         // Collision with boss
-        if (this.game.boss && this.game.boss !== this.spawner) { // Assuming boss has an 'id' property
+        if (this.game.boss && this.game.boss !== this.spawner && !this.bossHit) { // Assuming boss has an 'id' property
             if (this.x < this.game.boss.x + this.game.boss.width &&
                 this.x + this.width > this.game.boss.x &&
                 this.y < this.game.boss.y + this.game.boss.height &&
                 this.y + this.height > this.game.boss.y) {
                 
-                // Removed this.hitEnemyIds.add(this.game.boss.id); for piercing
+                this.bossHit = true; // Set to true after hitting the boss
                 
                 this.game.boss.takeDamage(this.damage, false);
                 this.game.screenShake.trigger(1, 5);
