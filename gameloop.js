@@ -59,6 +59,7 @@ export default class GameLoop {
             // Game Over logic should only run when not paused and not already over
             if (this.game.castleHealth <= 0) {
                 this.game.isGameOver = true;
+                this.game.isPaused = true;
                 this.game.audioManager.stopMusic('music');
                 this.game.audioManager.playMusic('gameOverMusic');
                 document.getElementById('open-emporium-btn').style.display = 'block';
@@ -324,6 +325,7 @@ export default class GameLoop {
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
         this.game.particlesBehind.forEach(p => p.draw(this.game.ctx));
+        this.game.debris.forEach(d => d.draw(this.game.ctx));
 
         this.game.player.draw(this.game.ctx);
         this.game.drawSwipeTrail(this.game.ctx);
@@ -331,8 +333,6 @@ export default class GameLoop {
         this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
         this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));
-        this.game.particlesInFront.forEach(p => p.draw(this.game.ctx));
-        this.game.debris.forEach(d => d.draw(this.game.ctx));
         this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
 
         this.game.lootPopupManager.draw(this.game.ctx);

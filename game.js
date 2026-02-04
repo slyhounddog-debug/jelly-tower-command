@@ -597,6 +597,22 @@ Object.entries(colors).forEach(([name, rgb]) => {
         }
     }
 
+    showSellButton(tower) {
+        if (!tower) return;
+        this.towerToSell = tower;
+        const sellBtn = this.ui.sellButton;
+        
+        // Position sell button in the center of the clicked tower
+        sellBtn.x = 25 + this.towerToSell.x + (this.towerToSell.width / 2) - (sellBtn.width / 2);
+        sellBtn.y = this.towerToSell.y + (this.towerToSell.height / 2) - (sellBtn.height / 2);
+        sellBtn.visible = true;
+        sellBtn.isAnimatingIn = true;
+        sellBtn.isAnimatingOut = false;
+        sellBtn.animTimer = 0;
+
+        this.awaitingSellConfirmation = true;
+    }
+
     requestUnpause() {
         this.isPaused = false;
         this.lastTime = 0;
@@ -847,10 +863,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 return;
             }
             
-            // NEW DOUBLE-TAP LOGIC FOR SELLING TURRETS (Clean Implementation)
             let clickedTower = null;
             for (const tower of this.towers) {
-                // Increase hitbox for click detection slightly
                 const clickHitboxX = tower.x - 5;
                 const clickHitboxY = tower.y - 5;
                 const clickHitboxWidth = tower.width + 10;
@@ -864,47 +878,65 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
 
             if (clickedTower) {
-                // If another sell was pending, cancel it before showing the new one.
-                if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
-                    this.cancelSell();
+                const currentTime = Date.now();
+                // Check for double-click
+                if (this.lastClickedTower === clickedTower && (currentTime - this.lastClickTime < this.doubleTapThreshold)) {
+                    // This is a double-click! Show sell button.
+                    this.showSellButton(clickedTower);
+                    this.lastClickTime = 0; // Reset for next potential double-tap
+                    this.lastClickedTower = null;
+                    if (this.doubleTapTimeoutId) {
+                        clearTimeout(this.doubleTapTimeoutId);
+                        this.doubleTapTimeoutId = null;
+                    }
+                } else {
+                    // This is a single click on a tower, or a first click of a potential double-tap
+                    this.lastClickTime = currentTime;
+                    this.lastClickedTower = clickedTower;
+                    // Clear any previous timeout and set a new one
+                    if (this.doubleTapTimeoutId) {
+                        clearTimeout(this.doubleTapTimeoutId);
+                    }
+                    this.doubleTapTimeoutId = setTimeout(() => {
+                        // If no second click happens within threshold, reset state
+                        this.lastClickTime = 0;
+                        this.lastClickedTower = null;
+                        this.doubleTapTimeoutId = null;
+                        // If a sell button was visible, cancel it if this single click wasn't on it
+                        if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
+                            this.cancelSell();
+                        } else if (this.awaitingSellConfirmation && this.towerToSell === clickedTower) {
+                            // If it was the first click of a double tap on the same tower, 
+                            // and the sell button is already visible (from a prior sequence), 
+                            // and the double tap didn't complete, then cancel the sell.
+                            this.cancelSell();
+                        }
+                    }, this.doubleTapThreshold);
+
+                    // If a sell button was visible, and we click elsewhere on the canvas, cancel it
+                    // This covers cases where a single click on a new tower or empty space closes an old sell dialog
+                    if (this.awaitingSellConfirmation && this.towerToSell !== clickedTower) {
+                        this.cancelSell();
+                    }
                 }
-
-                this.towerToSell = clickedTower;
-                const sellBtn = this.ui.sellButton;
-                
-                // Position sell button in the center of the clicked tower
-                sellBtn.x = 25 + this.towerToSell.x + (this.towerToSell.width / 2) - (sellBtn.width / 2);
-                sellBtn.y = this.towerToSell.y + (this.towerToSell.height / 2) - (sellBtn.height / 2);
-                sellBtn.visible = true;
-                sellBtn.isAnimatingIn = true;
-                sellBtn.isAnimatingOut = false;
-                sellBtn.animTimer = 0;
-
-                this.awaitingSellConfirmation = true;
-                // NOTE: We do NOT return here, so the click can fall through to the lick action.
             } else {
-                // Clicked nowhere or not on a tower (and no sell confirmation pending from a previous double-tap)
-                // Clear any pending single-click timeout
+                // Clicked nowhere or not on a tower
+                // Clear any pending single-click timeout for double-tap detection
                 if (this.doubleTapTimeoutId) {
                     clearTimeout(this.doubleTapTimeoutId);
                     this.doubleTapTimeoutId = null;
                 }
-                
+                this.lastClickTime = 0;
+                this.lastClickedTower = null;
+
                 // If sell button was visible, and we click elsewhere on the canvas, cancel it
                 if (this.awaitingSellConfirmation) {
                     this.cancelSell();
-                    return; // Consumed by cancel
                 }
-
-                // Only reset double-tap state if no tower was clicked AND no sell confirmation was pending.
-                // This allows the single-click state to persist for a double-tap window.
-                this.lastClickedTower = null;
-                this.lastClickTime = 0;
             }
             
-            if (this.player.isControlling) return;
-            
-            if (!this.isPaused && !this.isGameOver && !this.player.isControlling) {
+            // Always allow lick if not controlling and game is active
+            if (!this.player.isControlling && !this.isPaused && !this.isGameOver) {
                 if (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) {
                      handleSwipeStart(e);
                 } else {
@@ -1207,6 +1239,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.floatingTexts = []; this.waveAttacks = [];
         this.particlesBehind = [];
         this.particlesInFront = [];
+        this.debris = [];
         this.player.reset();
         this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);
@@ -1256,21 +1289,20 @@ Object.entries(colors).forEach(([name, rgb]) => {
     }
 
     calculateTurretPlacementCost(turretCount) {
-        const baseCost = 100;
+        const baseCost = 50;
         const totalTurrets = 25;
-        const endCost = 100000;
+        const endCost = 1500000;
 
-        // C(n) = A * B^(n-1)
-        // A = baseCost (100)
-        // B = (endCost / baseCost)^(1 / (totalTurrets - 1))
-        // B = (100000 / 100)^(1 / (25 - 1))
-        // B = 1000^(1/24) approx 1.32046
-        const multiplier = Math.pow((endCost / baseCost), (1 / (totalTurrets - 1)));
+        const curveFactor = 0.5; // Value < 1 makes the curve steeper initially
+
+        // Normalize turretCount to a 0-1 range
+        const normalizedTurretCount = turretCount / (totalTurrets - 1);
         
-        // turretCount is 0-indexed for number of turrets already placed
-        // For the first turret (turretCount = 0), cost is baseCost
-        // For the 25th turret (turretCount = 24), cost should be endCost
-        const cost = baseCost * Math.pow(multiplier, turretCount);
+        // Apply curve factor to the normalized count
+        const curvedNormalizedTurretCount = Math.pow(normalizedTurretCount, curveFactor);
+
+        // Apply this curved normalized count as the exponent to the overall cost ratio
+        const cost = baseCost * Math.pow((endCost / baseCost), curvedNormalizedTurretCount);
         return Math.round(cost / 10) * 10; // Round to nearest 10 for cleaner numbers
     }
 

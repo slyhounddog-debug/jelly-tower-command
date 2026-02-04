@@ -12,15 +12,15 @@ export default class ThreatManager {
         this.targetEnemy = null;
 
         this.enemyData = [
-            { name: 'missile', cost: 2, hpMultiplier: 1, threshold: 0, baseWeight: 80 },
-            { name: 'gummy_worm', cost: 3, hpMultiplier: 0.5, threshold: 15, baseWeight: 75 },
-            { name: 'donut', cost: 4, hpMultiplier: 1.5, threshold: 25, baseWeight: 60 },
-            { name: 'heartenemy', cost: 5, hpMultiplier: 1, threshold: 30, baseWeight: 40 },
-            { name: 'ice_cream', cost: 6, hpMultiplier: 2.5, threshold: 35, baseWeight: 40 },
-            { name: 'component_enemy', cost: 7, hpMultiplier: 2.5, threshold: 40, baseWeight: 30 },
-            { name: 'marshmallow_large', cost: 8, hpMultiplier: 3.5, threshold: 55, baseWeight: 35 },
-            { name: 'jelly_pudding', cost: 9, hpMultiplier: 5.5, threshold: 70, baseWeight: 26 },
-            { name: 'jaw_breaker', cost: 12, hpMultiplier: 7.5, threshold: 80, baseWeight: 25 },
+            { name: 'missile', cost: 2, threshold: 0, baseWeight: 100, weightModifier: -0.4 },
+            { name: 'gummy_worm', cost: 3, threshold: 15, baseWeight: 80, weightModifier: -0.2 },
+            { name: 'donut', cost: 6, threshold: 45, baseWeight: 20, weightModifier: 0.01 },
+            { name: 'heartenemy', cost: 6, threshold: 30, baseWeight: 10, weightModifier: 0 },
+            { name: 'ice_cream', cost: 7, threshold: 35, baseWeight: 35, weightModifier: 0.15 },
+            { name: 'component_enemy', cost: 5, threshold: 25, baseWeight: 25, weightModifier: 0 },
+            { name: 'marshmallow_large', cost: 9, threshold: 55, baseWeight: 20, weightModifier: 0.2 },
+            { name: 'jelly_pudding', cost: 10, threshold: 70, baseWeight: 15, weightModifier: 0.25 },
+            { name: 'jaw_breaker', cost: 15, threshold: 85, baseWeight: 10, weightModifier: 0.3 }
         ];
 
         this.reset();
@@ -93,7 +93,7 @@ export default class ThreatManager {
         if (this.targetEnemy && this.threatWallet >= this.targetEnemy.cost) {
             this.threatWallet -= this.targetEnemy.cost;
             const spawnX = Math.random() * (this.game.width - 350) + 175;
-            this.game.missiles.push(new Missile(this.game, spawnX, this.targetEnemy.name, undefined, this.targetEnemy.hpMultiplier));
+            this.game.missiles.push(new Missile(this.game, spawnX, this.targetEnemy.name, undefined, 1));
             this.targetEnemy = null;
             
             // Optional Burst Chance
@@ -110,18 +110,18 @@ export default class ThreatManager {
         }
         
         const weightedEnemies = availableEnemies.map(enemy => {
-            const dynamicWeight = enemy.threshold > 0 ? enemy.baseWeight * (this.threatRPM / enemy.threshold) : enemy.baseWeight;
-            return { ...enemy, dynamicWeight };
+            const activeWeight = Math.max(5, enemy.baseWeight + (enemy.weightModifier * this.threatRPM));
+            return { ...enemy, activeWeight };
         });
 
-        const totalWeight = weightedEnemies.reduce((sum, enemy) => sum + enemy.dynamicWeight, 0);
+        const totalWeight = weightedEnemies.reduce((sum, enemy) => sum + enemy.activeWeight, 0);
         let random = Math.random() * totalWeight;
 
         for (const enemy of weightedEnemies) {
-            if (random < enemy.dynamicWeight) {
+            if (random < enemy.activeWeight) {
                 return enemy;
             }
-            random -= enemy.dynamicWeight;
+            random -= enemy.activeWeight;
         }
         return weightedEnemies[weightedEnemies.length - 1];
     }

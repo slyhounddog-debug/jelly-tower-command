@@ -1,5 +1,5 @@
 export default class EnemyDebris {
-    constructor(game, enemy, enemySpriteWidth = null, enemySpriteHeight = null) {
+    constructor(game, enemy, enemySpriteWidth = null, enemySpriteHeight = null, cutSize = 2) {
         this.game = game;
         this.image = enemy.sprite ? enemy.sprite.image : enemy.image;
         this.collisionWidth = enemy.width;
@@ -14,13 +14,13 @@ export default class EnemyDebris {
         const visualSpriteHeight = enemySpriteHeight !== null ? enemySpriteHeight : this.collisionHeight;
 
         // Debris chunk size (3x3 grid from the collision box, 2x3 for piggy)
-        let numCols = 2;
-        let numRows = 2;
+        let numCols = cutSize;
+        let numRows = cutSize;
 
-        if (enemy.type === 'piggy') {
-            numCols = 2;
-            numRows = 3;
-        }
+        // if (enemy.type === 'piggy') { // Removed special case for piggy
+        //     numCols = 2;
+        //     numRows = 3;
+        // }
         const chunkWidth = baseWidth / numCols;
         const chunkHeight = baseHeight / numRows;
 
@@ -61,7 +61,7 @@ export default class EnemyDebris {
         this.rotation = Math.random() * Math.PI * 2;
         this.rotationSpeed = (Math.random() - 0.5) * 0.4;
 
-        this.lifespan = 1020;
+        this.lifespan = 600;
         this.fadeStart = 120;
         this.alpha = 1;
         this.dead = false;

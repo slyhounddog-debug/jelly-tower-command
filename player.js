@@ -305,7 +305,7 @@ export default class Player {
                         this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
                         if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
                     }
-                    this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m);
+                    this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
                 }
             });
 
@@ -338,7 +338,7 @@ export default class Player {
                         this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
                         if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
                     }
-                    this.spawnGumballs(boss.x + boss.width / 2, boss.y + boss.height / 2, boss);
+                    this.spawnGumballs(boss.x + boss.width / 2, boss.y + boss.height / 2, boss, 2, false);
                 }
             }
         }

@@ -15,11 +15,11 @@ export default class Gumball {
         this.color = color;
         this.life = 120; // Lifespan of 2 seconds at 60fps
         this.dead = false;
-        this.hitEnemyIds = new Set(); // To prevent hitting the same enemy multiple times
+        // this.hitEnemyIds = new Set(); // Removed for piercing
         this.spawner = spawner; // The enemy that spawned this gumball
         this.knockback = this.game.stats.lickKnockback * 0.01;
         this.collisionDelay = 5; // 5 frames delay before collision is active
-        this.canSpawn = canSpawn;
+        this.canSpawn = canSpawn; // Keep this for clarity, but its impact on recursive spawning is removed here
     }
 
     update(tsf) {
@@ -49,7 +49,7 @@ export default class Gumball {
         // Collision with missiles
         this.game.missiles.forEach(m => {
             // Gumballs should not hit the enemy they spawned from
-            if (m === this.spawner || this.hitEnemyIds.has(m.id)) { // Assuming enemies have an 'id' property
+            if (m === this.spawner) { // Assuming enemies have an 'id' property
                 return;
             }
 
@@ -58,7 +58,7 @@ export default class Gumball {
                 this.y < m.y + m.height &&
                 this.y + this.height > m.y) {
                 
-                this.hitEnemyIds.add(m.id); // Mark enemy as hit by this gumball
+                // Removed this.hitEnemyIds.add(m.id) for piercing behavior
                 
                 if (m.takeDamage(this.damage, false, this)) {
                     m.kill();
@@ -75,22 +75,18 @@ export default class Gumball {
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
                     this.game.player.sugarRushTimer = 300; // Reset sugar rush timer to 5 seconds
                 }
-
-                // If Gumball Volley is active, this hit also spawns gumballs
-                if (this.canSpawn && this.game.player.upgrades['Gumball Volley'] > 0 && m && !m.dead) {
-                    this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1, false);
-                }
+                // Removed recursive gumball spawning: this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1, false);
             }
         });
 
         // Collision with boss
-        if (this.game.boss && this.game.boss !== this.spawner && !this.hitEnemyIds.has(this.game.boss.id)) { // Assuming boss has an 'id' property
+        if (this.game.boss && this.game.boss !== this.spawner) { // Assuming boss has an 'id' property
             if (this.x < this.game.boss.x + this.game.boss.width &&
                 this.x + this.width > this.game.boss.x &&
                 this.y < this.game.boss.y + this.game.boss.height &&
                 this.y + this.height > this.game.boss.y) {
                 
-                this.hitEnemyIds.add(this.game.boss.id); // Mark boss as hit by this gumball
+                // Removed this.hitEnemyIds.add(this.game.boss.id); for piercing
                 
                 this.game.boss.takeDamage(this.damage, false);
                 this.game.screenShake.trigger(1, 5);
@@ -102,9 +98,7 @@ export default class Gumball {
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {
                     this.game.player.sugarRushTimer = 300;
                 }
-                 if (this.canSpawn && this.game.player.upgrades['Gumball Volley'] > 0 && this.game.boss) {
-                    this.game.player.spawnGumballs(this.game.boss.x + this.game.boss.width / 2, this.game.boss.y + this.game.boss.height / 2, this.game.boss, 1, false);
-                }
+                // Removed recursive gumball spawning logic
             }
         }
     }

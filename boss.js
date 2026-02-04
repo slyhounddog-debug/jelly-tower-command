@@ -380,6 +380,15 @@ export default class GummyCluster {
         this.game.screenShake.trigger(30, 60);
         this.game.currentRPM += 10;
 
+        // --- Debris spawning for Boss ---
+        let numDebris = 4 + Math.floor(Math.random() * 3); // 4-6 pieces
+        const cutSize = 3; // 3x3 cuts for boss
+
+        for (let i = 0; i < numDebris; i++) {
+            this.game.debris.push(new EnemyDebris(this.game, this, this.width, this.height, cutSize));
+        }
+        // --- End Debris spawning ---
+
         let lootMultiplier = 1;
         let luckMultiplier = 1;
         if (this.isJellyTagged && killedBy !== 'tongue') {

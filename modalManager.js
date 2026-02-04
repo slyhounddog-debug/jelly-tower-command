@@ -13,6 +13,8 @@ export default class ModalManager {
         this.isClosing = false;
         this.animationProgress = 0;
         this.animationDuration = 15; // In frames/ticks
+        this.closeDelayTimer = 0; // New: Timer for preventing immediate closure
+        this.closeDelayDuration = 60; // 1 second at 60 FPS
 
         this.uiButtonsImage = new Image();
         this.uiButtonsImage.src = 'assets/Images/uibuttons.png';
@@ -151,12 +153,18 @@ export default class ModalManager {
             this.close();
         }
 
-        if (!this.game.gameStarted || this.game.isGameOver) return;
+        if ((!this.game.gameStarted || this.game.isGameOver) && modalName !== 'emporium') return;
 
         this.activeModal = modalName;
         this.isOpening = true;
         this.isClosing = false;
         this.animationProgress = 0; // Start animation from the beginning
+
+        if (['piggy', 'component_modal', 'boss'].includes(modalName)) {
+            this.closeDelayTimer = this.closeDelayDuration;
+        } else {
+            this.closeDelayTimer = 0; // No delay for other modals
+        }
 
         this.game.isPaused = true;
         this.game.audioManager.setMuffled(true);
@@ -232,8 +240,8 @@ export default class ModalManager {
     }
 
     handleInput() {
-        if (!this.isOpen()) return;
-
+        if (!this.isOpen() || this.closeDelayTimer > 0) return;
+        
         const config = this.getModalConfig(this.activeModal);
         
         // Handle confirm button click
@@ -318,6 +326,12 @@ export default class ModalManager {
                 }
             }
         }
+
+        if (this.closeDelayTimer > 0) {
+            this.closeDelayTimer -= tsf;
+            if (this.closeDelayTimer < 0) this.closeDelayTimer = 0; // Ensure it doesn't go negative
+        }
+
 
 
         // Update button animations

@@ -18,7 +18,7 @@ export default class Drop {
         this.life = (type === 'ice_cream_scoop' || type === 'component') ? SPECIAL_LOOT_LIFESPAN : NORMAL_LOOT_LIFESPAN;
         this.maxLife = this.life; // Store max life for blinking calculations
         this.width = 70; 
-        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 25 : 0);
+        this.coinValue = (type === 'lucky_coin') ? 100 : (type === 'coin' ? 250000 : 0);
         this.xpValue = (type === 'xp_orb') ? value : 0;
         this.rotation = 0;
         this.rotationSpeed = this.vx * 0.1;

@@ -33,6 +33,7 @@ export default class Missile {
             });
             this.sprite.currentFrame = variantIndex;
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
+            this.damage = 5;
         
         } else if (type === 'gummy_worm') {
             this.width = 29;
@@ -41,6 +42,7 @@ export default class Missile {
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
             this.baseSpeed = 1; 
+            this.damage = 6;
         } else if (type === 'marshmallow_large') {
             this.width = 76.5 * 1.4;
             this.height = 76.5 * 1.4;
@@ -606,21 +608,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         this.dead = true;
 
         let numDebris = 0;
-        switch (this.type) {
-            case 'gummy_worm':
-                numDebris = 2 + Math.floor(Math.random() * 2); // 2-3
-                break;
-            case 'missile': // Jelly bean
-                numDebris = 4 + Math.floor(Math.random() * 3); // 4-6
-                break;
-            case 'marshmallow_large':
-            case 'marshmallow_medium':
-            case 'marshmallow_small':
-                numDebris = 2 + Math.floor(Math.random() * 2); // 2-3
-                break;
-            case 'piggy':
-                numDebris = 2 + Math.floor(Math.random() * 5 + (this.game.stats.piggyLvl / 5)); // 2-6+, scaled
-                break;
+        let cutSize = 2; // Default to 2x2
+
+        if (this.type === 'gummy_cluster') { // Assuming 'gummy_cluster' is the type name for the boss
+            numDebris = 4 + Math.floor(Math.random() * 3); // 4-6 for boss
+            cutSize = 3; // 3x3 for boss
+        } else {
+            numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 for normal enemies
+            cutSize = 2; // 2x2 for normal enemies
         }
 
         for (let i = 0; i < numDebris; i++) {
@@ -637,7 +632,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 spriteHeight = this.height * sizeMultiplier;
             }
             
-            this.game.debris.push(new EnemyDebris(this.game, this, spriteWidth, spriteHeight));
+            this.game.debris.push(new EnemyDebris(this.game, this, spriteWidth, spriteHeight, cutSize));
         }
         
         const numParticles = 10 + Math.floor(this.maxHealth / 15);
@@ -769,11 +764,10 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         this.game.particles.push(p);
 
         // NEW: Component drop chance tied to Luck
-        if (this.type !== 'piggy') {
-            const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
-            if (Math.random() * 100 < componentDropChance) {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
-            }
+        // Piggy bank now uses the same component drop chance as other enemies
+        const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
+        if (Math.random() * 100 < componentDropChance) {
+            this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
         }
 
         const dropsToCreate = [];
@@ -837,9 +831,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         });
 
         if (this.type === 'piggy') {
-            if (Math.random() < 0.99) {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
-            }
+            // Removed the guaranteed component drop for piggy
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;
