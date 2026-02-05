@@ -231,7 +231,7 @@ export default class Player {
             const animPhase = (15 - this.lickAnim) / 15;
             const animCurve = Math.sin(animPhase * Math.PI);
             const lickDistance = this.lickRange * animCurve;
-            const lickSegments = 10;
+            const lickSegments = 20;
             const lickLength = this.lickRange;
 
             // --- Drop Collision ---
@@ -284,7 +284,7 @@ export default class Player {
                         const missileCx = m.x + m.width / 2;
                         const missileCy = m.y + m.height / 2;
 
-                        if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) {
+                        if (Math.hypot(missileCx - checkX, missileCy - checkY) < 45) {
                             hit = true;
                             break;
                         }

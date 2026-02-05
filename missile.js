@@ -192,7 +192,7 @@ export default class Missile {
         this.speedBoostTimer = 0;
         this.isTeleporting = false; // Teleport animation flag
         this.teleportAnimTimer = 0; // Teleport animation timer
-        this.teleportAnimDuration = 10; // Teleport animation duration (frames)
+        this.teleportAnimDuration = 15; // Teleport animation duration (frames)
     }
 
     reset() {
@@ -256,7 +256,7 @@ export default class Missile {
         }
 
         if (this.isIceCream) {
-            this.speedBoostTimer = 60;
+            this.speedBoostTimer = 120;
         }
 
         if (this.isComponentEnemy) {
@@ -276,7 +276,6 @@ export default class Missile {
 
             // Teleport to new random position
             this.x = Math.random() * (this.game.width - this.width);
-            this.y = Math.random() * (this.game.PLAYABLE_AREA_HEIGHT * 0.5 - this.height) + this.height; // Teleport within upper playable area
         }
 
         this.game.hitStopFrames = 0;
@@ -444,6 +443,10 @@ export default class Missile {
     draw(ctx) {
         if (!this.active) return;
         ctx.save();
+
+        if (this.isIceCream && this.speedBoostTimer > 0) {
+            ctx.translate(Math.sin(this.game.gameTime * 0.5) * 2, Math.cos(this.game.gameTime * 0.5) * 2);
+        }
         if (this.groundProximity) {
             const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
             ctx.globalAlpha = 1 - alpha * 0.5;
@@ -674,7 +677,7 @@ export default class Missile {
             if (this.sprite) {
                 this.sprite.draw(
                     ctx, 
-                    0, 0, 
+                    0, 40, // Lower the sprite by 10 pixels
                     this.width, 
                     this.height, 
                     this.stretch - 1, 
@@ -786,35 +789,73 @@ export default class Missile {
         const soul = this.game.soulPool.get(this.game, spawnX + this.width / 2, spawnY + this.height / 2);
 
         // --- Drop Logic ---
-        this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained);
-
-        const rand = Math.random() * 100;
-        if (rand < this.game.stats.luckHeart) {
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'heart');
-        }
-
-        const randCoin = Math.random() * 100;
-        if (randCoin < this.game.stats.luckCoin) {
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin');
-        } else if (randCoin < 40) { // 40% chance for a regular coin if lucky coin doesn't drop
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'coin');
-        }
-
-        const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
-        if (Math.random() * 100 < componentDropChance) {
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
-        }
-        
-        const iceCreamChance = this.game.emporium.getIceCreamChance();
-        if (Math.random() * 100 < (this.type === 'piggy' ? iceCreamChance[1] : iceCreamChance[0])) {
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
-        }
-
         if (this.type === 'piggy') {
+            // Piggy Bank specific drops
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;
             this.game.handlePiggyDeath(bonus);
+
+            // Apply Piggy Bank loot multiplier for XP, coins, and multiple chances for special drops
+            for (let i = 0; i < pStats.mult; i++) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained); // Multiplied XP
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'coin'); // Multiplied regular coins
+
+                // Multiple chances for lucky coin, heart, component based on luck
+                const randHeart = Math.random() * 100;
+                if (randHeart < this.game.stats.luckHeart) {
+                    this.game.dropPool.get(this.game, spawnX, spawnY, 'heart');
+                }
+
+                const randLuckyCoin = Math.random() * 100;
+                if (randLuckyCoin < this.game.stats.luckCoin) {
+                    this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin');
+                }
+                
+                // Chance for component drop (evaluated per multiplier iteration)
+                const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25); // Use the general formula
+                if (Math.random() * 100 < componentDropChance) {
+                    this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
+                }
+            }
+
+            // Ice Cream Scoop chance for Piggy Bank
+            const iceCreamChance = this.game.emporium.getIceCreamChance();
+            if (Math.random() * 100 < iceCreamChance[1]) { // Use piggy-specific ice cream chance
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
+            }
+
+        } else { // For all other enemy types
+            // General drops for all non-piggy enemies
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained); // One XP orb
+
+            const randHeart = Math.random() * 100;
+            if (randHeart < this.game.stats.luckHeart) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'heart'); // One heart chance
+            }
+
+            const randCoin = Math.random() * 100;
+            if (randCoin < this.game.stats.luckCoin) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin'); // One lucky coin chance
+            } else if (randCoin < 40) { // 40% chance for a regular coin if lucky coin doesn't drop
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'coin'); // One regular coin chance
+            }
+
+            // Component Drop Logic for non-piggy enemies
+            if (this.type === 'component_enemy') {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'component'); // Guaranteed drop for component_enemy
+            } else { // Other regular enemies get a chance
+                const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25); // Reverted to original formula
+                if (Math.random() * 100 < componentDropChance) {
+                    this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
+                }
+            }
+            
+            // Ice Cream Scoop chance for non-Piggy enemies
+            const iceCreamChance = this.game.emporium.getIceCreamChance();
+            if (Math.random() * 100 < iceCreamChance[0]) { // Use general ice cream chance
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
+            }
         }
 
         this.reset();

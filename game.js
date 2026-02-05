@@ -1342,7 +1342,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         const totalTurrets = 25;
         const endCost = 1500000;
 
-        const curveFactor = 0.5; // Value < 1 makes the curve steeper initially
+        const curveFactor = 0.6; // Value < 1 makes the curve steeper initially
 
         // Normalize turretCount to a 0-1 range
         const normalizedTurretCount = turretCount / (totalTurrets - 1);
