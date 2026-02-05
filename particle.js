@@ -1,5 +1,9 @@
 export default class Particle {
-    constructor(game, x, y, color, type = 'spark', lifespan = 1.0, vx = null, vy = null, startRadius = 0, endRadius = 0) {
+    constructor() {
+        // Constructor is now parameterless, init() handles actual setup
+    }
+
+    init(game, x, y, color, type = 'spark', initialSize = null, lifespan = 1.0, vx = null, vy = null, startRadius = 0, endRadius = 0) {
         this.game = game;
         this.x = x; this.y = y; this.color = color; this.type = type;
 
@@ -13,8 +17,8 @@ export default class Particle {
             this.vy = vy;
         }
         
-        this.life = lifespan;
-        this.maxLife = lifespan;
+        this.life = 1;
+        this.maxLife = 1;
         this.decay = (1 / (lifespan * 60)) * (Math.random() * 0.5 + 0.75) ;
 
         this.targetX = undefined;
@@ -32,11 +36,28 @@ export default class Particle {
             this.size = Math.random() * 2 + 16; 
             this.emissionTimer = Math.random() * 2;
         } else {
-            this.size = Math.random() * 5 + 2;
+            this.size = initialSize !== null ? initialSize : (Math.random() * 5 + 2);
         }
+        this.active = true; // Added for pooling
+        this.emitter = null;
+    }
+
+    reset() {
+        this.active = false;
+        this.game = null;
+        this.x = 0; this.y = 0; this.color = ''; this.type = '';
+        this.life = 0; this.maxLife = 0; this.decay = 0;
+        this.vx = 0; this.vy = 0;
+        this.targetX = undefined; this.targetY = undefined;
+        this.homingStrength = 0; this.recoils = false;
+        this.emissionTimer = 0; this.gracePeriod = 0;
+        this.startRadius = 0; this.endRadius = 0; this.currentRadius = 0;
+        this.size = 0;
     }
 
     update(tsf) {
+        if (!this.active) return; // Added for pooling
+
         if (this.gracePeriod > 0) this.gracePeriod -= tsf;
 
         if (this.targetX !== undefined && this.targetY !== undefined) {
@@ -61,7 +82,27 @@ export default class Particle {
         this.y += this.vy * tsf;
         this.life -= this.decay * tsf;
 
+        if (this.life <= 0) { // Return to pool when life expires
+            this.active = false;
+            if (this.game && this.game.particlePool) { // Ensure pool exists
+                this.game.particlePool.returnToPool(this);
+            }
+            return;
+        }
+
+
         if (this.type === 'smoke') { this.vx *= 0.95; this.vy -= 0.05 * tsf; this.size += 0.2 * tsf; }
+        else if (this.type === 'trail') {
+            if (this.emitter && this.emitter.onGround) {
+                this.targetX = this.emitter.x + this.emitter.width / 2;
+                this.targetY = this.emitter.y + this.emitter.height / 2;
+                this.homingStrength = 2;
+            }
+            this.vx *= 0.95; // Some horizontal drag
+            this.vy -= 0.01 * tsf; // Small upward smoke-like movement
+            this.size = Math.max(0.5, this.size + 0.02 * tsf); // Slight expansion, with minimum size
+            this.size *= 0.95; // Overall shrinking
+        }
         else if (this.type === 'drip') { this.vy += 0.1 * tsf; this.vx *= 0.9; this.size *= 0.95; }
         else if (this.type === 'heal') { this.y -= 1 * tsf; this.size *= 0.98; }
         else if (this.type === 'explosion') {
@@ -76,12 +117,18 @@ export default class Particle {
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
                 const color = Math.random() < 0.5 ? 'rgba(255,255,255,0.7)' : 'rgba(173, 216, 230, 0.7)';
-                this.game.particles.push(new Particle(this.game, this.x, this.y, color, 'spark', 0.5, vx, vy));
+                // Change here to use particle pool
+                const newParticle = this.game.particlePool.get();
+                if (newParticle) {
+                    newParticle.init(this.game, this.x, this.y, color, 'spark', 0.5, vx, vy);
+                }
             }
         }
     }
 
     draw(ctx) {
+        if (!this.active) return; // Added for pooling
+
         ctx.save(); // Save once at the start
         ctx.globalAlpha = Math.max(0, this.life);
 
@@ -128,7 +175,7 @@ export default class Particle {
             for (let i = 0; i < shafts; i++) {
                 ctx.rotate((Math.PI * 2 / shafts));
                 const shaftGradient = ctx.createLinearGradient(0, 0, radius, 0);
-                const color = i % 2 === 0 ? '255, 255, 255' : '173, 216, 230';
+                const color = Math.random() < 0.5 ? '255, 255, 255' : '173, 216, 230'; // Use random color for variation
                 
                 shaftGradient.addColorStop(0, `rgba(${color}, ${0.4 * pulse})`);
                 shaftGradient.addColorStop(1, `rgba(${color}, 0)`);

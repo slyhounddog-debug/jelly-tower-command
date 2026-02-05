@@ -93,7 +93,10 @@ export default class ThreatManager {
         if (this.targetEnemy && this.threatWallet >= this.targetEnemy.cost) {
             this.threatWallet -= this.targetEnemy.cost;
             const spawnX = Math.random() * (this.game.width - 350) + 175;
-            this.game.missiles.push(new Missile(this.game, spawnX, this.targetEnemy.name, undefined, 1));
+           const enemy = this.game.enemyPools[this.targetEnemy.name].get(this.game, spawnX, this.targetEnemy.name, undefined, 1);
+            if (this.targetEnemy.name === 'missile') { // Specific to missile type, ensures 8-frame sprite assignment
+                enemy.sprite.currentFrame = Math.floor(Math.random() * 8);
+            }
             this.targetEnemy = null;
             
             // Optional Burst Chance
@@ -130,9 +133,12 @@ export default class ThreatManager {
         const spawnX = Math.random() * (this.game.width - 350) + 175;
         const spawnIf = (debugFlag, enemyName) => {
             if (debugFlag) {
-                const enemy = this.enemyData.find(e => e.name === enemyName);
-                if (enemy) {
-                    this.game.missiles.push(new Missile(this.game, spawnX, enemy.name, undefined, enemy.hpMultiplier));
+                const enemyData = this.enemyData.find(e => e.name === enemyName);
+                if (enemyData) {
+                    const enemy = this.game.enemyPools[enemyName].get(this.game, spawnX, enemyName, undefined, enemyData. calculltiplier);
+                    if (enemyName === 'missile') { // Specific to missile type, ensures 8-frame sprite assignment
+                        enemy.sprite.currentFrame = Math.floor(Math.random() * 8);
+                    }
                 }
             }
         };

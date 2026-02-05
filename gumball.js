@@ -17,7 +17,6 @@ export default class Gumball {
         this.dead = false;
         // this.hitEnemyIds = new Set(); // Removed for piercing
         this.spawner = spawner; // The enemy that spawned this gumball
-        this.knockback = this.game.stats.lickKnockback * 0.01;
         this.collisionDelay = 5; // 5 frames delay before collision is active
         this.canSpawn = canSpawn; // Keep this for clarity, but its impact on recursive spawning is removed here
         this.bossHit = false; // New property to track if this gumball has hit the boss
@@ -64,7 +63,6 @@ export default class Gumball {
                 if (m.takeDamage(this.damage, false, this)) {
                     m.kill();
                 }
-                m.kbVy = -this.knockback;
                 this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
 
                 // Add particles for impact

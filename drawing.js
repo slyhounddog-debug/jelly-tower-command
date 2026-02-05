@@ -1,4 +1,4 @@
-import { darkenColor, lightenColor } from './utils.js?v=25';
+import { darkenColor, lightenColor } from './utils.js?v=26';
 
 export default class Drawing {
     constructor(game) {

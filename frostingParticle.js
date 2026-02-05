@@ -1,5 +1,9 @@
 export default class FrostingParticle {
-    constructor(game, x, y, vx, vy, radius, color, lifespan, gravity = 0.15, type = 'player') {
+    constructor() {
+        this.active = false;
+    }
+
+    init(game, x, y, vx, vy, radius, color, lifespan, gravity = 0.15, type = 'player') {
         this.game = game;
         this.x = x;
         this.y = y;
@@ -18,11 +22,19 @@ export default class FrostingParticle {
         this.history = [];
         this.maxHistory = 7;
         this.isSplatting = false; // New state for when particle is about to become a decal
+        this.active = true;
+    }
+
+    reset() {
+        this.active = false;
+        this.history = [];
     }
 
     update(tsf) {
-        if (this.type === 'player') {
-            this.lifespan -= tsf;
+        this.lifespan -= tsf;
+        if (this.lifespan <= 0) {
+            this.game.frostingParticlePool.returnToPool(this);
+            return;
         }
 
         // If splatting, rapidly shorten the trail
@@ -30,6 +42,8 @@ export default class FrostingParticle {
             this.maxHistory -= 1 * tsf; // Rapidly decrease history size
             if (this.maxHistory <= 0) {
                 this.lifespan = 0; // Mark for removal after trail is gone
+                this.game.frostingParticlePool.returnToPool(this);
+                return;
             }
             this.radius *= 0.8; // Also make the head disappear faster
             return; // Stop further movement/collision checks

@@ -12,7 +12,7 @@ export default class DecalManager {
             y,
             size: size * 5, // Make splats 200% bigger
             color: darkenColor(color, Math.random() * 13),
-            life: 1.0,
+            life: 0.5,
             rotation,
             tower,
             splatParts: []
@@ -23,8 +23,8 @@ export default class DecalManager {
             decal.splatParts.push({
                 offsetX: (Math.random() - 0.5) * size * 1.5,
                 offsetY: (Math.random() - 0.5) * size * 1.5,
-                sizeX: (Math.random() * 0.5 + 0.5) * size * 2.5,
-                sizeY: (Math.random() * 0.5 + 0.5) * size * 1.4,
+                sizeX: (Math.random() * 1.0 + 0.2) * size * 2.5,
+                sizeY: (Math.random() * 1.0 + 0.2) * size * 1.5,
                 rotation: Math.random() * Math.PI
             });
         }

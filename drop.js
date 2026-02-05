@@ -7,7 +7,11 @@ const NORMAL_LOOT_LIFESPAN = 1800; // 30 seconds at 60 FPS
 const SPECIAL_LOOT_LIFESPAN = 3600; // 60 seconds at 60 FPS
 
 export default class Drop {
-    constructor(game, x, y, type, value = 0) {
+    constructor() {
+        this.active = false;
+    }
+
+    init(game, x, y, type, value = 0) {
         this.game = game;
         this.x = x + (Math.random() - 0.5) * 20;
         this.y = y + (Math.random() - 0.5) * 20;
@@ -53,18 +57,39 @@ export default class Drop {
         this.isBeingLicked = false;
         this.lickedByPlayer = null;
         this.spawnTime = this.game.gameTime;
+        this.active = true; // Mark as active
+    }
+
+    reset() {
+        this.active = false;
+        this.game = null;
+        this.x = 0; this.y = 0; this.type = '';
+        this.value = 0; this.vy = 0; this.vx = 0;
+        this.gravity = 0; this.bounciness = 0; this.onGround = false;
+        this.life = 0; this.maxLife = 0; this.width = 0;
+        this.coinValue = 0; this.xpValue = 0; this.rotation = 0; this.rotationSpeed = 0;
+        this.glow = 0; this.glowTimer = 0; this.pulseSpeed = 0; this.auraColor = '';
+        this.id = 0; this.isBeingLicked = false; this.lickedByPlayer = null; this.spawnTime = 0;
     }
 
     update(tsf) {
+        if (!this.active) return; // Only update active drops
+
         this.life -= tsf;
+
+        if (this.life <= 0) {
+            // Return to pool instead of just disappearing
+            this.game.dropPool.returnToPool(this);
+            return;
+        }
 
         if (this.isBeingLicked) {
             this.x = this.lickedByPlayer.tongueTipX - this.width / 2;
             this.y = this.lickedByPlayer.tongueTipY - this.width / 2;
             if (this.lickedByPlayer.lickAnim <= 0) {
                 this.collect();
-                this.life = 0;
-                for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff'));
+                // When collected, return to pool
+                this.game.dropPool.returnToPool(this);
             }
             return;
         }
@@ -95,8 +120,13 @@ export default class Drop {
         const dropCenterY = this.y + this.width / 2;
         if (Math.hypot(playerCenterX - dropCenterX, playerCenterY - dropCenterY) < this.game.player.pickupRange) {
             this.collect();
-            this.life = 0;
-            for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x, this.y, '#fff'));
+            for (let i = 0; i < 5; i++) {
+                const particle = this.game.particlePool.get();
+                if (particle) {
+                    particle.init(this.game, this.x, this.y, '#fff');
+                }
+            }
+            this.game.dropPool.returnToPool(this); // Return to pool when collected
         }
     }
 
@@ -112,10 +142,19 @@ export default class Drop {
             this.game.castleHealthBar.triggerHeal();
             this.game.audioManager.playSound('heart');
             this.game.lootPopupManager.addLoot('health', 'Health', healAmount);
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '+❤️'));
-            const spotsToRemove = Math.floor(this.game.damageSpots.length / 5);
+            this.game.floatingTextPool.get(this.game, this.x, this.y, '+❤️');
+            const activeSpots = [];
+            this.game.damageSpotPool.forEach(spot => activeSpots.push(spot));
+
+            const spotsToRemove = Math.floor(activeSpots.length / 5);
+
             for (let i = 0; i < spotsToRemove; i++) {
-                if (this.game.damageSpots.length > 0) this.game.damageSpots.splice(Math.floor(Math.random() * this.game.damageSpots.length), 1);
+                if (activeSpots.length > 0) {
+                    const spotToRemove = activeSpots.splice(Math.floor(Math.random() * activeSpots.length), 1)[0];
+                    if (spotToRemove) {
+                        this.game.damageSpotPool.returnToPool(spotToRemove);
+                    }
+                }
             }
         }
         if (this.type === 'ice_cream_scoop') {
@@ -123,7 +162,7 @@ export default class Drop {
             localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
             this.game.audioManager.playSound('scoop');
             this.game.lootPopupManager.addLoot('scoop', 'Scoop', 1);
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x, this.y, '🍦'));
+            this.game.floatingTextPool.get(this.game, this.x, this.y, '🍦');
         }
         if (this.type === 'xp_orb') {
             this.game.addXp(this.xpValue);
@@ -144,6 +183,7 @@ export default class Drop {
     }
 
     draw(ctx) {
+        if (!this.active) return; // Only draw active drops
         // --- DYNAMIC SHADOW ---
         const ground = this.game.platforms.find(p => p.type === 'ground');
         if (ground) {

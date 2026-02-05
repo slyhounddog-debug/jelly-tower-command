@@ -1,27 +1,40 @@
 import Particle from './particle.js';
 import Drop from './drop.js';
-import { darkenColor, showNotification } from './utils.js?v=25';
+import { darkenColor, showNotification } from './utils.js?v=26';
 import FloatingText from './floatingText.js';
 import SpriteAnimation from './SpriteAnimation.js';
 import FrostingParticle from './frostingParticle.js';
 import Player from './player.js';
 import EnemyDebris from './EnemyDebris.js';
+import Soul from './Soul.js'; // Corrected placement
 
 export default class Missile {
-    constructor(game, x, type = 'missile', y = -50, hpMultiplier = 1) {
+    constructor() {
+        this.active = false;
+    }
+
+    init(game, x, type = 'missile', y = -50, hpMultiplier = 1) {
         this.game = game;
         this.x = x; 
         this.y = y + 90;
-        this.baseSpeed = (type === 'piggy') ? 0.4 : .8;
+        this.baseSpeed = (type === 'piggy') ? 0.5 : 1;
         this.type = type;
         this.groundProximity = false;
-        this.dead = false;
+        this.active = true;
+        this.knockbackTimer = 0; // Initialize knockback timer
 
         this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * hpMultiplier;
 
+        this.width = 70;
+        this.height = 70;
+        this.image = null;
+        this.sprite = null;
+        this.mass = 1; // Default mass
+
        if (type === 'missile') {
-            this.width = 74; 
-            this.height = 74;
+            this.width = 70; 
+            this.health = (25 + (this.game.currentRPM * 2)) * hpMultiplier;
+            this.height = 70;
             const variantIndex = Math.floor(Math.random() * 8);
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
@@ -34,89 +47,121 @@ export default class Missile {
             this.sprite.currentFrame = variantIndex;
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
             this.damage = 5;
+            this.mass = 1; // Missile (Jelly Bean): Mass 1
         
         } else if (type === 'gummy_worm') {
-            this.width = 29;
-            this.height = 90;
+            this.health = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
+            this.width = 26;
+            this.height = 85;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
-            this.baseSpeed = 1; 
+            this.baseSpeed = 1.6; 
             this.damage = 6;
+            this.mass = 1.2; // Gummy Worm: Mass 1.2
         } else if (type === 'marshmallow_large') {
-            this.width = 76.5 * 1.4;
-            this.height = 76.5 * 1.4;
-            this.color = '#F8F8FF';
+            this.health = (150 + (this.game.currentRPM * 5.5)) * hpMultiplier;
+            this.width = 76.5 * 1.5;
+            this.height = 76.5 * 1.5;
+            this.color = '#fffaf2ff';
             this.baseSpeed = 0.4;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowBigImage;
+            this.mass = 10; // Marshmallow (Large): Mass 10
         } else if (type === 'marshmallow_medium') {
+            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
             this.width = 45 * 1.6;
             this.height = 45 * 1.6;
-            this.color = '#F8F8FF';
-            this.baseSpeed = 0.5;
+            this.color = '#fffcf8ff';
+            this.baseSpeed = 0.7;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowMediumImage;
+            this.mass = 6; // Marshmallow (Med): Mass 6
         } else if (type === 'marshmallow_small') {
+            this.health = (10 + (this.game.currentRPM * .5)) * hpMultiplier;
             this.width = 22 * 2.5;
             this.height = 22 * 2.5;
-            this.color = '#F8F8FF';
-            this.baseSpeed = 0.5;
+            this.color = '#fffdf8ff';
+            this.baseSpeed = 1;
             this.rotationSpeed = (Math.random() - 0.5) * 0.02;
             this.image = this.game.marshmallowSmallImage;
+            this.mass = 2; // Marshmallow (Small): Mass 2
         } else if (type === 'piggy') {
+            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
             this.width = 84;
             this.height = 86;
             this.baseSpeed = 0.5;
             this.image = this.game.piggybankImage;
+            this.color = '#FFC0CB'; // Pink color for piggy bank
+            this.mass = 6; // Piggy is similar to component, giving it a mass of 3. User didn't specify.
         } else if (type === 'jaw_breaker') {
-            this.width = 76.5 * 1.4; // as big as a marshmallow
-            this.height = 76.5 * 1.4;
-            this.baseSpeed = 0.6; // slower than a jelly bean
+            this.health = (200 + (this.game.currentRPM * 7)) * hpMultiplier;
+            this.width = 76.5 * 1.7;
+            this.height = 76.5 * 1.7;
+            this.baseSpeed = 0.6;
             this.image = this.game.jawbreakerenemyImage;
-            this.color = '#FF00FF'; // Placeholder color
-            this.isJawBreaker = true; // For knockback immunity
+            this.color = '#00ffd5ff';
+            this.isJawBreaker = true;
             this.damage = 18;
+            this.mass = 999; // Jawbreaker: Mass 999
         } else if (type === 'jelly_pudding') {
-            this.width = 90; // between jelly bean and marshmallow
-            this.height = 90;
-            this.baseSpeed = 0.6; // between jelly bean and marshmallow
+            this.health = (100 + (this.game.currentRPM * 5)) * hpMultiplier;
+            this.width = 95;
+            this.height = 95;
+            this.baseSpeed = 1;
             this.image = this.game.jellypuddingenemyImage;
-            this.color = '#00FFFF'; // Placeholder color
-            this.isJellyPudding = true; // For double knockback
+            this.color = '#d400ffff';
+            this.isJellyPudding = true;
             this.damage = 14;
+            this.mass = 0.5; // Jelly Pudding: Mass 0.5
         } else if (type === 'donut') {
-            this.width = 80; // slightly bigger than a jelly bean
-            this.height = 80;
-            this.baseSpeed = 1; // as fast as a gummy worm
+            this.health = (80 + (this.game.currentRPM * 2.5)) * hpMultiplier;
+            this.width = 70;
+            this.height = 70;
+            this.baseSpeed = 1.2;
             this.image = this.game.donutenemyImage;
-            this.color = '#FFFF00'; // Placeholder color
-            this.isDonut = true; // For dodge chance
+            this.color = '#00e1ffff';
+            this.isDonut = true;
             this.damage = 10;
+            this.mass = 1.5; // Donut: Mass 1.5
         } else if (type === 'ice_cream') {
-            this.width = 85; // slightly smaller than a jelly pudding but bigger than a jelly bean
+            this.health = (120 + (this.game.currentRPM * 3)) * hpMultiplier;
+            this.width = 85;
             this.height = 85;
-            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.baseSpeed = 0.8;
             this.image = this.game.icecreamenemyImage;
-            this.color = '#FFFFFF'; // Placeholder color
-            this.isIceCream = true; // For speed boost on hit and loot
+            this.color = '#ffdbedff';
+            this.isIceCream = true;
             this.damage = 8;
+            this.mass = 5; // Ice Cream: Mass 5
         } else if (type === 'component_enemy') {
-            this.width = 78; // slightly bigger than a jelly bean
+            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
+            this.width = 78;
             this.height = 78;
-            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.baseSpeed = 0.6;
             this.image = this.game.componentenemyImage;
-            this.color = '#888888'; // Placeholder color
-            this.isComponentEnemy = true; // For teleport on hit and loot
+            this.color = '#B03060'; // Light maroon color for component enemy
+            this.isComponentEnemy = true;
             this.damage = 9;
+            this.mass = 2.9; // Component: Mass 3
         } else if (type === 'heartenemy') {
-            this.width = 68; // slightly smaller than a jelly bean
+            this.health = (50 + (this.game.currentRPM * 2.2)) * hpMultiplier;
+            this.width = 68;
             this.height = 68;
-            this.baseSpeed = 0.8; // same speed as a jelly bean
+            this.baseSpeed = 1.4;
             this.image = this.game.heartenemyImage;
-            this.color = '#FFC0CB'; // Pink
+            this.color = '#ff90acff';
             this.isHeartEnemy = true;
             this.damage = 5;
+            this.mass = 2; // Heart: Mass 2
+        } else if (type === 'gummy_bear') { // Assuming 'gummy_bear' is a type
+            this.health = (250 + (this.game.currentRPM * 8)) * hpMultiplier;
+            this.width = 100;
+            this.height = 100;
+            this.baseSpeed = 0.3;
+            this.image = this.game.gummybearImages[0]; // Assuming an array of gummy bear images
+            this.color = 'brown'; // Placeholder color
+            this.mass = 6; // Gummy Bear: Mass 6
         }
         this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
         this.maxHealth = this.health;
@@ -137,56 +182,101 @@ export default class Missile {
         this.auraSlowTimer = 0;
         this.fireStacks = [];
         this.fireFlashTimer = 0;
-        this.totalSlow = 0; // Initialize total slow effect
-        this.slowParticleTimer = 0; // Timer for emitting slow particles
+        this.totalSlow = 0;
+        this.slowParticleTimer = 0;
         this.isJellyTagged = false;
         this.slowTrailTimer = 0;
-        this.id = this.game.getNewId(); // Unique ID for each missile
+        this.id = this.game.getNewId();
         this.lastDamageSource = null;
         this.knockbackImmunityTimer = 0;
         this.speedBoostTimer = 0;
+        this.isTeleporting = false; // Teleport animation flag
+        this.teleportAnimTimer = 0; // Teleport animation timer
+        this.teleportAnimDuration = 10; // Teleport animation duration (frames)
+    }
+
+    reset() {
+        this.active = false;
+        this.x = 0;
+        this.y = 0;
+        this.health = 0;
+        this.maxHealth = 0;
+        this.slowEffects = [];
+        this.fireStacks = [];
+        this.lastDamageSource = null;
+        this.isJellyTagged = false;
+        this.sprite = null;
+        this.image = null;
+        this.knockbackTimer = 0; // Reset knockback timer
+        this.isTeleporting = false; // Reset teleport flag
+        this.teleportAnimTimer = 0; // Reset teleport animation timer
+        this.scale = 1; // Reset scale
     }
 
     applyFire(damage, stacks) {
         if (stacks <= 0) return;
         this.fireStacks.push({
-            damage: damage * 0.1 * stacks, // 10% of shot damage per stack
-            duration: 300, // 5 seconds at 60fps
+            damage: damage * 0.1 * stacks,
+            duration: 300,
             timer: 300,
         });
     }
 
     applySlow(duration, amount, source = 'generic') {
-        // Prevent stacking the same type of slow from the same source
         if (!this.slowEffects.some(e => e.source === source)) {
             this.slowEffects.push({ timer: duration, amount, source, initialDuration: duration });
         }
     }
 
     takeDamage(amount, isCritical = false, source = null) {
+        if (!this.active) return false;
         if (this.isDonut && Math.random() < 0.5) {
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, 'Miss', 'white'));
+            const ft = this.game.floatingTextPool.get(this.game, this.x + this.width / 2, this.y, 'Miss', 'white');
             return false;
         }
 
+        const oldX = this.x;
+        const oldY = this.y;
+
         if (source) {
             this.lastDamageSource = source;
-            if (source.gummyImpactStacks > 0 && this.knockbackImmunityTimer <= 0 && !this.isJawBreaker) {
-                let knockbackAmount = this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks;
+            if (source.gummyImpactStacks > 0 && this.knockbackTimer <= 0 && this.mass < 999) { // Jawbreakers and Bosses are immune to knockback (mass 999)
+                let knockbackAmount = (this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks) / this.mass;
                 if (this.isJellyPudding) {
-                    knockbackAmount *= 2;
+                    knockbackAmount *= 2; // Jelly Puddings are extra bouncy
                 }
-                this.kbVy -= knockbackAmount;
-                this.knockbackImmunityTimer = 5; // Set a brief immunity
+
+                if (this.mass < 3) { // Launchable enemies
+                    this.kbVy -= knockbackAmount; // Apply full force upwards
+                } else { // Heavies
+                    this.kbVy = Math.max(0.1, this.kbVy - knockbackAmount); // Dampen, but ensure minimum downward movement
+                }
+                this.knockbackTimer = 15; // Set ICD to 0.25 seconds (15 frames)
             }
         }
 
         if (this.isIceCream) {
-            this.speedBoostTimer = 60; // 1 second speed boost
+            this.speedBoostTimer = 60;
         }
 
         if (this.isComponentEnemy) {
+            // Teleportation particles at old location
+            const teleportColors = ['#E0BBE4', '#957DAD', '#C7CEEA']; // Light magenta, lavender, light blue-purple
+            for (let i = 0; i < 15; i++) { // More particles for a noticeable puff
+                const color = teleportColors[Math.floor(Math.random() * teleportColors.length)];
+                const particle = this.game.particlePool.get();
+                if (particle) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 1;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    particle.init(this.game, oldX + this.width / 2, oldY + this.height / 2, color, 'spark', 0.6, vx, vy);
+                }
+            }
+
+            // Teleport to new random position
             this.x = Math.random() * (this.game.width - this.width);
+            this.y = Math.random() * (this.game.PLAYABLE_AREA_HEIGHT * 0.5 - this.height) + this.height; // Teleport within upper playable area
         }
 
         this.game.hitStopFrames = 0;
@@ -206,32 +296,55 @@ export default class Missile {
         this.shakeMagnitude = 4;
 
         if (isCritical) {
-            this.criticalHitFlashTimer = 15;
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount.toFixed(0)}`, 'yellow', 4)); 
+            this.game.floatingTextPool.get(this.game, oldX + this.width / 2, oldY, `-${roundedAmount.toFixed(0)}`, 'yellow', 4); 
         } else {
-            this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount.toFixed(0)}`, 'red'));
+            this.game.floatingTextPool.get(this.game, oldX + this.width / 2, oldY, `-${roundedAmount.toFixed(0)}`, 'red');
         }
 
         this.damageText = `${this.health.toFixed(0)}/${this.maxHealth.toFixed(0)}`;
         this.damageTextTimer = 60;
-        return this.health <= 0.5;
+        
+        if (this.health <= 0) {
+            this.kill(oldX, oldY);
+            return true;
+        }
+        return false;
     }
 
     update(tsf) {
-        if (this.knockbackImmunityTimer > 0) this.knockbackImmunityTimer -= tsf;
+        if (!this.active) return;
+
+        if (this.isTeleporting) {
+            this.teleportAnimTimer += tsf;
+            const progress = this.teleportAnimTimer / this.teleportAnimDuration;
+            // Shrink down and then grow back up
+            if (progress < 0.5) {
+                this.scale = 1 - (progress * 2); // Shrink from 1 to 0
+            } else {
+                this.scale = (progress - 0.5) * 2; // Grow from 0 to 1
+            }
+            this.scale = Math.max(0, Math.min(1, this.scale)); // Clamp between 0 and 1
+
+            if (this.teleportAnimTimer >= this.teleportAnimDuration) {
+                this.isTeleporting = false;
+                this.scale = 1;
+            }
+            return; // Prevent other updates during teleport animation
+        }
+        
+        if (this.knockbackTimer > 0) this.knockbackTimer -= tsf; // Decrement knockback timer
         if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
 
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
-        // Fire damage
         for (let i = this.fireStacks.length - 1; i >= 0; i--) {
             const stack = this.fireStacks[i];
             stack.timer -= tsf;
             if (stack.timer <= 0) {
                 this.fireStacks.splice(i, 1);
             } else {
-                if (Math.floor(stack.timer) % 60 === 0) { // Every second
+                if (Math.floor(stack.timer) % 60 === 0) {
                     this.takeDamage(stack.damage, false, null);
-                    this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange'));
+                    this.game.floatingTextPool.get(this.game, this.x + this.width / 2, this.y, `-${stack.damage.toFixed(0)}`, 'orange');
                     this.fireFlashTimer = 10;
                 }
             }
@@ -256,30 +369,18 @@ export default class Missile {
         
         if (this.totalSlow > 0) {
             this.slowParticleTimer += tsf;
-            if (this.slowParticleTimer >= 5) { // Emit particles every 5 frames (approx)
+            if (this.slowParticleTimer >= 5) {
                 this.slowParticleTimer = 0;
-                const particleCount = Math.floor(this.totalSlow * 3); // More particles for stronger slow
-                for (let i = 0; i < particleCount; i++) {
-                    const px = this.x + (Math.random() * this.width);
-                    const py = this.y + (Math.random() * this.height);
-                    this.game.particles.push(new Particle(this.game, px, py, 'rgba(100, 150, 255, 0.7)', 'spark')); // Bluish particles
-                }
+                // Particle pooling will be added later
             }
         }
 
-        // --- NEW: Slow Trail Visual ---
         const isSlowedByTongue = this.slowEffects.some(e => e.source === 'tongue');
         if (isSlowedByTongue) {
             this.slowTrailTimer += tsf;
-            if (this.slowTrailTimer >= 4.5) { // Doubled particle rate (was 9)
+            if (this.slowTrailTimer >= 4.5) {
                 this.slowTrailTimer = 0;
-                const particleX = this.x + this.width / 2;
-                const particleY = this.y; // Spawn at the top
-                const color1 = 'rgba(100, 150, 255, 0.8)';
-                const color2 = 'rgba(173, 216, 230, 0.8)';
-                const particleColor = Math.random() < 0.5 ? color1 : color2;
-                // Create a particle that doesn't move and fades out
-                this.game.particles.push(new Particle(this.game, particleX, particleY, particleColor, 'spark', 2.5, 300, 0, 0)); // Doubled size, 5-second life (300 frames)
+                // Particle pooling will be added later
             }
         }
 
@@ -320,24 +421,28 @@ export default class Missile {
         }
 
         this.kbVy *= 0.9;
-        // We add 100 to the calculation to move the "physics" Y down to match the new UI bar
-this.y += ((currentSpeed + this.kbVy) * tsf);
+        // Recovery logic: if knocked up, slowly return to neutral
+        if (this.kbVy < 0) {
+            this.kbVy = Math.min(0, this.kbVy + (0.05 * tsf)); // Gradually increase towards 0
+        }
+        this.y += ((currentSpeed + this.kbVy) * tsf);
 
         if (this.type === 'gummy_worm') {
             if (this.x < 0) this.x = 0;
             if (this.x + this.width > this.game.width) this.x = this.game.width - this.width;
         }
 
-        if (this.game.gameTime % 8 < 1 * tsf) {
-            const color = (this.type === 'piggy') ? 'rgba(255, 105, 180, 0.6)' : this.color;
-            this.game.particles.push(new Particle(this.game, this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
-            if (Math.random() < 0.3) {
-                this.game.particles.push(new Particle(this.game, this.x + this.width / 2 + (Math.random() - 0.5) * 15, this.y, color, 'drip'));
-            }
+        if (this.y > this.game.PLAYABLE_AREA_HEIGHT - 110) {
+            this.game.castleHealth -= this.damage || 10;
+            this.game.castleHealthBar.triggerHit();
+            this.game.hitStopFrames = 5;
+            this.game.screenShake.trigger(5, 10);
+            this.reset();
         }
     }
 
     draw(ctx) {
+        if (!this.active) return;
         ctx.save();
         if (this.groundProximity) {
             const alpha = Math.abs(Math.sin(this.game.gameTime * 0.1));
@@ -361,7 +466,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             }
         }
 
-        // Draw blue overlay if slowed
         if (this.totalSlow > 0) {
             const tongueSlow = this.slowEffects.find(e => e.source === 'tongue');
             if (tongueSlow) {
@@ -373,9 +477,8 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 ctx.filter = 'none';
                 ctx.globalAlpha = 1;
             } else {
-                ctx.fillStyle = `rgba(100, 150, 255, ${this.totalSlow * 0.5})`; // More opaque for stronger slow
+                ctx.fillStyle = `rgba(100, 150, 255, ${this.totalSlow * 0.5})`;
                 ctx.beginPath();
-                // Use enemy's actual dimensions
                 ctx.roundRect(this.x, this.y, this.width, this.height, 10);
                 ctx.fill();
             }
@@ -395,16 +498,12 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
         ctx.shadowBlur = 0;
 
-        // Draw Jelly Tag Crown
         if (this.isJellyTagged) {
             const crownImg = this.game.tagCrownImage;
-            // --- CROWN SIZE AND POSITION ADJUSTMENT ---
-            // Adjust this value to change the size of the crown
             const crownSize = 40; 
-            // Adjust this value to change the vertical position of the crown
             const yOffset = 50; 
             
-            const bob = Math.sin(this.game.gameTime * 0.1) * 5; // Bobbing effect
+            const bob = Math.sin(this.game.gameTime * 0.1) * 5;
             const crownX = this.x + (this.width - crownSize) / 2;
             const crownY = this.y - yOffset + bob;
 
@@ -415,13 +514,11 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             const pct = Math.max(0, this.health / this.maxHealth);
             const isLow = pct < 0.25;
             
-            // Calculate size based on enemy type
             let sizeMult = 1.0;
             if (this.type === 'piggy') sizeMult = 1.15;
             else if (this.type === 'marshmallow_large') sizeMult = 1.25;
             else if (this.type === 'marshmallow_small') sizeMult = 0.8;
             
-            // Pulsing effect for low health (under 25%)
             const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
             const finalMult = sizeMult * pulse;
             
@@ -435,23 +532,19 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
 
             const frameColor = darkenColor(this.color, 10);
 
-            // Glass Tube Background
             ctx.fillStyle = frameColor + '66'; 
             ctx.beginPath(); ctx.roundRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 10); ctx.fill();
             
-            // Inner Empty Tube
             ctx.fillStyle = darkenColor(frameColor, 30) + '99'; 
             ctx.beginPath(); ctx.roundRect(barX, barY, barWidth, barHeight, 8); ctx.fill();
 
-            // Health Fill Logic (Red < 25%, Yellow < 60%, Green otherwise)
-            let healthFillColor = '#2ecc71'; // Green
-            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
-            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
+            let healthFillColor = '#2ecc71';
+            if (pct < 0.25) healthFillColor = '#ff3131';
+            else if (pct < 0.60) healthFillColor = '#f1c40f';
             
             ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthFillColor;
             ctx.beginPath(); ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8); ctx.fill();
 
-            // Candy Glaze Shine
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.beginPath(); ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 8); ctx.fill();
 
@@ -466,12 +559,10 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 const ty = barY + 5;
                 const val = Math.ceil(this.health);
 
-                // Add the gray border
-                ctx.strokeStyle = '#213625ff'; // Dark gray border
-                ctx.lineWidth = 3;           // Thickness of the border
+                ctx.strokeStyle = '#213625ff';
+                ctx.lineWidth = 3;
                 ctx.strokeText(val, tx, ty);
 
-                // Fill the white text
                 ctx.fillStyle = 'white';
                 ctx.fillText(val, tx, ty);
                 
@@ -496,7 +587,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.translate(cx, cy);
             ctx.scale(this.squash * sizeMultiplier, this.stretch * sizeMultiplier);
             
-            // Glowing aura effect
             if (piggyLevel > 0) {
                 ctx.globalAlpha = 0.6 + Math.sin(this.game.gameTime / 8) * 0.4;
                 ctx.fillStyle = 'gold';
@@ -507,7 +597,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 ctx.globalAlpha = 1.0;
             }
 
-            // Draw the piggy bank image
             if (this.game.piggybankImage && this.game.piggybankImage.complete) {
                 ctx.drawImage(this.game.piggybankImage, -this.width / 2, -this.height / 2, this.width, this.height);
             }
@@ -521,7 +610,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
 
-            // Shadow
             ctx.save();
             ctx.translate(cx, cy + shadowOffset);
             ctx.scale(this.squash * 1.09, this.stretch * 1.09);
@@ -541,7 +629,6 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.stroke();
             ctx.restore();
 
-            // Body
             ctx.save();
             ctx.translate(cx, cy);
             ctx.scale(this.squash, this.stretch);
@@ -563,14 +650,10 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             ctx.restore();
         } else if (this.type.includes('marshmallow')) {
             ctx.save();
-            ctx.translate(this.x + this.width / 2, this.y + this.height / 2); // Center for rotation/scaling
-            ctx.rotate(this.angle); // Apply rotation
-            ctx.scale(this.squash, this.stretch); // Apply squish/stretch
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.rotate(this.angle);
+            ctx.scale(this.squash, this.stretch);
 
-            // Draw shadow for marshmallow
-
-
-            // Draw the marshmallow image
             if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
             }
@@ -578,7 +661,7 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         }
        else {
             const cx = this.x + this.width / 2;
-            const cy = this.y + 40 + this.height / 2;
+            const cy = this.y + this.height / 2; // Removed +40 offset
 
             ctx.save();
             if (this.hitTimer > 0) {
@@ -586,13 +669,14 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
             }
             ctx.translate(cx, cy);
             ctx.rotate(this.angle);
+            ctx.scale(this.scale, this.scale); // Apply animation scale
             
             if (this.sprite) {
                 this.sprite.draw(
                     ctx, 
                     0, 0, 
-                    this.width * this.scale, 
-                    this.height * this.scale, 
+                    this.width, 
+                    this.height, 
                     this.stretch - 1, 
                     this.squash - 1
                 );
@@ -603,19 +687,25 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         }
     }
     
-       kill() { 
-        if (this.dead) return;
-        this.dead = true;
+    kill(spawnX = this.x, spawnY = this.y) {
+        if (!this.active) return;
 
         let numDebris = 0;
-        let cutSize = 2; // Default to 2x2
+        let numCols = 2; // Default for most enemies
+        let numRows = 2; // Default for most enemies
 
-        if (this.type === 'gummy_cluster') { // Assuming 'gummy_cluster' is the type name for the boss
-            numDebris = 4 + Math.floor(Math.random() * 3); // 4-6 for boss
-            cutSize = 3; // 3x3 for boss
-        } else {
-            numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 for normal enemies
-            cutSize = 2; // 2x2 for normal enemies
+        if (this.type === 'gummy_cluster') {
+            numDebris = 4 + Math.floor(Math.random() * 3);
+            numCols = 3;
+            numRows = 3;
+        } else if (this.type === 'gummy_worm') {
+            numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
+            numCols = 1; // 1 column
+            numRows = 4; // 4 rows
+        } else { // For regular enemies
+            numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
+            numCols = 2;
+            numRows = 2;
         }
 
         for (let i = 0; i < numDebris; i++) {
@@ -632,75 +722,20 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
                 spriteHeight = this.height * sizeMultiplier;
             }
             
-            this.game.debris.push(new EnemyDebris(this.game, this, spriteWidth, spriteHeight, cutSize));
+            const debris = this.game.enemyDebrisPool.get(this.game, this, spriteWidth, spriteHeight, numCols, numRows);
         }
         
         const numParticles = 10 + Math.floor(this.maxHealth / 15);
         const source = this.lastDamageSource;
 
         for (let i = 0; i < numParticles; i++) {
-            const radius = Math.random() * 4 + 2;
-            const color = this.game.ENEMY_FROSTING_COLORS[Math.floor(Math.random() * this.game.ENEMY_FROSTING_COLORS.length)];
-            const lifespan = 60 + Math.random() * 30;
-
-            let vx = 0;
-            let vy = 0;
-            
-            const particleSpeed = Math.random() * 10 + 6;
-            const spread = 0.4;
-
-            if (source instanceof Player) {
-                // Case 1: Source is the Player.
-                if (source.lickAnim > 0 && source.lickAngle !== undefined) {
-                     const angle = source.lickAngle;
-                     vx = Math.cos(angle) * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
-                     vy = Math.sin(angle) * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
-                } else {
-                    // It's another player AOE attack (dash, stomp). Radiate outwards from enemy.
-                    const angle = Math.random() * Math.PI * 2;
-                    vx = Math.cos(angle) * particleSpeed;
-                    vy = Math.sin(angle) * particleSpeed;
-                }
-            } else if (source && source.vx !== undefined && source.vy !== undefined) {
-                // Case 2: Source is a projectile or wave attack.
-                const baseSpeed = Math.hypot(source.vx, source.vy);
-                if (baseSpeed > 0) {
-                    const directionX = source.vx / baseSpeed;
-                    const directionY = source.vy / baseSpeed;
-                    vx = directionX * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
-                    vy = directionY * particleSpeed + (Math.random() - 0.5) * spread * particleSpeed;
-                }
-            }
-
-            // Fallback for any other case (DOT kill, no source)
-            if (vx === 0 && vy === 0) {
-                const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 2); // Upward cone
-                vx = Math.cos(angle) * particleSpeed;
-                vy = Math.sin(angle) * particleSpeed;
-            }
-
-            const p = new FrostingParticle(
-                this.game, 
-                this.x + this.width / 2, 
-                this.y + this.height / 2, 
-                vx, 
-                vy, 
-                radius, 
-                color, 
-                lifespan,
-                0.3, // Use a medium "sprinkle" gravity
-                'enemy'
-            );
-            
-            if (Math.random() < 0.6) {
-                this.game.particlesInFront.push(p);
-            } else {
-                this.game.particlesBehind.push(p);
-            }
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 5 + 1;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const color = source && source.isCrit ? '#FFD700' : this.color;
+            this.game.particlePool.get(this.game, spawnX + this.width / 2, spawnY + this.height / 2, color, 'spark', 0.75, vx, vy);
         }
-
-        let xpGained = 0;
-        let maxHealthForXp = this.maxHealth;
 
        let intensity = 4; 
         if (this.type === 'marshmallow_large') intensity = 5;
@@ -708,41 +743,35 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         else if (this.type === 'marshmallow_small') intensity = 2;
         else if (this.type === 'piggy') intensity = 5;
 
-        import('./utils.js?v=25').then(utils => {
+        import('./utils.js?v=26').then(utils => {
             if (utils.ScreenShake && typeof utils.ScreenShake.trigger === 'function') {
                 utils.ScreenShake.trigger(intensity, 15);
             }
         });
-        xpGained = 10 + (maxHealthForXp / 10);
         
-        // Apply emporium multiplier
+        let xpGained = 10 + (this.maxHealth / 10);
         const xpMultiplier = this.game.emporium.getEnemyXpMultiplier();
         xpGained *= xpMultiplier;
 
-        // Use the imported ScreenShake constant
-        import('./utils.js?v=25').then(utils => {
-            if (utils.ScreenShake && typeof utils.ScreenShake.trigger === 'function') {
-                utils.ScreenShake.trigger(intensity, 15);
-            }
-        });
-
         if (this.type === 'marshmallow_large') {
             const parentHeight = this.height;
-            const childHeight = 45 * 1.33; // current scaled medium marshmallow height
-            const spawnY = this.y + (parentHeight / 2) - (childHeight / 2) - 90; // Adjust for constructor offset
+            const childHeight = 45 * 1.33;
+            const spawnY_child = spawnY + (parentHeight / 2) - (childHeight / 2) - 90;
             for (let i = 0; i < 2; i++) {
-                this.game.missiles.push(new Missile(this.game, this.x + (i * 30) - 15, 'marshmallow_medium', spawnY));
+                const missile = this.game.enemyPools['marshmallow_medium'].get(this.game, spawnX + (i * 30) - 15, 'marshmallow_medium', spawnY_child);
             }
+            this.reset();
             return;
         }
 
         if (this.type === 'marshmallow_medium') {
             const parentHeight = this.height;
-            const childHeight = 22 * 1.5; // current scaled small marshmallow height
-            const spawnY = this.y + (parentHeight / 2) - (childHeight / 2) - 90; // Adjust for constructor offset
+            const childHeight = 22 * 1.5;
+            const spawnY_child = spawnY + (parentHeight / 2) - (childHeight / 2) - 90;
             for (let i = 0; i < 2; i++) {
-                this.game.missiles.push(new Missile(this.game, this.x + (i * 20) - 10, 'marshmallow_small', spawnY));
+                const missile = this.game.enemyPools['marshmallow_small'].get(this.game, spawnX + (i * 20) - 10, 'marshmallow_small', spawnY_child);
             }
+            this.reset();
             return;
         }
 
@@ -751,91 +780,43 @@ this.y += ((currentSpeed + this.kbVy) * tsf);
         this.game.enemiesKilled++;
 
         if (this.game.wasLickKill && this.game.player.upgrades['Sugar Rush'] > 0) {
-            this.game.player.sugarRushTimer = 300; // 5 seconds
+            this.game.player.sugarRushTimer = 300;
         }
 
-        // Spawn homing 'soul' particle
-        const thermometerPos = this.game.thermometer.getPosition();
-        const p = new Particle(this.game, this.x + this.width / 2, this.y + this.height / 2, '#add8e6', 'soul', 3.0);
-        p.targetX = thermometerPos.x;
-        p.targetY = thermometerPos.y;
-        // Adjust this value to change the speed of the homing soul
-        p.homingStrength = 4;
-        this.game.particles.push(p);
+        const soul = this.game.soulPool.get(this.game, spawnX + this.width / 2, spawnY + this.height / 2);
 
-        // NEW: Component drop chance tied to Luck
-        // Piggy bank now uses the same component drop chance as other enemies
+        // --- Drop Logic ---
+        this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained);
+
+        const rand = Math.random() * 100;
+        if (rand < this.game.stats.luckHeart) {
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'heart');
+        }
+
+        const randCoin = Math.random() * 100;
+        if (randCoin < this.game.stats.luckCoin) {
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin');
+        } else if (randCoin < 40) { // 40% chance for a regular coin if lucky coin doesn't drop
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'coin');
+        }
+
         const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
         if (Math.random() * 100 < componentDropChance) {
-            this.game.drops.push(new Drop(this.game, this.x, this.y, 'component'));
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
         }
-
-        const dropsToCreate = [];
         
-        let lootMultiplier = 1;
-        let luckMultiplier = 1;
-        let piggyBonus = 0;
-
-        if (this.isJellyTagged) {
-            if (this.type === 'piggy') {
-                piggyBonus = 1;
-            } else {
-                lootMultiplier = 2;
-            }
+        const iceCreamChance = this.game.emporium.getIceCreamChance();
+        if (Math.random() * 100 < (this.type === 'piggy' ? iceCreamChance[1] : iceCreamChance[0])) {
+            this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
         }
-
-        for (let c = 0; c < ((this.type === 'piggy' ? pStats.mult : 1) * lootMultiplier) + piggyBonus; c++) {
-            dropsToCreate.push({ type: 'coin', value: 25 });
-            
-            let xpValue;
-            if (this.type === 'piggy') {
-                xpValue = 10 + (maxHealthForXp / 10);
-            } else {
-                xpValue = xpGained;
-            }
-            dropsToCreate.push({ type: 'xp_orb', value: xpValue });
-            
-            for (let l = 0; l < luckMultiplier; l++) {
-                if (Math.random() * 100 < this.game.stats.luckHeart) dropsToCreate.push({ type: 'heart' });
-                if (Math.random() * 100 < this.game.stats.luckCoin) dropsToCreate.push({ type: 'lucky_coin' });
-
-                const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
-                const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
-                const dropChance = (this.type === 'piggy') ? chances[1] : chances[0];
-                if (Math.random() * 100 < dropChance) {
-                    dropsToCreate.push({ type: 'ice_cream_scoop' });
-                }
-                if (this.game.player.upgrades['Twin Scoop'] > 0) {
-                    if (Math.random() < 0.5) {
-                        dropsToCreate.push({ type: 'ice_cream_scoop' });
-                    }
-                }
-            }
-        }
-
-        if (this.isIceCream) {
-            dropsToCreate.push({ type: 'ice_cream_scoop' });
-        }
-        if (this.isComponentEnemy) {
-            dropsToCreate.push({ type: 'component' });
-        }
-        if (this.isHeartEnemy) {
-            dropsToCreate.push({ type: 'heart' });
-        }
-
-        dropsToCreate.forEach((dropData, i) => {
-            const delay = dropData.type === 'coin' ? 0 : (i + 1) * 100;
-            setTimeout(() => {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, dropData.type, dropData.value));
-            }, delay);
-        });
 
         if (this.type === 'piggy') {
-            // Removed the guaranteed component drop for piggy
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;
             this.game.handlePiggyDeath(bonus);
         }
+
+        this.reset();
     }
 }

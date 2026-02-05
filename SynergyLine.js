@@ -1,26 +1,45 @@
 export default class SynergyLine {
-    constructor(game, startTower, endTower) {
+    constructor() {
+        // Constructor is now parameterless, init() handles actual setup
+        this.active = false;
+    }
+
+    init(game, startTower, endTower) {
         this.game = game;
         this.startTower = startTower;
         this.endTower = endTower;
         
         this.life = 80; // Animation duration in frames
         this.maxLife = this.life;
-        this.dead = false;
+        // this.dead = false; // 'dead' is replaced by 'active' flag
 
         this.hue = Math.random() * 360; // For color
+        this.active = true;
+    }
+
+    reset() {
+        this.active = false;
+        this.game = null;
+        this.startTower = null;
+        this.endTower = null;
+        this.life = 0;
+        this.maxLife = 0;
+        this.hue = 0;
     }
 
     update(tsf) {
+        if (!this.active) return;
+
         this.life -= tsf;
         if (this.life <= 0) {
-            this.dead = true;
+            this.game.synergyLinePool.returnToPool(this);
+            return;
         }
         this.hue = (this.hue + 2 * tsf) % 360; // Slow color shift
     }
 
     draw(ctx) {
-        if (this.dead || !this.startTower || !this.endTower) return;
+        if (!this.active) return; // Only draw active synergy lines
 
         // Calculate a life ratio that goes from 0 -> 1 -> 0 for a smooth fade-in and fade-out
         const progress = 1 - (this.life / this.maxLife);

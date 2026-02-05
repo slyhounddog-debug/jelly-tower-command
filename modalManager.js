@@ -363,7 +363,7 @@ export default class ModalManager {
     createSparks() {
         const shopButton = this.game.ui.shopButton;
         const x = shopButton.x + shopButton.width / 2;
-        const y = shopButton.y + shopButton.height / 2;
+        const y = shopButton.y + 100; // 100 pixels down
 
         const themedColors = {
             shop: ['#fdffb6', '#ffd6a5'],
@@ -374,9 +374,17 @@ export default class ModalManager {
 
         const colors = themedColors[this.activeModal] || ['#ffffff'];
 
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 5; i++) { // Half the particles
             const color = colors[Math.floor(Math.random() * colors.length)];
-            this.game.particles.push(new Particle(this.game, x, y, color, 'spark'));
+            const particle = this.game.particlePool.get();
+            if (particle) {
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 2);
+                const speed = Math.random() * 6 + 3; // Increased speed
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const initialSize = (Math.random() * 3 + 2) * 1.25; // 25% larger particles
+                particle.init(this.game, x, y, color, 'spark', initialSize, 0.5, vx, vy); // Half the lifespan
+            }
         }
     }
 

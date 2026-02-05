@@ -100,11 +100,11 @@ export default class initLevel {
         // Cloud Platforms logic
         const floatingConfigs = [
             { x: 80, y: game.PLAYABLE_AREA_HEIGHT - 580, width: 280, height: 75 },
-            { x: 820, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 290, height: 75 },
+            { x: 750, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 320, height: 75 },
             { x: 500, y: game.PLAYABLE_AREA_HEIGHT - 850, width: 300, height: 79 },
             { x: 120, y: game.PLAYABLE_AREA_HEIGHT - 1050, width: 275, height: 70 },
-            { x: 760, y: game.PLAYABLE_AREA_HEIGHT - 1150, width: 285, height: 70 },
-            { x: 450, y: game.PLAYABLE_AREA_HEIGHT - 1400, width: 295, height: 75 }
+            { x: 810, y: game.PLAYABLE_AREA_HEIGHT - 1110, width: 285, height: 70 },
+            { x: 410, y: game.PLAYABLE_AREA_HEIGHT - 1400, width: 375, height: 88 }
         ];
 
         floatingConfigs.forEach(cfg => {

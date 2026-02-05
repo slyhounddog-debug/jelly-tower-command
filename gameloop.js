@@ -1,8 +1,7 @@
-import Missile from './missile.js';
-import Particle from './particle.js';
 import { darkenColor } from './utils.js';
 import Gumball from './gumball.js';
 import FrostingParticle from './frostingParticle.js';
+import Particle from './particle.js';
 
 
 export default class GameLoop {
@@ -21,8 +20,6 @@ export default class GameLoop {
             this.game.isPaused = true;
             this.game.modalManager.update((currentTime - (this.game.lastTime || currentTime)) / this.game.targetFrameTime);
         } else if (this.game.isPaused && !this.game.sellModeActive && !this.game.levelingManager.isLevelingUp) {
-            // If nothing else is keeping the game paused, unpause it.
-            // This is to handle the case where a modal was closed, but the game remained paused.
             this.game.isPaused = false;
         }
 
@@ -32,13 +29,13 @@ export default class GameLoop {
             return;
         }
         if (!this.game.lastTime) this.game.lastTime = currentTime;
-        const deltaTime = Math.min(100, currentTime - this.game.lastTime); // Cap delta to prevent physics explosion
+        const deltaTime = Math.min(100, currentTime - this.game.lastTime);
         this.game.lastTime = currentTime;
                 let tsf = deltaTime / this.game.targetFrameTime;
                 if (this.game.isBuilding) {
-                    tsf *= 0.05; // Slow down by 95%
+                    tsf *= 0.05;
                 }
-                this.game.update(tsf); // Call the game's main update method regardless of pause state
+                this.game.update(tsf);
         
                 this.game.screenShake.update(tsf);
         
@@ -46,17 +43,13 @@ export default class GameLoop {
                 this.game.background.draw(this.game.ctx, this.game.PLAYABLE_AREA_HEIGHT);
                 
         
-        // Sell Mode Activation - This should run even if the game is "paused" for building, etc.
         if (this.game.heldTurret && !this.game.sellModeActive) {
-            if (Date.now() - this.game.sellTimer > 10) { // 400ms hold to activate
+            if (Date.now() - this.game.sellTimer > 10) {
                 this.game.sellModeActive = true;
-                this.game.isPaused = true; // Pause game for selling interaction
+                this.game.isPaused = true;
             }
         }
 
-        // Check for full game pause (e.g., modals, sell mode)
-        //         if ((!this.game.isPaused || this.game.isBuilding) && !this.game.isGameOver) {
-            // Game Over logic should only run when not paused and not already over
             if (this.game.castleHealth <= 0) {
                 this.game.isGameOver = true;
                 this.game.isPaused = true;
@@ -82,9 +75,7 @@ export default class GameLoop {
                 document.getElementById('go-score').textContent = finalScore.toLocaleString();
                 document.getElementById('go-high-score').textContent = highScore.toLocaleString();
             }
-        // --- ALL UPDATES BELOW THIS LINE RUN DURING BULLET TIME (tsf is small) BUT NOT DURING FULL PAUSE ---
         if (!this.game.isPaused) {
-        // GEMINI_UPDATE_BLOCK_START
         this.game.gameTime += tsf;
         this.game.threatManager.update(tsf);
 
@@ -98,7 +89,6 @@ export default class GameLoop {
                 this.game.shopReminderShown = true;
                 const reminder = document.getElementById('shop-o');
                 if (reminder) reminder.style.display = 'block';
-                // Note: we don't unpause here, only allow reminder to show
             }
 
             const pLvl = this.game.emporiumUpgrades.piggy_cooldown.level;
@@ -106,79 +96,58 @@ export default class GameLoop {
             this.game.piggyTimer += tsf;
             if (this.game.piggyTimer >= pCooldown) {
                 this.game.piggyTimer = 0;
-                this.game.missiles.push(new Missile(this.game, Math.random() * (this.game.width - 90) + 25, 'piggy'));
+                this.game.enemyPools['piggy'].get(this.game, Math.random() * (this.game.width - 90) + 25, 'piggy');
                 if (!this.game.piggyBankSeen) {
                     this.game.piggyBankSeen = true;
-                    // We don't pause here, this is just for the first time pop-up.
-                    // The modal itself will handle pausing if it's new.
                     const curCD = this.game.emporiumUpgrades.piggy_cooldown.values[pLvl];
                     this.game.modalManager.toggle('piggy');
                 }
             }
 
-            // Individual entity updates (now all run during bullet time)
-            // this.game.player.update(tsf) is now managed by this.game.update(tsf)
-            // this.game.towers.forEach(t => t.update(tsf)) is now managed by this.game.update(tsf)
             this.game.castleHealthBar.update(tsf);
             this.game.thermometer.update(tsf);
             if (this.game.boss) this.game.boss.update(tsf);
 
-            for (let i = this.game.missiles.length - 1; i >= 0; i--) {
-                const m = this.game.missiles[i];
-                m.update(tsf);
-                if (m.dead) continue;
-                if (m.health <= 0) { m.kill(); continue; }
-                if (m.y > this.game.PLAYABLE_AREA_HEIGHT - 110) {  // enemy death vertical threshold 
-                    this.game.castleHealth -= m.damage || 10;
-                    this.game.castleHealthBar.triggerHit();
-                    m.dead = true;
-                    this.game.hitStopFrames = 5;
-                    this.game.screenShake.trigger(5, 10);
-                    // Old smoke particles removed
+            // Check for missiles reaching castle (modified to use pools)
+            for (const type in this.game.enemyPools) {
+                this.game.enemyPools[type].forEach(m => {
+                    if (m.active && m.y > this.game.PLAYABLE_AREA_HEIGHT - 110) {  // enemy death vertical threshold 
+                        this.game.castleHealth -= m.damage || 10;
+                        this.game.castleHealthBar.triggerHit();
+                        this.game.hitStopFrames = 5;
+                        this.game.screenShake.trigger(5, 10);
+                        // Old smoke particles removed - These will need pooling later
+                        const particleCount = 10 + Math.floor(Math.random() * 10);
+                        for (let k = 0; k < particleCount; k++) {
+                            const colorChoice = Math.random();
+                            let color;
+                            if (colorChoice < 0.5) {
+                                color = this.game.ENEMY_FROSTING_COLORS[Math.floor(Math.random() * this.game.ENEMY_FROSTING_COLORS.length)];
+                            } else {
+                                color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                            }
+                            
+                            const vx = (Math.random() - 0.5) * 8;
+                            const vy = -Math.random() * 10 - 2;
+                            const radius = Math.random() * 5 + 2;
+                            const lifespan = 40 + Math.random() * 20;
 
-                    // Ground impact particles
-                    const particleCount = 10 + Math.floor(Math.random() * 10); // 10-19 particles (doubled)
-                    for (let k = 0; k < particleCount; k++) {
-                        const colorChoice = Math.random();
-                        let color;
-                        if (colorChoice < 0.5) {
-                            color = this.game.ENEMY_FROSTING_COLORS[Math.floor(Math.random() * this.game.ENEMY_FROSTING_COLORS.length)];
-                        } else {
-                            color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
+                            this.game.frostingParticlePool.get(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan, 0.15, 'enemy');
                         }
-                        
-                        const vx = (Math.random() - 0.5) * 8; // Outward horizontal burst
-                        const vy = -Math.random() * 10 - 2; // Mostly upward velocity
-                        const radius = Math.random() * 5 + 2;
-                        const lifespan = 40 + Math.random() * 20;
-
-                        this.game.particles.push(new FrostingParticle(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan));
+                        this.game.damageSpotPool.get(this.game, m.x + m.width / 2, m.y + m.height / 2, m.width * 0.5);
+                        m.reset(); // Return to pool by deactivating
                     }
-                    
-                    const castlePlats = this.game.platforms.filter(p => p.type === 'castle' || p.type === 'ground');
-                }
+                });
             }
-            this.game.missiles = this.game.missiles.filter(m => !m.dead);
 
             this.game.currentScore = (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned) + (this.game.gameTime / 30);
             // document.getElementById('score-display').textContent = this.game.currentScore.toFixed(0);
         // GEMINI_UPDATE_BLOCK_END
 
 
-            for (let i = this.game.projectiles.length - 1; i >= 0; i--) {
-                const p = this.game.projectiles[i];
-                p.update(tsf);
-                if (p.x < 0 || p.x > this.game.width || p.y < 0 || p.y > this.game.height || p.dead) {
-                    if (p.popRockStacks > 0) {
-                        p.createExplosion();
-                    }
-                    if (!p.hasHit) {
-                        this.game.audioManager.playSound('miss');
-                    }
-                    this.game.projectiles.splice(i, 1);
-                    continue;
-                }
-                
+            this.game.projectilesPool.forEach(p => {
+                if (!p.active) return; // Should not be needed if pool is managed correctly, but as a safeguard
+
                 if (this.game.boss && !p.hasHitBoss &&
                     p.x > this.game.boss.x + this.game.boss.hitboxOffsetX &&
                     p.x < this.game.boss.x + this.game.boss.hitboxOffsetX + this.game.boss.hitboxWidth &&
@@ -187,69 +156,71 @@ export default class GameLoop {
                     const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                     let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
                     this.game.boss.takeDamage(dmg, isCrit);
-                    this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
+                    this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark');
                     if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                     p.hasHitBoss = true;
                     if (p.popRockStacks > 0) {
                         p.createExplosion();
                     }
-                    // Only remove non-piercing projectiles. Piercing projectiles continue.
-                    if (!p.chainBounceCount) { // If it's not a chain bounce projectile, remove it
-                        this.game.projectiles.splice(i, 1);
+                    if (!p.chainBounceCount) {
+                        p.reset(); // Return to pool
                     }
-                    continue;
                 }
 
-                for (let j = this.game.missiles.length - 1; j >= 0; j--) {
-                    const m = this.game.missiles[j];
-                    if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
-                        const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
-                        let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
-                        if (p.fireDamageCount > 0) {
-                            m.applyFire(dmg, p.fireDamageCount);
+                for (const type in this.game.enemyPools) {
+                    let hit = false;
+                    this.game.enemyPools[type].forEach(m => {
+                        if (!m.active) return;
+                        if (p.x > m.x && p.x < m.x + m.width && p.y > m.y && p.y < m.y + m.height) {
+                            const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
+                            let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
+                            if (p.fireDamageCount > 0) {
+                                m.applyFire(dmg, p.fireDamageCount);
+                            }
+                            if (p.freezeStacks > 0) {
+                                m.applySlow(300, 0.1 * p.freezeStacks);
+                            }
+                            if (m.takeDamage(dmg, isCrit, p)) m.kill();
+                            m.kbVy = -2;
+                            this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark');
+                            if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
+                            if (p.popRockStacks > 0) {
+                                p.createExplosion();
+                            }
+                            if (!p.chainBounceCount) {
+                                p.reset(); // Return to pool
+                            }
+                            hit = true;
                         }
-                        if (p.freezeStacks > 0) {
-                            m.applySlow(300, 0.1 * p.freezeStacks);
-                        }
-                        if (m.takeDamage(dmg, isCrit, p)) m.kill();
-                        m.kbVy = -2;
-                        this.game.particles.push(new Particle(this.game, p.x, p.y, '#fff', 'spark'));
-                        if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
-                        if (p.popRockStacks > 0) {
-                            p.createExplosion();
-                        }
-                        this.game.projectiles.splice(i, 1);
-                        break;
-                    }
+                    });
+                    if (hit) break; // Break from enemy type loop if hit, to prevent multiple hits per projectile per frame
                 }
-            }
+            });
 
             // Gravity Pull component logic
-            this.game.projectiles.forEach(p => {
+            this.game.projectilesPool.forEach(p => {
                 if (p.gravityPullCount > 0) {
                     const pullRange = 50 * (1 + p.gravityPullCount * 0.15);
                     const pullForce = 0.1 * (1 + p.gravityPullCount * 0.15);
-                    this.game.missiles.forEach(m => {
-                        const dist = Math.hypot(p.x - m.x, p.y - m.y);
-                        if (dist < pullRange) {
-                            const angle = Math.atan2(p.y - m.y, p.x - m.x);
-                            m.x += Math.cos(angle) * pullForce * tsf;
-                            m.y += Math.sin(angle) * pullForce * tsf;
-                        }
-                    });
+                    for (const type in this.game.enemyPools) {
+                        this.game.enemyPools[type].forEach(m => {
+                            if (m.active) {
+                                const dist = Math.hypot(p.x - m.x, p.y - m.y);
+                                if (dist < pullRange) {
+                                    const angle = Math.atan2(p.y - m.y, p.x - m.x);
+                                    m.x += Math.cos(angle) * pullForce * tsf;
+                                    m.y += Math.sin(angle) * pullForce * tsf;
+                                }
+                            }
+                        });
+                    }
                 }
             });
 
             // Cleanup
-            for (let i = this.game.drops.length - 1; i >= 0; i--) { this.game.drops[i].update(tsf); if (this.game.drops[i].life <= 0) this.game.drops.splice(i, 1); }
-            for (let i = this.game.particles.length - 1; i >= 0; i--) { this.game.particles[i].update(tsf); if (this.game.particles[i].life <= 0) this.game.particles.splice(i, 1); }
-            for (let i = this.game.floatingTexts.length - 1; i >= 0; i--) { this.game.floatingTexts[i].update(tsf); if (this.game.floatingTexts[i].life <= 0) this.game.floatingTexts.splice(i, 1); }
-            for (let i = this.game.waveAttacks.length - 1; i >= 0; i--) { this.game.waveAttacks[i].update(tsf); if (this.game.waveAttacks[i].lifespan <= 0) this.game.waveAttacks.splice(i, 1); }
+            
             for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
             for (let i = this.game.swipeParticles.length - 1; i >= 0; i--) { this.game.swipeParticles[i].update(tsf); if (this.game.swipeParticles[i].life <= 0) this.game.swipeParticles.splice(i, 1); }
-            for (let i = this.game.particlesBehind.length - 1; i >= 0; i--) { this.game.particlesBehind[i].update(tsf); if (this.game.particlesBehind[i].lifespan <= 0) this.game.particlesBehind.splice(i, 1); }
-            for (let i = this.game.particlesInFront.length - 1; i >= 0; i--) { this.game.particlesInFront[i].update(tsf); if (this.game.particlesInFront[i].lifespan <= 0) this.game.particlesInFront.splice(i, 1); }
-            for (let i = this.game.debris.length - 1; i >= 0; i--) { this.game.debris[i].update(tsf); if (this.game.debris[i].dead) this.game.debris.splice(i, 1); }
 
             this.game.decalManager.update(tsf);
             this.game.lootPopupManager.update(deltaTime);
@@ -317,27 +288,39 @@ export default class GameLoop {
 
         this.game.towers.forEach(t => t.draw(this.game.ctx));
 
-        // Draw synergy lines once per frame, after missiles but before projectiles
         this.game.decalManager.draw(this.game.ctx);
         if (this.game.boss) this.game.boss.draw(this.game.ctx);
-        this.game.missiles.forEach(m => m.draw(this.game.ctx));
+        // Draw enemies from pools
+        for (const type in this.game.enemyPools) {
+            this.game.enemyPools[type].draw(this.game.ctx);
+        }
         // Draw synergy lines once per frame, after missiles but before projectiles
-        this.game.synergyLines.forEach(line => line.draw(this.game.ctx));
-        this.game.projectiles.forEach(p => p.draw(this.game.ctx));
-        this.game.drops.filter(d => !d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
-        this.game.particles.forEach(p => p.draw(this.game.ctx));
+        this.game.synergyLinePool.draw(this.game.ctx);
+        // Draw projectiles from pool
+        this.game.projectilesPool.draw(this.game.ctx);
+        this.game.dropPool.forEach(d => { if (!d.isBeingLicked) d.draw(this.game.ctx); });
         this.game.thermometer.draw(this.game.ctx);
         this.game.xpBar.draw(this.game.ctx);
-        this.game.particlesBehind.forEach(p => p.draw(this.game.ctx));
-        this.game.debris.forEach(d => d.draw(this.game.ctx));
+        // Draw souls from pool
+        this.game.soulPool.draw(this.game.ctx);
+        // Draw particles from pool
+        this.game.particlePool.draw(this.game.ctx);
+        // Draw debris from pool
+        this.game.enemyDebrisPool.draw(this.game.ctx);
+        // Draw frosting particles from pool
+        this.game.frostingParticlePool.draw(this.game.ctx);
+        // Draw damage spots from pool
+        this.game.damageSpotPool.draw(this.game.ctx);
+        // Draw wave attacks from pool
+        this.game.waveAttackPool.draw(this.game.ctx);
 
         this.game.player.draw(this.game.ctx);
         this.game.drawSwipeTrail(this.game.ctx);
         this.game.swipeParticles.forEach(p => p.draw(this.game.ctx));
-        this.game.drops.filter(d => d.isBeingLicked).forEach(d => d.draw(this.game.ctx));
-        this.game.waveAttacks.forEach(wa => wa.draw(this.game.ctx));
+        this.game.dropPool.forEach(d => { if (d.isBeingLicked) d.draw(this.game.ctx); });
         this.game.gumballs.forEach(g => g.draw(this.game.ctx));
-        this.game.floatingTexts.forEach(ft => ft.draw(this.game.ctx));
+        // Draw floating texts from pool
+        this.game.floatingTextPool.draw(this.game.ctx);
 
         this.game.lootPopupManager.draw(this.game.ctx);
 

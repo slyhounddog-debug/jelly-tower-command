@@ -1,9 +1,13 @@
 export default class FloatingText {
-    constructor(game, x, y, text, color = 'white', sizeIncrease = 0) {
+    constructor() {
+        this.active = false;
+    }
+
+    init(game, x, y, text, color = 'white', sizeIncrease = 0) {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.text = text;
+        this.contentString = text;
         this.life = 60; 
         this.opacity = 1;
         this.color = color;
@@ -14,16 +18,30 @@ export default class FloatingText {
         this.vy = -5 - Math.random() * 3;    // Initial upward burst
         this.gravity = 0.6;                  // Pulls the number down slightly
         this.scale = 1.6;                    // Start big for "impact"
+        this.active = true;
+    }
+
+    reset() {
+        this.x = 0;
+        this.y = 0;
+        this.contentString = '';
+        this.life = 0;
+        this.opacity = 0;
+        this.active = false;
     }
 
     update(tsf) {
+        if (!this.active) return;
         // Apply physics
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
         this.vy += this.gravity * tsf;
         
         this.life -= 2 * tsf;
-        if (this.life < 0) this.life = 0;
+        if (this.life <= 0) {
+            this.reset();
+            return;
+        }
         this.opacity = this.life / 60;
         
         // Shrink scale back to normal over time
@@ -31,6 +49,7 @@ export default class FloatingText {
     }
 
     draw(ctx) {
+        if (!this.active) return;
         ctx.save();
         ctx.globalAlpha = this.opacity;
         
@@ -45,11 +64,11 @@ export default class FloatingText {
         ctx.strokeStyle = '#0c0202ff';
         ctx.lineWidth = 1;
         ctx.lineJoin = 'round';
-        ctx.strokeText(this.text, 0, 0);
+        ctx.strokeText(this.contentString, 0, 0);
 
         // 2. Draw main color
         ctx.fillStyle = this.color;
-        ctx.fillText(this.text, 0, 0);
+        ctx.fillText(this.contentString, 0, 0);
 
         ctx.restore();
     }

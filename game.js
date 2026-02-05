@@ -3,13 +3,13 @@ const FORCE_MOBILE_DEBUG = false;
 import Player from './player.js?v=2';
 import SynergyLine from './SynergyLine.js';
 import Tower from './tower.js';
-import Missile from './missile.js?v=25';
+import Missile from './missile.js?v=26';
 import ThreatManager from './threatManager.js';
-import { ScreenShake, darkenColor, lightenColor, showNotification } from './utils.js?v=25';
-import Drop from './drop.js?v=25';
+import { ScreenShake, darkenColor, lightenColor, showNotification } from './utils.js?v=26';
+import Drop from './drop.js?v=26';
 import Particle from './particle.js';
 import WaveAttack from './waveAttack.js';
-import FloatingText from './floatingText.js?v=25';
+import FloatingText from './floatingText.js?v=26';
 import DamageSpot from './damageSpot.js';
 import CastleHealthBar from './castleHealthBar.js';
 import initLevel from './initLevel.js';
@@ -32,11 +32,17 @@ import ModalManager from './modalManager.js';
 import Shop from './shop.js';
 import ComponentQuarters from './componentQuarters.js';
 import SwipeParticle from './swipeParticle.js';
+import ObjectPool from './objectPool.js';
+import Soul from './Soul.js';
+import EnemyDebris from './EnemyDebris.js';
+import Projectile from './projectile.js';
+import FrostingParticle from './frostingParticle.js';
 
 class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = this.canvas.getContext('2d');
+        this.money = 0; // Moved here to ensure it's defined early
         this.width = this.canvas.width;
         this.boss = null;
         this.bossesKilled = 0;
@@ -271,14 +277,131 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         this.thermometer = new Thermometer(this);
         this.drawing = new Drawing(this);
-        this.emporium = new Emporium(this);
-        this.emporium.loadEmporiumUpgrades(); // Essential to load upgrade levels
+        // this.emporium = new Emporium(this); // Moved to init()
+        // this.emporium.loadEmporiumUpgrades(); // Moved to init()
         this.gameLoop = new GameLoop(this);
         this.timeScale = 1; // New property for controlling game speed
 
 
         this.player = new Player(this);
 
+        // this.stats will be moved here
+        this.modalManager = new ModalManager(this); // ModalManager must be defined first
+        // this.shop = new Shop(this); // Moved to init()
+        // this.levelUpManagerScreen = new LevelUpManagerScreen(this); // Moved to init()
+
+        this.platforms = [];
+        this.towers = [];
+        // this.missiles = []; // Replaced by enemyPools
+        // this.projectiles = []; // Replaced by projectilePool
+        this.projectilesPool = new ObjectPool(Projectile, 100);
+        this.particlePool = new ObjectPool(Particle, 1000); // Increased pool size to address "Pool of Particle is full" warning
+        this.soulPool = new ObjectPool(Soul, 100);
+        this.synergyLinePool = new ObjectPool(SynergyLine, 50);
+        this.frostingParticlePool = new ObjectPool(FrostingParticle, 300);
+        this.dropPool = new ObjectPool(Drop, 50);
+        this.floatingTextPool = new ObjectPool(FloatingText, 100);
+        this.damageSpotPool = new ObjectPool(DamageSpot, 50);
+        this.waveAttackPool = new ObjectPool(WaveAttack, 20);
+        this.currentRPM = 9.25;
+        this.currentId = 0;
+        this.gumballs = [];
+        this.particlesBehind = [];
+        this.particlesInFront = [];
+        this.waveAttacks = [];
+        this.floatingTexts = [];
+        this.synergyLines = [];
+        // this.debris = []; // Replaced by enemyDebrisPool
+        // this.debris = []; // Replaced by enemyDebrisPool
+        this.enemyDebrisPool = new ObjectPool(EnemyDebris, 100);
+
+        // Enemy Pools
+        this.enemyPools = {
+            'missile': new ObjectPool(Missile, 40), // Fodder
+            'gummy_worm': new ObjectPool(Missile, 40), // Fodder
+            'donut': new ObjectPool(Missile, 30), // Elite
+            'component_enemy': new ObjectPool(Missile, 30), // Elite
+            'ice_cream': new ObjectPool(Missile, 30), // Elite
+            'marshmallow_medium': new ObjectPool(Missile, 30), // Elite
+            'marshmallow_small': new ObjectPool(Missile, 30), // Elite
+            'jelly_pudding': new ObjectPool(Missile, 15), // Heavy
+            'jaw_breaker': new ObjectPool(Missile, 15), // Heavy
+            'marshmallow_large': new ObjectPool(Missile, 15), // Heavy
+            'piggy': new ObjectPool(Missile, 10),
+            'heartenemy': new ObjectPool(Missile, 30),
+            'gummy_bear': new ObjectPool(Missile, 30),
+        };
+
+        this.levelingManager = new LevelingManager(this);
+        this.levelingManager.initializePlayer(this.player);
+        this.xpBar = new XPBar(this);
+        this.levelUpScreen = new LevelUpScreen(this);
+        this.threatManager = new ThreatManager(this);
+        this.screenShake = ScreenShake;
+        this.castleHealthBar = new CastleHealthBar(this);
+
+
+        this.buildButtonImage = new Image();
+        this.buildButtonImage.src = 'assets/Images/buildbutton.png';
+        this.shopButtonImage = new Image();
+        this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';        this.settingButtonImage = new Image();
+        this.settingButtonImage.src = 'assets/Images/settings.png';
+
+        this.ui = {
+            barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0, // 500px for mobile, 0px for PC
+            buildButton: {
+                img: this.buildButtonImage, // This will be dynamically managed
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
+            },
+            cancelButton: { // New: for the cancel button during build mode
+                img: this.cancelButtonImage,
+                x: 0, y: 0, width: 80, height: 80,
+                activeImg: this.cancelButtonActiveImage,
+            },
+            shopButton: {
+                img: this.shopButtonImage,
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
+            },
+            settingsButton: {
+                img: this.settingButtonImage, // Added img property
+                x: 0, y: 0, width: 80, height: 80,
+                isAnimating: false,
+                animTimer: 0,
+                animDuration: 12
+            },
+            readyButton: {
+                x: 0, y: 0, width: 0, height: 0
+            },
+            sellButton: {
+                visible: false, alpha: 0, x: 0, y: 0, width: 80, height: 80
+            },
+            sellButton: {
+                visible: false, alpha: 0, x: 0, y: 0, width: 120, height: 120,
+                animTimer: 0,
+                animDuration: 12, // 20% faster (was 15)
+                isAnimatingIn: false,
+                isAnimatingOut: false
+            },
+            moneyTextPos: { x: 0, y: 0 },
+            xpBarPos: { x: 0, y: 0 }
+        };
+
+        this.uiShake = { money: 0, xp: 0, turretCost: 0 };
+
+        this.initListeners();
+        this.injectMobileControls();
+    }
+
+    init() {
+        // Initializations moved from constructor
+        this.emporium = new Emporium(this);
+        this.emporium.loadEmporiumUpgrades();
         this.stats = {
             damageLvl: 0,
             fireRateLvl: 0,
@@ -311,7 +434,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
             },
             get piggyStats() { return this.game.PIGGY_TIERS[Math.min(this.piggyLvl, this.game.PIGGY_TIERS.length - 1)]; },
         };
-
         this.shopItems = [
             { id: 'dmg', name: 'Tower Damage', icon: '💥', desc: 'Increases tower damage & auto-turret damage.', type: 'upgrade', 
               getCost: () => (this.stats.damageLvl >= this.DAMAGE_TIERS.length - 1) ? 'MAX' : this.UPGRADE_COSTS[this.stats.damageLvl], 
@@ -386,93 +508,11 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
         ];
         this.selectedShopItem = this.shopItems[0];
-        
-        this.modalManager = new ModalManager(this); // ModalManager must be defined first
-        this.shop = new Shop(this);
-        this.levelUpManagerScreen = new LevelUpManagerScreen(this);
-
-        this.platforms = [];
-        this.towers = [];
-        this.missiles = [];
-        this.projectiles = [];
-        this.particles = [];
-        this.synergyLines = [];
-        this.drops = [];
-        this.floatingTexts = [];
-        this.damageSpots = [];
-        this.waveAttacks = [];
-        this.currentRPM = 9.25;
-        this.currentId = 0;
-        this.gumballs = [];
-        this.particlesBehind = [];
-        this.particlesInFront = [];
-        this.debris = [];
-
-        this.levelingManager = new LevelingManager(this);
-        this.levelingManager.initializePlayer(this.player);
-        this.xpBar = new XPBar(this);
-        this.levelUpScreen = new LevelUpScreen(this);
-        this.threatManager = new ThreatManager(this);
-        this.screenShake = ScreenShake;
-        this.castleHealthBar = new CastleHealthBar(this);
-
-
-        this.buildButtonImage = new Image();
-        this.buildButtonImage.src = 'assets/Images/buildbutton.png';
-        this.shopButtonImage = new Image();
-        this.shopButtonImage.src = 'assets/Images/shopbuttonup.png';        this.settingButtonImage = new Image();
-        this.settingButtonImage.src = 'assets/Images/settings.png';
-
-        this.ui = {
-            barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0, // 500px for mobile, 0px for PC
-            buildButton: {
-                img: this.buildButtonImage, // This will be dynamically managed
-                x: 0, y: 0, width: 80, height: 80,
-                isAnimating: false,
-                animTimer: 0,
-                animDuration: 12
-            },
-            cancelButton: { // New: for the cancel button during build mode
-                img: this.cancelButtonImage,
-                x: 0, y: 0, width: 80, height: 80,
-                activeImg: this.cancelButtonActiveImage,
-            },
-            shopButton: {
-                img: this.shopButtonImage,
-                x: 0, y: 0, width: 80, height: 80,
-                isAnimating: false,
-                animTimer: 0,
-                animDuration: 12
-            },
-            settingsButton: {
-                img: this.settingButtonImage, // Added img property
-                x: 0, y: 0, width: 80, height: 80,
-                isAnimating: false,
-                animTimer: 0,
-                animDuration: 12
-            },
-            readyButton: {
-                x: 0, y: 0, width: 0, height: 0
-            },
-            sellButton: {
-                visible: false, alpha: 0, x: 0, y: 0, width: 80, height: 80
-            },
-            sellButton: {
-                visible: false, alpha: 0, x: 0, y: 0, width: 120, height: 120,
-                animTimer: 0,
-                animDuration: 12, // 20% faster (was 15)
-                isAnimatingIn: false,
-                isAnimatingOut: false
-            },
-            moneyTextPos: { x: 0, y: 0 },
-            xpBarPos: { x: 0, y: 0 }
-        };
-
-        this.uiShake = { money: 0, xp: 0, turretCost: 0 };
-
-        this.initListeners();
-        this.injectMobileControls();
+        this.shop = new Shop(this); // Moved from constructor
+        this.levelUpManagerScreen = new LevelUpManagerScreen(this); // Moved from constructor
+        this.updateStatsWindow();
     }
+
 
     addMoney(amount) {
         if (amount <= 0) return;
@@ -490,13 +530,13 @@ Object.entries(colors).forEach(([name, rgb]) => {
     triggerMoneyAnimation(amount) {
         this.uiShake.money = 15;
         const pos = this.ui.moneyTextPos;
-        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+$${amount}`, '#fdffb6'));
+        this.floatingTextPool.get(this, pos.x, pos.y, `+$${amount}`, '#fdffb6');
     }
 
     triggerXpAnimation(amount) {
         this.uiShake.xp = 15;
         const pos = this.ui.xpBarPos;
-        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+${amount.toFixed(0)} XP`, '#9bf6ff'));
+        this.floatingTextPool.get(this, pos.x, pos.y, `+${amount.toFixed(0)} XP`, '#9bf6ff');
     }
 
     triggerTurretCostAnimation() {
@@ -971,7 +1011,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     // Create "poof" effect at the correct location
                     const poofY = (this.highlightedSlot.id === 'cancel') ? this.highlightedSlot.y - (this.ui.cancelButton.height * 1.55 / 2) + 30 : this.highlightedSlot.y - 80;
                     for (let i = 0; i < 25; i++) {
-                        this.particles.push(new Particle(this, this.highlightedSlot.x, poofY, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
+                        this.particlePool.get(this, this.highlightedSlot.x, poofY, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8);
                     }
 
                     this.audioManager.playSound('reset'); // Play a cancel sound
@@ -999,7 +1039,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
                                         // 100% chance to create a synergy line
                                         const delay = Math.random() * 500; // Stagger animations slightly
                                         setTimeout(() => {
-                                            this.synergyLines.push(new SynergyLine(this, towerA, towerB));
+                                            this.synergyLinePool.get(this, towerA, towerB);
                                         }, delay);
                                     }
                                 }
@@ -1236,10 +1276,19 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.stats.criticalHitLvl = 0;
         this.stats.turretsBought = 0;
 
-        this.missiles = []; this.projectiles = []; this.particles = []; this.drops = []; this.floatingTexts = []; this.waveAttacks = [];
+        // Clear object pools
+        this.projectilesPool.reset();
+        this.soulPool.reset();
+        this.floatingTextPool.reset();
+        this.enemyDebrisPool.reset();
+        for (const type in this.enemyPools) {
+            this.enemyPools[type].reset();
+        }
+
+        this.particles = []; this.drops = []; this.waveAttacks = [];
         this.particlesBehind = [];
         this.particlesInFront = [];
-        this.debris = [];
+
         this.player.reset();
         this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);
@@ -1352,9 +1401,25 @@ Object.entries(colors).forEach(([name, rgb]) => {
         if (!this.isPaused) {
             this.player.update(tsf);
             this.towers.forEach(t => t.update(tsf));
-        }
 
-        for (let i = this.synergyLines.length - 1; i >= 0; i--) { this.synergyLines[i].update(tsf); if (this.synergyLines[i].dead) this.synergyLines.splice(i, 1); }
+            // Update pooled objects
+            this.particlePool.update(tsf);
+            this.dropPool.update(tsf);
+            this.waveAttackPool.update(tsf);
+            this.synergyLinePool.update(tsf);
+            this.damageSpotPool.update(tsf);
+            this.floatingTextPool.update(tsf);
+            this.soulPool.update(tsf);
+            this.frostingParticlePool.update(tsf);
+            this.projectilesPool.update(tsf);
+            this.enemyDebrisPool.update(tsf);
+            for (const type in this.enemyPools) {
+                this.enemyPools[type].update(tsf);
+            }
+
+            // Handle the removal of dead synergy lines. This logic is now handled within the SynergyLine.update method by returning to pool.
+            // No direct iteration and splicing of synergyLines array needed here anymore.
+        }
         // Update logic for the build-cancel animation
         if (this.isCancelingBuild) {
             this.cancelAnimTimer += tsf;
@@ -1371,7 +1436,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
     handlePiggyDeath(bonus) {
         // This can be used for special effects when a piggy dies
         const pos = this.ui.moneyTextPos;
-        this.floatingTexts.push(new FloatingText(this, pos.x, pos.y, `+${bonus} BONUS!`, 'gold', 10));
+        this.floatingTextPool.get(this, pos.x, pos.y, `+${bonus} BONUS!`, 'gold', 10);
         this.uiShake.money = 25; // Extra big shake for piggy bonus
     }
 
@@ -1598,6 +1663,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
         const game = new Game(canvas);
+        game.init(); // Call the initialization method
         window.gameInstance = game;
     }
 });

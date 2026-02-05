@@ -40,9 +40,10 @@ export class GummyBear {
         this.fireFlashTimer = 0;
         this.totalSlow = 0;
         this.slowParticleTimer = 0;
-        this.groundProximity = false;
         this.isJellyTagged = false;
         this.id = this.game.getNewId();
+        this.mass = 6; // Gummy Bear: Mass 6
+        this.knockbackTimer = 0; // Initialize knockback timer
     }
 
     applyFire(damage, stacks) {
@@ -61,13 +62,23 @@ export class GummyBear {
         }
     }
 
-    takeDamage(amount, isCritical = false) {
+    takeDamage(amount, isCritical = false, source = null) {
         const player = this.game.player;
         if (player.upgrades['Sweet Aura'] > 0) {
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
             if (dist < player.lickRange) {
                 amount *= (1 + player.upgrades['Sweet Aura'] * 0.1);
             }
+        }
+        
+        if (source && source.gummyImpactStacks > 0 && this.knockbackTimer <= 0 && this.mass < 999) {
+            const knockbackAmount = (this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks) / this.mass;
+            if (this.mass < 3) { // Launchable enemies
+                this.kbVy -= knockbackAmount; // Apply full force upwards
+            } else { // Heavies
+                this.kbVy = Math.max(0.1, this.kbVy - knockbackAmount); // Dampen, but ensure minimum downward movement
+            }
+            this.knockbackTimer = 15; // 0.25 seconds * 60 frames/sec
         }
 
         this.game.audioManager.playSound('towerHit');
@@ -84,8 +95,6 @@ export class GummyBear {
             this.game.floatingTexts.push(new FloatingText(this.game, this.x + this.width / 2, this.y, `-${roundedAmount.toFixed(0)}`, 'red'));
         }
         
-
-
         if (this.health <= 0) {
             this.kill();
         }
@@ -125,6 +134,7 @@ export class GummyBear {
     }
 
     update(tsf) {
+        if (this.knockbackTimer > 0) this.knockbackTimer -= tsf;
         if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
 
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
@@ -170,6 +180,10 @@ export class GummyBear {
         else this.healScale = 1;
 
         this.kbVy *= 0.9;
+        // Recovery logic: if knocked up, slowly return to neutral
+        if (this.kbVy < 0) {
+            this.kbVy = Math.min(0, this.kbVy + (0.05 * tsf)); // Gradually increase towards 0
+        }
         this.y += (currentSpeed + this.kbVy) * tsf;
 
         const ground = this.game.platforms.find(p => p.type === 'ground');
@@ -313,6 +327,8 @@ export default class GummyCluster {
         this.totalSlow = 0;
         this.isJellyTagged = false;
         this.id = this.game.getNewId();
+        this.mass = 999; // Boss: Mass 999
+        this.knockbackTimer = 0; // Initialize knockback timer
     }
 
     applyFire(damage, stacks) {
@@ -383,10 +399,11 @@ export default class GummyCluster {
 
         // --- Debris spawning for Boss ---
         let numDebris = 4 + Math.floor(Math.random() * 3); // 4-6 pieces
-        const cutSize = 3; // 3x3 cuts for boss
+        const numCols = 3; // 3x3 cuts for boss
+        const numRows = 3;
 
         for (let i = 0; i < numDebris; i++) {
-            this.game.debris.push(new EnemyDebris(this.game, this, this.width, this.height, cutSize));
+            this.game.enemyDebrisPool.get(this.game, this, this.width, this.height, numCols, numRows);
         }
         // --- End Debris spawning ---
 
@@ -443,6 +460,7 @@ export default class GummyCluster {
     }
 
     update(tsf) {
+        if (this.knockbackTimer > 0) this.knockbackTimer -= tsf;
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
         for (let i = this.fireStacks.length - 1; i >= 0; i--) {
             const stack = this.fireStacks[i];

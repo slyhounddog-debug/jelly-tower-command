@@ -188,7 +188,7 @@ export default class LevelUpManagerScreen {
 
         // Use rarity color for the title
         ctx.fillStyle = this.rarityColors[rarity] || 'white';
-        ctx.font = `${20 * scale}px "Titan One"`;
+        ctx.font = `24px "Titan One"`; // Fixed font size for consistent title size
         ctx.textAlign = 'center';
         
         const title = card.choice.name.toUpperCase();

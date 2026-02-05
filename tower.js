@@ -131,7 +131,7 @@ export default class Tower extends BaseStructure {
                     const vy = -Math.random() * 12 - 5;   // Increased velocity slightly
                     const radius = Math.random() * 8 + 1; // Increased radius (was effectively 2-7, now 4-10)
                     const lifespan = 30 + Math.random() * 20;
-                    this.game.particlesBehind.push(new FrostingParticle(this.game, visualCx, visualCy, vx, vy, radius, this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)], lifespan));
+                    this.game.frostingParticlePool.get(this.game, visualCx, visualCy, vx, vy, radius, this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)], lifespan);
                 }
             }
             return; // Don't do other updates while placing
@@ -152,10 +152,12 @@ export default class Tower extends BaseStructure {
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
 
-        this.game.missiles.forEach(m => {
-            const dist = Math.hypot((m.x + m.width / 2) - (cx + this.drawOffsetX), (m.y + m.height / 2) - (cy + this.drawOffsetY - 30));
-            if (dist < minDist) { minDist = dist; target = m; }
-        });
+        for (const type in this.game.enemyPools) {
+            this.game.enemyPools[type].forEach(m => {
+                const dist = Math.hypot((m.x + m.width / 2) - (cx + this.drawOffsetX), (m.y + m.height / 2) - (cy + this.drawOffsetY - 30));
+                if (dist < minDist) { minDist = dist; target = m; }
+            });
+        }
         if (target) {
             this.isAnimating = true;
             if (this.cooldown <= 0) {
@@ -206,8 +208,7 @@ export default class Tower extends BaseStructure {
             const fireDamageCount = this.game.player.getEquippedComponentCount('Fire Damage');
             const chainBounceCount = this.game.player.getEquippedComponentCount('Chain Bounce');
 
-            const projectile = new Projectile(this.game, tx, ty, angle, damage, this.range, { x: visualCx, y: visualCy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true, isCrit); // Always auto-turret
-            this.game.projectiles.push(projectile);
+            this.game.projectilesPool.get(this.game, tx, ty, angle, damage, this.range, { x: visualCx, y: visualCy }, projectileSpeed, radius, gummyImpactCount, popRockCount, bubbleGumCount, fireDamageCount, chainBounceCount, true, isCrit); // Always auto-turret
         }
     }
 

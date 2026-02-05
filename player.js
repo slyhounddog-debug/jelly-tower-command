@@ -142,13 +142,14 @@ export default class Player {
                 const hitboxWidth = this.width * 2;
                 const hitboxHeight = this.height * 2;
 
-                this.game.missiles.forEach(m => {
-                    if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
-                        hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
-                        m.takeDamage(this.game.stats.lickDamage, false, this);
-                        
-                    }
-                });
+                for (const type in this.game.enemyPools) {
+                    this.game.enemyPools[type].forEach(m => {
+                        if (hitboxX < m.x + m.width && hitboxX + hitboxWidth > m.x &&
+                            hitboxY < m.y + m.height && hitboxY + hitboxHeight > m.y) {
+                            m.takeDamage(this.game.stats.lickDamage, false, this);
+                        }
+                    });
+                }
 
                 if (this.game.boss && hitboxX < this.game.boss.x + this.game.boss.width && hitboxX + hitboxWidth > this.game.boss.x &&
                     hitboxY < this.game.boss.y + this.game.boss.height && hitboxY + hitboxHeight > this.game.boss.y) {
@@ -156,12 +157,12 @@ export default class Player {
                 }
 
                 const angle = Math.atan2(this.vy, this.vx);
-                this.game.waveAttacks.push(new WaveAttack(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2, this.vx));
+                this.game.waveAttackPool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, angle, 2, this.vx);
             }
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
-                this.game.particles.push(new Particle(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark'));
+                this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark');
             }
         }
     }
@@ -202,17 +203,19 @@ export default class Player {
             this.whirlwindAngle += 0.8 * tsf; // Faster rotation
 
             const whirlwindRange = this.lickRange * 1.3;
-            this.game.missiles.forEach(m => {
-                const dist = Math.hypot(this.x - m.x, this.y - m.y);
-                if (dist < whirlwindRange) {
-                    if(m.takeDamage(this.game.stats.lickDamage * 0.1, false, this)) {
-                        m.kill();
+            for (const type in this.game.enemyPools) {
+                this.game.enemyPools[type].forEach(m => {
+                    const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                    if (dist < whirlwindRange) {
+                        if(m.takeDamage(this.game.stats.lickDamage * 0.1, false, this)) {
+                            m.kill();
+                        }
+                        if (this.upgrades['Ice Tongue'] > 0) {
+                            m.applySlow(300, 0.5, 'tongue'); // 5 seconds, 50% slow
+                        }
                     }
-                    if (this.upgrades['Ice Tongue'] > 0) {
-                        m.applySlow(300, 0.5, 'tongue'); // 5 seconds, 50% slow
-                    }
-                }
-            });
+                });
+            }
 
             if (this.game.boss) {
                 const dist = Math.hypot(this.x - this.game.boss.x, this.y - this.game.boss.y);
@@ -233,7 +236,7 @@ export default class Player {
 
             // --- Drop Collision ---
             if (!this.isControlling && this.transitionState !== 'entering') {
-                this.game.drops.forEach(d => {
+                this.game.dropPool.forEach(d => {
                     if (d.isBeingLicked || (this.game.gameTime - d.spawnTime < 30)) return; // Already being licked or too new
 
                     let hit = false;
@@ -267,48 +270,50 @@ export default class Player {
             }
 
             // --- Missile Collision ---
-            this.game.missiles.forEach(m => {
-                let hit = false;
-                for (let i = 1; i <= lickSegments; i++) {
-                    const progress = i / lickSegments;
-                    const drag = 2.5;
-                    const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
-                    const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
-                    const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
-                    const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
+            for (const type in this.game.enemyPools) {
+                this.game.enemyPools[type].forEach(m => {
+                    let hit = false;
+                    for (let i = 1; i <= lickSegments; i++) {
+                        const progress = i / lickSegments;
+                        const drag = 2.5;
+                        const shiftX = Math.sin(progress * Math.PI) * (this.vx * drag);
+                        const shiftY = Math.sin(progress * Math.PI) * (this.vy * drag);
+                        const checkX = cx + Math.cos(this.lickAngle) * (lickLength * progress) - shiftX;
+                        const checkY = cy + Math.sin(this.lickAngle) * (lickLength * progress) - shiftY;
 
-                    const missileCx = m.x + m.width / 2;
-                    const missileCy = m.y + m.height / 2;
+                        const missileCx = m.x + m.width / 2;
+                        const missileCy = m.y + m.height / 2;
 
-                    if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) {
-                        hit = true;
-                        break;
+                        if (Math.hypot(missileCx - checkX, missileCy - checkY) < 35) {
+                            hit = true;
+                            break;
+                        }
                     }
-                }
 
-                if (hit && !this.hitEnemies.includes(m.id)) {
-                    this.game.hitStopFrames = 0;
-                    this.hitEnemies.push(m.id);
-                    if (this.upgrades['Jelly Tag'] > 0) {
-                        m.isJellyTagged = true;
+                    if (hit && !this.hitEnemies.includes(m.id)) {
+                        this.game.hitStopFrames = 0;
+                        this.hitEnemies.push(m.id);
+                        if (this.upgrades['Jelly Tag'] > 0) {
+                            m.isJellyTagged = true;
+                        }
+                        this.game.wasLickKill = true;
+                        if (m.takeDamage(this.game.stats.lickDamage, false, this)) {
+                            m.kill();
+                        }
+                        this.game.wasLickKill = false;
+                        if (this.upgrades['Ice Tongue'] > 0) {
+                            m.applySlow(300, 0.5, 'tongue');
+                        }
+                        m.kbVy = -this.game.stats.lickKnockback * 0.2;
+                        this.game.screenShake.trigger(2, 10);
+                        for (let i = 0; i < 15; i++) {
+                            this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark');
+                            if (i < 5) this.game.particlePool.get(this.game, m.x, m.y, '#fff', 'smoke');
+                        }
+                        this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
                     }
-                    this.game.wasLickKill = true;
-                    if (m.takeDamage(this.game.stats.lickDamage, false, this)) {
-                        m.kill();
-                    }
-                    this.game.wasLickKill = false;
-                    if (this.upgrades['Ice Tongue'] > 0) {
-                        m.applySlow(300, 0.5, 'tongue');
-                    }
-                    m.kbVy = -this.game.stats.lickKnockback * 0.2;
-                    this.game.screenShake.trigger(2, 10);
-                    for (let i = 0; i < 15; i++) {
-                        this.game.particles.push(new Particle(this.game, m.x, m.y, this.color, 'spark'));
-                        if (i < 5) this.game.particles.push(new Particle(this.game, m.x, m.y, '#fff', 'smoke'));
-                    }
-                    this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
-                }
-            });
+                });
+            }
 
             // --- Boss Collision ---
             if (this.game.boss) {
@@ -336,8 +341,8 @@ export default class Player {
                     boss.takeDamage(this.game.stats.lickDamage, false, this);
                     this.game.screenShake.trigger(2, 10);
                     for (let i = 0; i < 15; i++) {
-                        this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark'));
-                        if (i < 5) this.game.particles.push(new Particle(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke'));
+                        this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark');
+                        if (i < 5) this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke');
                     }
                     this.spawnGumballs(boss.x + boss.width / 2, boss.y + boss.height / 2, boss, 2, false);
                 }
@@ -422,18 +427,13 @@ export default class Player {
                     const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                     const lifespan = 50 + Math.random() * 20;
                     const vx = (Math.random() - 0.5) * 8;
-                    const vy = -Math.random() * 8 - 3.5;
-                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
-                    if (Math.random() < 0.2) {
-                        this.game.particlesInFront.push(p);
-                    } else {
-                        this.game.particlesBehind.push(p);
-                    }
+                    const vy = Math.random() * 5;
+                    this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
                 }
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
                 this.jumpSquash = 15;
-                for (let i = 0; i < 5; i++) this.game.particles.push(new Particle(this.game, this.x + this.width / 2, this.y + this.height, '#fff'));
+                for (let i = 0; i < 5; i++) this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height, '#fff');
                 this.game.audioManager.playSound('midAirJump');
                 // Spawn frosting particles for double jumping
                 const numParticles = 4 + Math.floor(Math.random() * 4);
@@ -441,14 +441,9 @@ export default class Player {
                     const radius = Math.random() * 4 + 2;
                     const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
                     const lifespan = 50 + Math.random() * 20;
-                    const vx = (Math.random() - 0.5) * 4;
-                    const vy = -Math.random() * 5 - 2;
-                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
-                    if (Math.random() < 0.2) {
-                        this.game.particlesInFront.push(p);
-                    } else {
-                        this.game.particlesBehind.push(p);
-                    }
+                    const vx = (Math.random() - 0.5) * 8;
+                    const vy = Math.random() * 5;
+                    this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
                 }
             }
         }
@@ -505,23 +500,20 @@ export default class Player {
                         const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
                         const vx = (Math.random() + (this.vx / 22) - 0.5) * 6 * (this.vy / 20);
                         const vy = -Math.random() * 8 * (this.vy / 17);
-                                            const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
-                    if (Math.random() < 0.2) {
-                        this.game.particlesInFront.push(p);
-                    } else {
-                        this.game.particlesBehind.push(p);
-                    }
+                        this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
                     }
 
                     if (this.upgrades['Squishy Butt'] > 0) {
                         const shockwaveRange = this.lickRange * .87;
-                        this.game.missiles.forEach(m => {
-                            const dist = Math.hypot(this.x - m.x, this.y - m.y);
-                            if (dist < shockwaveRange) {
-                                m.takeDamage(this.game.stats.lickDamage, false, this);
-                                m.kbVy = -this.game.stats.lickKnockback * .1;
-                            }
-                        });
+                        for (const type in this.game.enemyPools) {
+                            this.game.enemyPools[type].forEach(m => {
+                                const dist = Math.hypot(this.x - m.x, this.y - m.y);
+                                if (dist < shockwaveRange) {
+                                    m.takeDamage(this.game.stats.lickDamage, false, this);
+                                    m.kbVy = -this.game.stats.lickKnockback * .1;
+                                }
+                            });
+                        }
                         this.shockwaveAnimations.push({
                             x: this.x + this.width / 2,
                             y: this.y + this.height,
@@ -591,12 +583,7 @@ export default class Player {
                     const lifespan = 30 + Math.random() * 20;
                     const vx = -this.vx * 0.7 + (Math.random() - 0.5) * 1.7;
                     const vy = -Math.random() * 2 - .5 - (Math.abs(this.vx / 7));
-                                        const p = new FrostingParticle(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
-                    if (Math.random() < 0.2) {
-                        this.game.particlesInFront.push(p);
-                    } else {
-                        this.game.particlesBehind.push(p);
-                    }
+                    this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
                 }
             }
         } else {
