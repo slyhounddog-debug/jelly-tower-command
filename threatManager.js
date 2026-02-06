@@ -36,7 +36,7 @@ export default class ThreatManager {
 
     update(tsf) {
         this.diffTimer += tsf;
-        if (this.diffTimer >= 120) {
+        if (this.diffTimer >= 150) {  // this is the line that determines how quickly threatRPM increases
             this.game.currentRPM += 0.1;
             this.diffTimer = 0;
         }

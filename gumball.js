@@ -72,35 +72,39 @@ export default class Gumball {
         if (this.collisionDelay > 0) return;
 
         // Collision with missiles
-        this.game.missiles.forEach(m => {
-            // Gumballs should not hit the enemy they spawned from
-            if (m === this.spawner) { // Assuming enemies have an 'id' property
-                return;
-            }
+        // Collision with enemies (from all pools)
+        for (const type in this.game.enemyPools) {
+            this.game.enemyPools[type].forEach(m => {
+                if (!m.active) return; // Ensure we only check active enemies
+                // Gumballs should not hit the enemy they spawned from
+                if (m === this.spawner) { // Assuming enemies have an 'id' property
+                    return;
+                }
 
-            if (this.x < m.x + m.width &&
-                this.x + this.width > m.x &&
-                this.y < m.y + m.height &&
-                this.y + this.height > m.y) {
-                
-                // Removed this.hitEnemyIds.add(m.id) for piercing behavior
-                
-                if (m.takeDamage(this.damage, false, this)) {
-                    m.kill();
-                }
-                this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
+                if (this.x < m.x + m.width &&
+                    this.x + this.width > m.x &&
+                    this.y < m.y + m.height &&
+                    this.y + this.height > m.y) {
+                    
+                    // Removed this.hitEnemyIds.add(m.id) for piercing behavior
+                    
+                    if (m.takeDamage(this.damage, false, this)) {
+                        m.kill();
+                    }
+                    this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
 
-                for (let i = 0; i < 5; i++) {
-                    this.game.particlePool.get(this.game, this.x, this.y, this.color, 'spark', null, 0.5);
+                    for (let i = 0; i < 5; i++) {
+                        this.game.particlePool.get(this.game, this.x, this.y, this.color, 'spark', null, 0.5);
+                    }
+                    
+                    // Gumball damage counts towards sugar rush
+                    if (this.game.player.upgrades['Sugar Rush'] > 0) {
+                        this.game.player.sugarRushTimer = 300; // Reset sugar rush timer to 5 seconds
+                    }
+                    // Removed recursive gumball spawning: this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1, false);
                 }
-                
-                // Gumball damage counts towards sugar rush
-                if (this.game.player.upgrades['Sugar Rush'] > 0) {
-                    this.game.player.sugarRushTimer = 300; // Reset sugar rush timer to 5 seconds
-                }
-                // Removed recursive gumball spawning: this.game.player.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 1, false);
-            }
-        });
+            });
+        }
 
         // Collision with boss
         if (this.game.boss && this.game.boss !== this.spawner && !this.bossHit) { // Assuming boss has an 'id' property
