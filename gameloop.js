@@ -141,7 +141,7 @@ export default class GameLoop {
                             this.game.frostingParticlePool.get(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan, 0.15, 'enemy');
                         }
                         this.game.damageSpotPool.get(this.game, m.x + m.width / 2, m.y + m.height / 2, m.width * 0.5);
-                        m.reset(); // Return to pool by deactivating
+                        this.game.enemyPools[type].returnToPool(m); 
                     }
                 });
             }
@@ -224,9 +224,6 @@ export default class GameLoop {
             });
 
             // Cleanup
-            
-            for (let i = this.game.gumballs.length - 1; i >= 0; i--) { this.game.gumballs[i].update(tsf); if (this.game.gumballs[i].dead) this.game.gumballs.splice(i, 1); }
-            for (let i = this.game.swipeParticles.length - 1; i >= 0; i--) { this.game.swipeParticles[i].update(tsf); if (this.game.swipeParticles[i].life <= 0) this.game.swipeParticles.splice(i, 1); }
 
             this.game.decalManager.update(tsf);
             this.game.lootPopupManager.update(deltaTime);
@@ -322,13 +319,14 @@ export default class GameLoop {
 
         this.game.player.draw(this.game.ctx);
         this.game.drawSwipeTrail(this.game.ctx);
-        this.game.swipeParticles.forEach(p => p.draw(this.game.ctx));
+        this.game.swipeParticlePool.draw(this.game.ctx);
         this.game.dropPool.forEach(d => { if (d.isBeingLicked) d.draw(this.game.ctx); });
-        this.game.gumballs.forEach(g => g.draw(this.game.ctx));
+        this.game.gumballPool.draw(this.game.ctx);
         // Draw floating texts from pool
         this.game.floatingTextPool.draw(this.game.ctx);
 
         this.game.lootPopupManager.draw(this.game.ctx);
+        this.game.modalManager.draw(this.game.ctx);
 
         if (this.game.levelingManager.isLevelingUp) {
             this.game.audioManager.setMuffled(true);
@@ -428,23 +426,22 @@ export default class GameLoop {
         }
 
         const centerY = uiBarY + (uiBarHeight / 2);
-        const uiScale = 1.55; // 25% bigger
 
 
         // 1. Calculate widths of all elements for precise layout
-        const xpBarTotalWidth = (game.xpBar.width * 0.6) * uiScale; 
-        const shopButtonTotalWidth = ui.shopButton.width * uiScale; 
-        ctx.font = `bold ${Math.floor(52 * uiScale)}px "VT323"`;
+        const xpBarTotalWidth = (game.xpBar.width * 0.6) * game.ui.uiScale; 
+        const shopButtonTotalWidth = ui.shopButton.width * game.ui.uiScale; 
+        ctx.font = `bold ${Math.floor(52 * game.ui.uiScale)}px "VT323"`;
         const moneyTextTotalWidth = ctx.measureText(`$${game.money}`).width;
-        const healthBarTotalWidth = (game.castleHealthBar.width * 0.3) * uiScale; 
-        ctx.font = `bold ${Math.floor(40 * uiScale)}px "VT323"`;
+        const healthBarTotalWidth = (game.castleHealthBar.width * 0.3) * game.ui.uiScale; 
+        ctx.font = `bold ${Math.floor(40 * game.ui.uiScale)}px "VT323"`;
         const turretCostTextTotalWidth = ctx.measureText(`$${game.getNextTurretCost()}`).width;
-        const buildButtonTotalWidth = ui.buildButton.width * uiScale; 
+        const buildButtonTotalWidth = ui.buildButton.width * game.ui.uiScale; 
         const settingsButtonTotalWidth = ui.settingsButton.width; 
 
         // 2. Health Bar (CENTERED)
         const healthBarX = (game.width / 2) - (healthBarTotalWidth / 2);
-        game.castleHealthBar.height = 52 * uiScale;
+        game.castleHealthBar.height = 52 * game.ui.uiScale;
         game.castleHealthBar.draw(ctx, healthBarX, centerY - (game.castleHealthBar.height / 2), healthBarTotalWidth);
 
         // 3. Place elements to the LEFT of Health Bar (XP, Shop, Money)
@@ -469,7 +466,7 @@ export default class GameLoop {
         ctx.shadowBlur = 0;
         currentXLeft -= (elementSpacing + xpBarTotalWidth + 30); // Move left for XP bar, added extra padding
 
-        game.xpBar.height = 38 * uiScale;
+        game.xpBar.height = 38 * game.ui.uiScale;
         ctx.save();
         const xpShakeX = (Math.random() - 0.5) * game.uiShake.xp;
         const xpShakeY = (Math.random() - 0.5) * game.uiShake.xp;
@@ -504,7 +501,7 @@ export default class GameLoop {
             const turretCostShakeY = (Math.random() - 0.5) * game.uiShake.turretCost;
             ctx.translate(turretCostShakeX, turretCostShakeY);
 
-            ctx.font = `bold ${Math.floor(45 * uiScale)}px "VT323"`; // 50% bigger
+            ctx.font = `bold ${Math.floor(45 * game.ui.uiScale)}px "VT323"`; // 50% bigger
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             ctx.fillStyle = game.turretCostTextColor;

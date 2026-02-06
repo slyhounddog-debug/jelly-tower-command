@@ -36,31 +36,31 @@ export default class ModalManager {
         // Dynamically calculate MODAL_CONFIG based on game dimensions
         this.MODAL_CONFIG = {
             shop: {
-                x: this.game.width * 0.1,
-                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.8,
                 height: this.game.PLAYABLE_AREA_HEIGHT * 0.7,
+                x: (this.game.width - (this.game.width * 0.8)) / 2,
+                y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.7)) / 2,
                 image: this.shopOverlayImage,
             },
             emporium: { // Emporium reuses the shop's layout
-                x: this.game.width * 0.1,
-                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.8,
                 height: this.game.PLAYABLE_AREA_HEIGHT * 0.7,
+                x: (this.game.width - (this.game.width * 0.8)) / 2,
+                y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.7)) / 2,
                 image: this.shopOverlayImage, // Re-use the shop background
             },
             components: {
-                x: this.game.width * 0.15,
-                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.7,
                 height: this.game.PLAYABLE_AREA_HEIGHT * 0.6,
+                x: (this.game.width - (this.game.width * 0.7)) / 2,
+                y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.6)) / 2,
                 image: this.componentQuartersImage,
             },
             player: { // This is for the level-up/player screen
-                x: this.game.width * 0.05,
-                y: this.game.PLAYABLE_AREA_HEIGHT * 0.05,
                 width: this.game.width * 0.9,
                 height: this.game.PLAYABLE_AREA_HEIGHT * 0.8,
+                x: (this.game.width - (this.game.width * 0.9)) / 2,
+                y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.8)) / 2,
                 image: this.levelUpManagerImage,
             }
         };
@@ -94,7 +94,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.piggyModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 20,
+                        y: y + height - buttonHeight - 120,
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -110,7 +110,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.componentModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 20,
+                        y: y + height - buttonHeight - 120,
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -126,7 +126,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.bossModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 20,
+                        y: y + height - buttonHeight - 120,
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -146,6 +146,7 @@ export default class ModalManager {
     }
 
     open(modalName) {
+        console.log('modalManager.open called', modalName);
         if (this.isOpening || this.isClosing || this.activeModal === modalName) return;
 
         // If another modal is already open, close it first before opening the new one.
@@ -194,6 +195,7 @@ export default class ModalManager {
     }
 
     close() {
+        console.log('modalManager.close called');
         if (!this.isOpen() || this.isClosing) return;
         
         this.isClosing = true;
@@ -484,7 +486,7 @@ export default class ModalManager {
             // Draw confirm button for specific modals
             if (config.confirmButton && this.modalConfirmUpImage && this.modalConfirmUpImage.complete) {
                 const btn = config.confirmButton;
-                ctx.drawImage(this.modalConfirmUpImage, btn.x, btn.y, btn.width, btn.height);
+                ctx.drawImage(this.modalConfirmUpImage, btn.x, btn.y + 100, btn.width, btn.height);
             }
 
             // Draw UI buttons

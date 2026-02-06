@@ -2,7 +2,11 @@ import Particle from './particle.js';
 import FloatingText from './floatingText.js';
 
 export default class Gumball {
-    constructor(game, x, y, initialVx, initialVy, damage, color, spawner, canSpawn = true) {
+    constructor() {
+        this.active = false;
+    }
+
+    init(game, x, y, initialVx, initialVy, damage, color, spawner, canSpawn = true) {
         this.game = game;
         this.x = x;
         this.y = y;
@@ -14,18 +18,31 @@ export default class Gumball {
         this.damage = damage;
         this.color = color;
         this.life = 120; // Lifespan of 2 seconds at 60fps
-        this.dead = false;
-        // this.hitEnemyIds = new Set(); // Removed for piercing
         this.spawner = spawner; // The enemy that spawned this gumball
         this.collisionDelay = 5; // 5 frames delay before collision is active
         this.canSpawn = canSpawn; // Keep this for clarity, but its impact on recursive spawning is removed here
         this.bossHit = false; // New property to track if this gumball has hit the boss
+        this.active = true;
+    }
+
+    reset() {
+        this.active = false;
+        this.x = 0;
+        this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.life = 0;
+        this.spawner = null;
+        this.bossHit = false;
     }
 
     update(tsf) {
+        if (!this.active) return;
+
         this.life -= tsf;
         if (this.life <= 0) {
-            this.dead = true;
+            this.active = false;
+            this.game.gumballPool.returnToPool(this);
             return;
         }
 
@@ -40,7 +57,8 @@ export default class Gumball {
         // Disappear off-screen
         if (this.x < -this.width || this.x > this.game.width + this.width ||
             this.y < -this.height || this.y > this.game.PLAYABLE_AREA_HEIGHT + this.height) {
-            this.dead = true;
+            this.active = false;
+            this.game.gumballPool.returnToPool(this);
             return;
         }
 

@@ -618,7 +618,10 @@ export default class Player {
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
                 const randomColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-                this.game.gumballs.push(new Gumball(this.game, x, y, vx, vy, this.game.stats.lickDamage * 0.5, randomColor, spawner, canSpawn));
+                const gumball = this.game.gumballPool.get();
+                if (gumball) {
+                    gumball.init(this.game, x, y, vx, vy, this.game.stats.lickDamage * 0.5, randomColor, spawner, canSpawn);
+                }
             }
         }
     }

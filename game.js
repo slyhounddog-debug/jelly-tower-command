@@ -19,7 +19,7 @@ import SpriteAnimation from './SpriteAnimation.js';
 import Emporium from './emporium.js';
 import GameLoop from './gameloop.js';
 import AudioManager from './audioManager.js';
-import LootPopupManager from './lootPopup.js';
+import LootPopupManager, { LootPopup } from './lootPopup.js';
 import LevelUpScreen from './levelUpScreen.js';
 import LevelUpManagerScreen from './levelUpManagerScreen.js';
 import XPBar from './xpBar.js';
@@ -37,6 +37,8 @@ import Soul from './Soul.js';
 import EnemyDebris from './EnemyDebris.js';
 import Projectile from './projectile.js';
 import FrostingParticle from './frostingParticle.js';
+import Gumball from './gumball.js';
+import Decal from './decal.js';
 
 class Game {
     constructor(canvas) {
@@ -47,7 +49,6 @@ class Game {
         this.boss = null;
         this.bossesKilled = 0;
         this.swipeTrail = [];
-        this.swipeParticles = [];
 
         // Define playable area height and mobile control zone height
         this.PLAYABLE_AREA_HEIGHT = this.canvas.height
@@ -312,9 +313,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.floatingTextPool = new ObjectPool(FloatingText, 200);
         this.damageSpotPool = new ObjectPool(DamageSpot, 50);
         this.waveAttackPool = new ObjectPool(WaveAttack, 20);
+        this.lootPopupPool = new ObjectPool(LootPopup, 50);
+        this.gumballPool = new ObjectPool(Gumball, 100);
+        this.decalPool = new ObjectPool(Decal, 100);
+        this.swipeParticlePool = new ObjectPool(SwipeParticle, 100);
         this.currentRPM = 9.25; // Moved this line up
         this.currentId = 0;
-        this.gumballs = [];
         this.particlesBehind = [];
         this.particlesInFront = [];
         this.waveAttacks = [];
@@ -357,6 +361,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.settingButtonImage.src = 'assets/Images/settings.png';
 
         this.ui = {
+            uiScale: 1.55, // 25% bigger
             barHeight: (FORCE_MOBILE_DEBUG || Game.isMobileDevice()) ? 500 : 0, // 500px for mobile, 0px for PC
             buildButton: {
                 img: this.buildButtonImage, // This will be dynamically managed
@@ -880,7 +885,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
             if (this.modalManager.isOpen()) { this.modalManager.handleInput(); return; } // Handle clicks within modals
             const shopBtn = this.ui.shopButton;
-            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + shopBtn.width && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + shopBtn.height) {
+            const scaledShopBtnWidth = shopBtn.width * this.ui.uiScale;
+            const scaledShopBtnHeight = shopBtn.height * this.ui.uiScale;
+            if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + (scaledShopBtnWidth * 1.2) && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + (scaledShopBtnHeight * 1.2)) {
                 this.modalManager.toggle(this.lastOpenedMenu);
                 shopBtn.isAnimating = true;
                 shopBtn.animTimer = 0;
@@ -888,7 +895,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 return;
             }
             const buildBtn = this.ui.buildButton;
-            if (this.mouse.x > buildBtn.x && this.mouse.x < buildBtn.x + buildBtn.width && this.mouse.y > buildBtn.y && this.mouse.y < buildBtn.y + buildBtn.height) {
+            const scaledBuildBtnWidth = buildBtn.width * this.ui.uiScale;
+            const scaledBuildBtnHeight = buildBtn.height * this.ui.uiScale;
+            if (this.mouse.x > buildBtn.x && this.mouse.x < buildBtn.x + (scaledBuildBtnWidth * 1.2) && this.mouse.y > buildBtn.y && this.mouse.y < buildBtn.y + (scaledBuildBtnHeight * 1.2)) {
                 if (!this.isBuilding) {
                     this.isBuilding = true;
                     this.audioManager.setBuildMode(true, false); // In build mode, not just muffled
@@ -1293,6 +1302,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.projectilesPool.reset();
         this.soulPool.reset();
         this.floatingTextPool.reset();
+        this.lootPopupPool.reset();
+        this.gumballPool.reset();
+        this.decalPool.reset();
+        this.swipeParticlePool.reset();
         this.enemyDebrisPool.reset();
         for (const type in this.enemyPools) {
             this.enemyPools[type].reset();
@@ -1447,6 +1460,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.soulPool.update(tsf);
             this.frostingParticlePool.update(tsf);
             this.projectilesPool.update(tsf);
+            this.lootPopupPool.update(tsf);
+            this.gumballPool.update(tsf);
+            this.decalPool.update(tsf);
+            this.swipeParticlePool.update(tsf);
             this.enemyDebrisPool.update(tsf);
             for (const type in this.enemyPools) {
                 this.enemyPools[type].update(tsf);

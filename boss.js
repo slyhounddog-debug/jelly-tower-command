@@ -62,6 +62,21 @@ export class GummyBear {
         this.active = true; // Set active flag
     }
 
+    reset() {
+        this.active = false;
+        this.x = 0;
+        this.y = 0;
+        this.health = 0;
+        this.maxHealth = 0;
+        this.slowEffects = [];
+        this.fireStacks = [];
+        this.lastDamageSource = null;
+        this.isJellyTagged = false;
+        this.id = -1;
+        this.kbVy = 0;
+        this.knockbackTimer = 0;
+    }
+
     applyFire(damage, stacks) {
         if (stacks <= 0) return;
         this.fireStacks.push({
@@ -117,7 +132,8 @@ export class GummyBear {
     }
 
     kill(killedBy = 'unknown') {
-        this.dead = true;
+        this.active = false;
+        this.game.enemyPools['gummy_bear'].returnToPool(this);
         this.game.enemiesKilled++;
         
         let lootMultiplier = 1;
@@ -210,7 +226,8 @@ export class GummyBear {
         this.angle = Math.sin(this.animationTimer) * 0.1;
 
         if (this.y > this.game.PLAYABLE_AREA_HEIGHT) {
-            this.dead = true;
+            this.active = false;
+            this.game.enemyPools['gummy_bear'].returnToPool(this);
         }
     }
 

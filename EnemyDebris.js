@@ -98,7 +98,7 @@ export default class EnemyDebris {
         }
 
         if (this.lifespan <= 0) {
-            this.reset();
+            this.game.enemyDebrisPool.returnToPool(this);
             return;
         }
 
@@ -194,7 +194,7 @@ export default class EnemyDebris {
         }
 
         if (this.y > this.game.height + 50) {
-            this.reset();
+            this.game.enemyDebrisPool.returnToPool(this);
         }
     }
 

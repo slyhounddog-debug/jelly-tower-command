@@ -116,8 +116,8 @@ export default class Missile {
             this.mass = 0.5; // Jelly Pudding: Mass 0.5
         } else if (type === 'donut') {
             this.health = (80 + (this.game.currentRPM * 2.5)) * hpMultiplier;
-            this.width = 70;
-            this.height = 70;
+            this.width = 165;
+            this.height = 175;
             this.baseSpeed = 1.2;
             this.image = this.game.donutenemyImage;
             this.color = '#00e1ffff';
