@@ -123,7 +123,7 @@ export default class Drop {
             for (let i = 0; i < 5; i++) {
                 const particle = this.game.particlePool.get();
                 if (particle) {
-                    particle.init(this.game, this.x, this.y, '#fff');
+                    particle.init(this.game, this.x, this.y, '#fff', 'spark', null, 0.5);
                 }
             }
             this.game.dropPool.returnToPool(this); // Return to pool when collected

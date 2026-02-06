@@ -94,7 +94,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.piggyModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y: moved up by 100
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -110,7 +110,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.componentModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y: moved up by 100
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -126,7 +126,7 @@ export default class ModalManager {
                     x: x, y: y, width: width, height: height, image: this.bossModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y: moved up by 100
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -483,7 +483,7 @@ export default class ModalManager {
             // Draw confirm button for specific modals
             if (config.confirmButton && this.modalConfirmUpImage && this.modalConfirmUpImage.complete) {
                 const btn = config.confirmButton;
-                ctx.drawImage(this.modalConfirmUpImage, btn.x, btn.y + 100, btn.width, btn.height);
+                ctx.drawImage(this.modalConfirmUpImage, btn.x, btn.y, btn.width, btn.height);
             }
 
             // Draw UI buttons

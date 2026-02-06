@@ -94,6 +94,12 @@ export default class Particle {
 
         if (this.type === 'smoke') { this.vx *= 0.95; this.vy -= 0.05 * tsf; this.size += 0.2 * tsf; }
         else if (this.type === 'trail') {
+            // Check if emitter is still active. If not, terminate this trail particle.
+            if (this.emitter && !this.emitter.active) {
+                this.life = 0; // Set life to 0 to trigger return to pool
+                return; // Skip further updates for this particle
+            }
+
             if (this.emitter && this.emitter.onGround) {
                 this.targetX = this.emitter.x + this.emitter.width / 2;
                 this.targetY = this.emitter.y + this.emitter.height / 2;
@@ -121,7 +127,7 @@ export default class Particle {
                 // Change here to use particle pool
                 const newParticle = this.game.particlePool.get();
                 if (newParticle) {
-                    newParticle.init(this.game, this.x, this.y, color, 'spark', 0.5, vx, vy);
+                    newParticle.init(this.game, this.x, this.y, color, 'spark', 0.5, 1.0, vx, vy);
                 }
             }
         }

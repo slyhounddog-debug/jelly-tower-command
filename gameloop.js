@@ -162,7 +162,7 @@ export default class GameLoop {
                     const isCrit = (Math.random() * 100 < this.game.stats.criticalHitChance);
                     let dmg = (p.hp || 10) * (isCrit ? 2 : 1);
                     this.game.boss.takeDamage(dmg, isCrit);
-                    this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark');
+                    this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark', null, 0.5);
                     if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                     p.hasHitBoss = true;
                     if (p.popRockStacks > 0) {
@@ -188,7 +188,7 @@ export default class GameLoop {
                             }
                             if (m.takeDamage(dmg, isCrit, p)) m.kill();
                             m.kbVy = -2;
-                            this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark');
+                            this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark', null, 0.5);
                             if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                             if (p.popRockStacks > 0) {
                                 p.createExplosion();

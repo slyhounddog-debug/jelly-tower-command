@@ -792,7 +792,7 @@ export default class Missile {
             const debris = this.game.enemyDebrisPool.get(this.game, this, spriteWidth, spriteHeight, numCols, numRows);
         }
         
-        const numParticles = 10 + Math.floor(this.maxHealth / 15);
+        const numParticles = Math.min(50, 10 + Math.floor(this.maxHealth / 30));
         const source = this.lastDamageSource;
 
         for (let i = 0; i < numParticles; i++) {

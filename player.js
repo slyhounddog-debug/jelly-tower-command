@@ -162,7 +162,7 @@ export default class Player {
 
             // Add dash particle effect
             for (let i = 0; i < 10; i++) { // More particles for a dash
-                this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark');
+                this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(255, 255, 255, 0.7)', 'spark', null, 0.5);
             }
         }
     }
@@ -307,8 +307,8 @@ export default class Player {
                         m.kbVy = -this.game.stats.lickKnockback * 0.2;
                         this.game.screenShake.trigger(2, 10);
                         for (let i = 0; i < 15; i++) {
-                            this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark');
-                            if (i < 5) this.game.particlePool.get(this.game, m.x, m.y, '#fff', 'smoke');
+                            this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark', null, 0.5);
+                            if (i < 5) this.game.particlePool.get(this.game, m.x, m.y, '#fff', 'smoke', null, 0.5);
                         }
                         this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
                     }
@@ -341,8 +341,8 @@ export default class Player {
                     boss.takeDamage(this.game.stats.lickDamage, false, this);
                     this.game.screenShake.trigger(2, 10);
                     for (let i = 0; i < 15; i++) {
-                        this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark');
-                        if (i < 5) this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke');
+                        this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, this.color, 'spark', null, 0.5);
+                        if (i < 5) this.game.particlePool.get(this.game, boss.x + boss.width/2, boss.y + boss.height/2, '#fff', 'smoke', null, 0.5);
                     }
                     this.spawnGumballs(boss.x + boss.width / 2, boss.y + boss.height / 2, boss, 2, false);
                 }
@@ -433,7 +433,7 @@ export default class Player {
             } else if (this.jumpsLeft > 0) {
                 this.vy = this.airJumpForce; this.jumpsLeft--; this.jumpLock = true;
                 this.jumpSquash = 15;
-                for (let i = 0; i < 5; i++) this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height, '#fff');
+                for (let i = 0; i < 5; i++) this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height, '#fff', null, null, 0.5);
                 this.game.audioManager.playSound('midAirJump');
                 // Spawn frosting particles for double jumping
                 const numParticles = 4 + Math.floor(Math.random() * 4);

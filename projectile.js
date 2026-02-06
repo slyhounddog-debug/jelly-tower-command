@@ -70,7 +70,7 @@ export default class Projectile {
 
         if (Math.random() < particleChance) {
             // This will be refactored later to use a particle pool
-            this.game.particlePool.get(this.game, this.x, this.y, (Math.random() < 0.5) ? 'rgba(255, 105, 180, 0.7)' : 'rgba(255, 255, 255, 0.7)', 'smoke');
+            this.game.particlePool.get(this.game, this.x, this.y, (Math.random() < 0.5) ? 'rgba(255, 105, 180, 0.7)' : 'rgba(255, 255, 255, 0.7)', 'smoke', null, 0.5);
         }
 
         const allEnemies = [];
@@ -124,8 +124,8 @@ export default class Projectile {
                         this.vx = Math.cos(angle) * speed;
                         this.vy = Math.sin(angle) * speed;
                         for (let j = 0; j < 10; j++) {
-                            this.game.particlePool.get(this.game, this.x, this.y, 'lightblue', 'spark');
-                            this.game.particlePool.get(this.game, this.x, this.y, 'darkblue', 'spark');
+                            this.game.particlePool.get(this.game, this.x, this.y, 'lightblue', 'spark', null, 0.5);
+                            this.game.particlePool.get(this.game, this.x, this.y, 'darkblue', 'spark', null, 0.5);
                         }
                     } else {
                         this.game.projectilesPool.returnToPool(this);
@@ -161,7 +161,7 @@ export default class Projectile {
                 this.bouncesLeft--;
                 this.game.audioManager.playSound('pop');
                 for(let i = 0; i < 5; i++) {
-                    this.game.particlePool.get(this.game, this.x, this.y, 'rgba(255, 192, 203, 0.8)', 'spark');
+                    this.game.particlePool.get(this.game, this.x, this.y, 'rgba(255, 192, 203, 0.8)', 'spark', null, 0.5);
                 }
             }
         }
@@ -205,7 +205,7 @@ export default class Projectile {
 
         const explosionColors = ['rgba(255, 140, 0, 0.6)', 'rgba(255, 69, 0, 0.6)', 'rgba(255, 215, 0, 0.6)', 'rgba(139, 69, 19, 0.6)'];
         const color = explosionColors[Math.floor(Math.random() * explosionColors.length)];
-        this.game.particlePool.get(this.game, this.x, this.y, color, 'explosion', 0.5, 0, 0, 0, explosionRadius);
+        this.game.particlePool.get(this.game, this.x, this.y, color, 'explosion', 0.5, 0.5, 0, 0, explosionRadius);
 
         for (let i = 0; i < 20 * this.popRockStacks; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -213,7 +213,7 @@ export default class Projectile {
             const particleX = this.x + Math.cos(angle) * distance;
             const particleY = this.y + Math.sin(angle) * distance;
             const sparkColor = explosionColors[Math.floor(Math.random() * explosionColors.length)];
-            this.game.particlePool.get(this.game, particleX, particleY, sparkColor, 'spark', 0.5);
+            this.game.particlePool.get(this.game, particleX, particleY, sparkColor, 'spark', 0.5, 0.5);
         }
 
         this.game.screenShake.trigger(2 * this.popRockStacks, 10);

@@ -242,7 +242,7 @@ export default class Tower extends BaseStructure {
         const visualCx = this.x + this.width / 2 + this.drawOffsetX;
         const visualCy = this.y + this.height / 2 + this.drawOffsetY;
         for (let i = 0; i < 25; i++) {
-            this.game.particlePool.get(this.game, visualCx, visualCy, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8);
+            this.game.particlePool.get(this.game, visualCx, visualCy, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8, 0.5);
         }
     }
 

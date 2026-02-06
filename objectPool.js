@@ -16,25 +16,40 @@ export default class ObjectPool {
     }
 
     get(...args) {
-        const obj = this.pool[this.poolPointer];
-        
-        // If the object is active, force-reset it (overwriting oldest)
-        if (obj.active) {
+        let foundObj = null;
+        let objIndex = -1;
+
+        // Search for an inactive object starting from the current poolPointer
+        for (let i = 0; i < this.poolSize; i++) {
+            const currentIndex = (this.poolPointer + i) % this.poolSize;
+            const obj = this.pool[currentIndex];
+            if (!obj.active) {
+                foundObj = obj;
+                objIndex = currentIndex;
+                break;
+            }
+        }
+
+        // If no inactive object was found after searching the entire pool,
+        // then the pool is truly full. Force-reset the object at the current poolPointer.
+        if (foundObj === null) {
+            foundObj = this.pool[this.poolPointer];
+            objIndex = this.poolPointer;
             console.warn(`Pool for ${this.objectClass.name} is full, force-resetting oldest active object.`);
-            if (typeof obj.reset === 'function') {
-                obj.reset();
+            if (typeof foundObj.reset === 'function') {
+                foundObj.reset();
             }
         }
         
-        obj.active = true;
-        if (typeof obj.init === 'function') {
-            obj.init(...args);
+        foundObj.active = true;
+        if (typeof foundObj.init === 'function') {
+            foundObj.init(...args);
         }
         
-        // Move pointer to the next position
-        this.poolPointer = (this.poolPointer + 1) % this.poolSize;
+        // Update poolPointer to the next position after the one we just took
+        this.poolPointer = (objIndex + 1) % this.poolSize;
         
-        return obj;
+        return foundObj;
     }
 
     returnToPool(obj) {
