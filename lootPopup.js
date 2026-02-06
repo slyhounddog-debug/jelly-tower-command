@@ -1,6 +1,10 @@
 
 class LootPopup {
-    constructor(type, text, value, x, y) {
+    constructor() {
+        this.active = false;
+    }
+
+    init(type, text, value, x, y) {
         this.type = type;
         this.text = text;
         this.value = value;
@@ -11,12 +15,28 @@ class LootPopup {
         this.isFaded = false;
         this.shakeTimer = 0;
         this.targetY = y;
+        this.active = true;
+    }
+
+    reset() {
+        this.active = false;
+        this.type = null;
+        this.text = null;
+        this.value = null;
+        this.x = 0;
+        this.y = 0;
+        this.fadeTimer = 0;
+        this.isFaded = false;
+        this.shakeTimer = 0;
+        this.targetY = 0;
     }
 
     update(dt) {
+        if (!this.active) return;
         this.fadeTimer -= dt;
         if (this.fadeTimer <= 0) {
             this.isFaded = true;
+            this.active = false;
         }
 
         if (this.shakeTimer > 0) {
@@ -30,6 +50,7 @@ class LootPopup {
     }
 
     draw(ctx) {
+        if (!this.active) return;
         const alpha = Math.max(0, this.fadeTimer / this.FADE_DURATION);
         if (alpha <= 0) return;
 
@@ -184,11 +205,14 @@ class LootPopupManager {
             this.popups.forEach(p => {
                 p.targetY -= this.spacing;
             });
-            const newPopup = new LootPopup(type, text, value, this.baseX, this.baseY);
-            this.popups.push(newPopup);
+            const newPopup = this.game.lootPopupPool.get();
+            if (newPopup) {
+                newPopup.init(type, text, value, this.baseX, this.baseY);
+                this.popups.push(newPopup);
+            }
             return;
         }
-        const existingPopup = this.popups.find(p => p.type === type);
+        const existingPopup = this.popups.find(p => p.type === type && p.active);
 
         if (existingPopup) {
             existingPopup.value += value;
@@ -199,8 +223,11 @@ class LootPopupManager {
                 p.targetY -= this.spacing;
             });
 
-            const newPopup = new LootPopup(type, text, value, this.baseX, this.baseY);
-            this.popups.push(newPopup);
+            const newPopup = this.game.lootPopupPool.get();
+            if (newPopup) {
+                newPopup.init(type, text, value, this.baseX, this.baseY);
+                this.popups.push(newPopup);
+            }
         }
     }
 
@@ -209,6 +236,7 @@ class LootPopupManager {
             const popup = this.popups[i];
             popup.update(dt);
             if (popup.isFaded) {
+                this.game.lootPopupPool.returnToPool(popup);
                 this.popups.splice(i, 1);
             }
         }
@@ -221,4 +249,4 @@ class LootPopupManager {
     }
 }
 
-export default LootPopupManager;
+export { LootPopup, LootPopupManager as default };

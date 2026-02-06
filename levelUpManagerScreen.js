@@ -16,26 +16,42 @@ export default class LevelUpManagerScreen {
     }
 
     handleInput() {
+        const modalConfig = this.game.modalManager.getModalConfig('player');
+        if (!modalConfig) return false; // Should not happen if this modal is active
+
+        const mouseX = this.game.mouse.x;
+        const mouseY = this.game.mouse.y;
+
+        // Check if click is within the modal's drawing area
+        if (!(mouseX >= modalConfig.x && mouseX <= modalConfig.x + modalConfig.width &&
+              mouseY >= modalConfig.y && mouseY <= modalConfig.y + modalConfig.height)) {
+            return false; // Clicked outside the actual modal body, let modalManager handle closing
+        }
+        
+        // If we reach here, the click is *inside* the modal's configured area.
+        // It should be consumed by this modal, even if no specific card is clicked.
+
         let clickedCard = null;
-        // Check if any card was clicked
         for (const card of this.cards) {
-            if (this.game.mouse.x > card.x && this.game.mouse.x < card.x + card.width &&
-                this.game.mouse.y > card.y && this.game.mouse.y < card.y + card.height) {
+            if (mouseX > card.x && mouseX < card.x + card.width &&
+                mouseY > card.y && mouseY < card.y + card.height) {
                 clickedCard = card;
                 break;
             }
         }
 
         if (this.magnifiedCard !== null) {
-            // If a card is currently magnified, the NEXT click ALWAYS un-magnifies it.
             this.magnifiedCard = null;
-            this.game.audioManager.playSound('lick'); // Play sound for un-magnify
+            this.game.audioManager.playSound('lick');
+            return true; // Click consumed
         } else if (clickedCard !== null) {
-            // If no card was magnified, and a card was clicked, magnify it.
             this.magnifiedCard = clickedCard;
-            this.game.audioManager.playSound('lick'); // Play sound for magnify
+            this.game.audioManager.playSound('lick');
+            return true; // Click consumed
         }
-        // If no card was magnified and nothing was clicked, do nothing.
+        
+        // If clicked inside modal area, but not on a card, still consume the click
+        return true; // Click consumed
     }
 
     organizeCards(modalConfig) {

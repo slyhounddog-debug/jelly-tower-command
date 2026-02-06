@@ -281,20 +281,32 @@ export default class ModalManager {
         }
 
         // If no navigation button was clicked, delegate to the active modal's input handler
+        let clickHandledByModal = false;
         switch (this.activeModal) {
             case 'shop':
-                this.game.shop.handleInput();
+                if (this.game.shop && typeof this.game.shop.handleInput === 'function') {
+                    clickHandledByModal = this.game.shop.handleInput();
+                }
                 break;
             case 'components':
-                this.componentQuarters.handleInput();
+                if (this.componentQuarters && typeof this.componentQuarters.handleInput === 'function') {
+                    clickHandledByModal = this.componentQuarters.handleInput();
+                }
                 break;
             case 'player':
-                this.game.levelUpManagerScreen.handleInput();
+                if (this.game.levelUpManagerScreen && typeof this.game.levelUpManagerScreen.handleInput === 'function') {
+                    clickHandledByModal = this.game.levelUpManagerScreen.handleInput();
+                }
                 break;
             case 'emporium':
-                this.game.emporium.handleInput();
+                if (this.game.emporium && typeof this.game.emporium.handleInput === 'function') {
+                    clickHandledByModal = this.game.emporium.handleInput();
+                }
                 break;
             // No specific input handling for piggy, component_modal, boss as they are simple display modals
+        }
+        if (clickHandledByModal) {
+            return; // Click consumed by the active modal, stop further processing
         }
     }
     
@@ -304,7 +316,9 @@ export default class ModalManager {
         // Handle animation logic
         if (this.isOpening || this.isClosing) {
             this.animationProgress = Math.min(this.animationDuration, this.animationProgress + tsf);
-            this.createSparks();
+            if (this.isClosing) {
+                this.createSparks();
+            }
 
             if (this.animationProgress >= this.animationDuration) {
                 if (this.isOpening) {

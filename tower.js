@@ -56,6 +56,7 @@ export default class Tower extends BaseStructure {
         this.placementVY = 0;
         this.placementGravity = 1.5;
         this.squashTimer = 0;
+        this.isSugarRushed = false;
     }
     calculateSynergyBonus() {
         const synergyComponentCount = this.game.player.getEquippedComponentCount('Turret Synergy');
@@ -98,8 +99,27 @@ export default class Tower extends BaseStructure {
         let fireRate = this.game.stats.fireRate * synergyBonus.fireRate;
 
         // Apply Sugar Rush fire rate buff
-        if (this.game.player.sugarRushTimer > 0) {
+        if (this.game.player.upgrades['Sugar Rush'] > 0) { // Check player upgrade here for logic, even if visual is on tower
             fireRate *= 0.75; // 25% faster fire rate (cooldown is 75% of normal)
+        }
+
+        if (this.isSugarRushed) {
+            // Spawn energy line particles
+            if (this.game.gameTime % 3 === 0) { // Spawn every 3 frames to control density
+                const visualCx = this.x + this.width / 2 + this.drawOffsetX;
+                const visualCy = this.y + this.height / 2 + this.drawOffsetY;
+
+                const angle = Math.random() * Math.PI * 2; // Random direction
+                const speed = Math.random() * 5 + 2; // Medium speed
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+
+                const color = 'rgba(255, 255, 255, 0.7)'; // Bright white
+                const initialSize = Math.random() * 3 + 1; // Small size
+                const lifespan = 20 + Math.random() * 10; // Short lifespan
+
+                this.game.particlePool.get(this.game, visualCx, visualCy, color, 'spark', initialSize, vx, vy, lifespan);
+            }
         }
 
         if (this.isSelling) {
@@ -221,7 +241,7 @@ export default class Tower extends BaseStructure {
         const visualCx = this.x + this.width / 2 + this.drawOffsetX;
         const visualCy = this.y + this.height / 2 + this.drawOffsetY;
         for (let i = 0; i < 25; i++) {
-            this.game.particles.push(new Particle(this.game, visualCx, visualCy, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8));
+            this.game.particlePool.get(this.game, visualCx, visualCy, 'rgba(255, 105, 180, 0.7)', 'smoke', 0.8);
         }
     }
 
@@ -261,6 +281,13 @@ export default class Tower extends BaseStructure {
         }
 
 
+        // Sugar Rush Heartbeat (Scaling) Animation
+        if (this.isSugarRushed) {
+            const pulse = (Math.sin(this.game.gameTime * 0.2) + 1) / 2; // Pulsates between 0 and 1
+            const scaleFactor = 1 + (pulse * 0.05); // Scales from 1 to 1.05
+            ctx.scale(scaleFactor, scaleFactor);
+        }
+
         // Apply body shake
         const bodyShakeX = Math.cos(this.barrelAngle) * this.recoil * -2.2;
         const bodyShakeY = Math.sin(this.barrelAngle) * this.recoil * -2.2;
@@ -280,43 +307,6 @@ export default class Tower extends BaseStructure {
                           -sWidth * 0.9 / 2, -sHeight * 0.9 / 2, // Center the image
                           Tower.SPRITE_FRAME_WIDTH * 0.9, Tower.SPRITE_FRAME_HEIGHT * 0.9); // Draw at original scaled size
         }
-
-        // --- Sugar Rush Animation ---
-        if (this.game.player.sugarRushTimer > 0) {
-            ctx.save();
-            // Create a clipping mask from the tower sprite
-            ctx.beginPath();
-            const sWidth = 137, sHeight = 190;
-            const drawWidth = sWidth * 0.9, drawHeight = sHeight * 0.9;
-            ctx.rect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-            ctx.clip();
-
-            const waveCount = 3;
-            const slowSpeed = 0.05; 
-            const colorSpeed = 2; 
-            const arcHeight = -10;
-            
-            for (let i = 0; i < waveCount; i++) {
-                const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
-                
-                const minY = -drawHeight / 2;
-                const maxY = drawHeight / 2;
-                const yPos = minY + ((maxY - minY) * progress);
-                
-                const alpha = Math.sin(progress * Math.PI);
-                const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
-                
-                ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
-                ctx.lineWidth = 11;
-
-                ctx.beginPath();
-                ctx.moveTo(-drawWidth / 2, yPos);
-                ctx.quadraticCurveTo(0, yPos - arcHeight, drawWidth / 2, yPos);
-                ctx.stroke();
-            }
-            ctx.restore(); // Restore from clipping mask
-        }
-        // --- End Sugar Rush ---
 
         ctx.restore(); // Restore from the main tower body's translation and scaling
         if (this.isPlacing) { return; } // Don't draw arm while falling

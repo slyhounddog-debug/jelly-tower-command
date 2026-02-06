@@ -76,23 +76,41 @@ export default class Shop {
     }
 
     handleInput() {
+        const modalConfig = this.game.modalManager.getModalConfig('shop');
+        if (!modalConfig) return false; // Should not happen if this modal is active
+
+        const mouseX = this.game.mouse.x;
+        const mouseY = this.game.mouse.y;
+
+        // Check if click is within the modal's drawing area
+        if (!(mouseX >= modalConfig.x && mouseX <= modalConfig.x + modalConfig.width &&
+              mouseY >= modalConfig.y && mouseY <= modalConfig.y + modalConfig.height)) {
+            return false; // Clicked outside the actual modal body, let modalManager handle closing
+        }
+
+        // If we reach here, the click is *inside* the modal's configured area.
+        // It should be consumed by this modal, even if no specific element is clicked.
+
         for (const slot of this.gridSlots) {
-            if (this.game.mouse.x > slot.x && this.game.mouse.x < slot.x + slot.width &&
-                this.game.mouse.y > slot.y && this.game.mouse.y < slot.y + slot.height) {
+            if (mouseX > slot.x && mouseX < slot.x + slot.width &&
+                mouseY > slot.y && mouseY < slot.y + slot.height) {
                 if (this.selectedShopItem !== slot.item) {
                     this.selectedShopItem = slot.item;
                     slot.isAnimating = true;
                     slot.animTimer = 0;
                     this.game.audioManager.playSound('lick');
                 }
-                return;
+                return true; // Click consumed by slot
             }
         }
         
-        if (this.game.mouse.x > this.buyButton.x && this.game.mouse.x < this.buyButton.x + this.buyButton.width &&
-            this.game.mouse.y > this.buyButton.y && this.game.mouse.y < this.buyButton.y + this.buyButton.height) {
+        if (mouseX > this.buyButton.x && mouseX < this.buyButton.x + this.buyButton.width &&
+            mouseY > this.buyButton.y && mouseY < this.buyButton.y + this.buyButton.height) {
             this.buyItem(this.selectedShopItem);
+            return true; // Click consumed by buy button
         }
+
+        return true; // Clicked inside modal area, but not on a specific interactive element, still consume it
     }
     
     buyItem(item) {

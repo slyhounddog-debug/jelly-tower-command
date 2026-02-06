@@ -6,25 +6,21 @@ import FloatingText from './floatingText.js';
 import EnemyDebris from './EnemyDebris.js';
 
 export class GummyBear {
-    constructor(game, x, y) {
+    constructor(game) { // Constructor only takes `game` now. x,y come from init
         this.game = game;
-        this.x = x;
-        this.y = y;
+        this.active = false; // Add active flag for pooling
+
+        // Initialize properties that don't depend on game.currentRPM or game.enemiesKilled
         this.width = 60;
         this.height = 80;
-        this.speed = (0.4 + (this.game.currentRPM * 0.01)) * 0.5 * 3; // Slightly faster than a jelly bean
-        this.health = (40 + this.game.currentRPM + (this.game.enemiesKilled * 0.06));
-        this.maxHealth = this.health;
-        this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
-        this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-        this.vy = -5;
-        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = -5; // Default/initial values
+        this.vx = 0;
         this.gravity = 0.3;
         this.type = 'gummy_bear';
         this.kbVy = 0;
         this.scale = 1;
         this.angle = 0;
-        this.animationTimer = Math.random() * Math.PI * 2;
+        this.animationTimer = 0; // Initialize with 0
         this.hitTimer = 0;
         this.stretch = 1;
         this.squash = 1;
@@ -41,9 +37,29 @@ export class GummyBear {
         this.totalSlow = 0;
         this.slowParticleTimer = 0;
         this.isJellyTagged = false;
-        this.id = this.game.getNewId();
-        this.mass = 6; // Gummy Bear: Mass 6
-        this.knockbackTimer = 0; // Initialize knockback timer
+        this.id = -1; // Default ID
+        this.mass = 6;
+        this.knockbackTimer = 0;
+    }
+
+    init(game, x, y) { // This init method is called by ObjectPool.get()
+        this.game = game; // Re-assign or confirm game instance
+        this.x = x;
+        this.y = y;
+        
+        // Now calculate properties that depend on game.currentRPM and other game state
+        // We know game is fully initialized when init is called from ObjectPool.get()
+        const currentRPM = this.game.currentRPM || 9.25; // Fallback if still null/undefined
+        const enemiesKilled = this.game.enemiesKilled || 0; // Fallback
+
+        this.speed = (0.4 + (currentRPM * 0.01)) * 0.5 * 3;
+        this.health = (40 + currentRPM + (enemiesKilled * 0.06));
+        this.maxHealth = this.health;
+        this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
+        this.color = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+        this.id = this.game.getNewId(); // Assign ID here
+        this.animationTimer = Math.random() * Math.PI * 2; // Randomize here
+        this.active = true; // Set active flag
     }
 
     applyFire(damage, stacks) {
@@ -453,10 +469,9 @@ export default class GummyCluster {
     spawnGummyBear() {
         const spawnX = this.x + Math.random() * this.width;
         const spawnY = this.y + Math.random() * this.height;
-        const gummyBear = new GummyBear(this.game, spawnX, spawnY);
+        const gummyBear = this.game.enemyPools['gummy_bear'].get(this.game, spawnX, spawnY);
         gummyBear.vx = (Math.random() - 0.5) * 12;
         gummyBear.vy = -Math.random() * 10;
-        this.game.missiles.push(gummyBear);
     }
 
     update(tsf) {

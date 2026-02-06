@@ -497,7 +497,7 @@ export default class Player {
                     for (let i = 0; i < numParticles; i++) {
                         const radius = Math.random() * 4 + 2;
                         const color = this.game.FROSTING_COLORS[Math.floor(Math.random() * this.game.FROSTING_COLORS.length)];
-                        const lifespan = 60 + Math.random() * 30 * (this.vy / 20);
+                        const lifespan = Math.min(600, 60 + Math.random() * 30 * (this.vy / 20));
                         const vx = (Math.random() + (this.vx / 22) - 0.5) * 6 * (this.vy / 20);
                         const vy = -Math.random() * 8 * (this.vy / 17);
                         this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height, vx, vy, radius, color, lifespan);
@@ -815,47 +815,7 @@ export default class Player {
 
         ctx.restore(); // END PLAYER TRANSFORM
 
-     if (this.sugarRushTimer > 0) {
-    ctx.save();
-    
-    // 1. BOUNDARY LOCK: Keeps waves from bleeding out of character bounds
-    ctx.beginPath();
-    ctx.rect(this.x, this.y + (this.height * 0.33), this.width, this.height * 0.67);
-    ctx.clip();
 
-    const waveCount = 3;
-    const slowSpeed = 0.05; 
-    const colorSpeed = 2; 
-    const arcHeight = -10; // Controls how much the wave "curves"
-    
-    for (let i = 0; i < waveCount; i++) {
-        // 2. REVERSED DIRECTION: subtracted from 1 to move bottom-to-top
-        const progress = 1 - ((this.game.gameTime * slowSpeed + i * (1 / waveCount)) % 1);
-        
-        const minY = this.y + (this.height * 0.33);
-        const maxY = this.y + this.height;
-        const yPos = minY + ((maxY - minY) * progress);
-        
-        const alpha = Math.sin(progress * Math.PI);
-        const hue = (this.game.gameTime * colorSpeed + i * (360 / waveCount)) % 360;
-        
-        ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha * 0.47})`;
-        ctx.lineWidth = 11;
-
-        // 3. ARCHED WAVE LOGIC: Using Quadratic Curve
-        ctx.beginPath();
-        // Start point (left side)
-        ctx.moveTo(this.x, yPos);
-        // Arched path: control point is at center width but raised/lowered by arcHeight
-        ctx.quadraticCurveTo(
-            this.x + this.width / 2, yPos - arcHeight, 
-            this.x + this.width, yPos
-        );
-        ctx.stroke();
-    }
-
-    ctx.restore();
-}
 
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
         if (!this.isControlling && this.lickAnim > 0) {

@@ -25,7 +25,7 @@ import LevelUpManagerScreen from './levelUpManagerScreen.js';
 import XPBar from './xpBar.js';
 import LevelingManager from './levelingManager.js';
 import { COMPONENTS } from './components.js';
-import GummyCluster from './boss.js';
+import GummyCluster, { GummyBear } from './boss.js';
 import Background from './background.js';
 import DecalManager from './decalManager.js';
 import ModalManager from './modalManager.js';
@@ -257,6 +257,15 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.vignetteAlpha = 0; // For build mode vignette fade
         this.cancelAnimData = { x: 0, y: 0, width: 0, height: 0 };
 
+        this.debugMode = false; // Debug HUD
+        this.fps = 0;
+        this.frameTime = 0;
+        this.frameTimes = []; // For averaging frame time
+        this.fpsLastUpdate = 0;
+        this.fpsHistory = []; // To calculate average FPS
+
+
+
 
         this.gummyWormSpawnThreshold = 24;
         this.gummyWormSeen = false;
@@ -296,14 +305,14 @@ Object.entries(colors).forEach(([name, rgb]) => {
         // this.projectiles = []; // Replaced by projectilePool
         this.projectilesPool = new ObjectPool(Projectile, 100);
         this.particlePool = new ObjectPool(Particle, 1000); // Increased pool size to address "Pool of Particle is full" warning
-        this.soulPool = new ObjectPool(Soul, 100);
-        this.synergyLinePool = new ObjectPool(SynergyLine, 50);
-        this.frostingParticlePool = new ObjectPool(FrostingParticle, 300);
+        this.soulPool = new ObjectPool(Soul, 50);
+        this.synergyLinePool = new ObjectPool(SynergyLine, 200);
+        this.frostingParticlePool = new ObjectPool(FrostingParticle, 400);
         this.dropPool = new ObjectPool(Drop, 50);
-        this.floatingTextPool = new ObjectPool(FloatingText, 100);
+        this.floatingTextPool = new ObjectPool(FloatingText, 200);
         this.damageSpotPool = new ObjectPool(DamageSpot, 50);
         this.waveAttackPool = new ObjectPool(WaveAttack, 20);
-        this.currentRPM = 9.25;
+        this.currentRPM = 9.25; // Moved this line up
         this.currentId = 0;
         this.gumballs = [];
         this.particlesBehind = [];
@@ -317,19 +326,19 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         // Enemy Pools
         this.enemyPools = {
-            'missile': new ObjectPool(Missile, 40), // Fodder
-            'gummy_worm': new ObjectPool(Missile, 40), // Fodder
-            'donut': new ObjectPool(Missile, 30), // Elite
-            'component_enemy': new ObjectPool(Missile, 30), // Elite
-            'ice_cream': new ObjectPool(Missile, 30), // Elite
-            'marshmallow_medium': new ObjectPool(Missile, 30), // Elite
-            'marshmallow_small': new ObjectPool(Missile, 30), // Elite
-            'jelly_pudding': new ObjectPool(Missile, 15), // Heavy
-            'jaw_breaker': new ObjectPool(Missile, 15), // Heavy
-            'marshmallow_large': new ObjectPool(Missile, 15), // Heavy
-            'piggy': new ObjectPool(Missile, 10),
-            'heartenemy': new ObjectPool(Missile, 30),
-            'gummy_bear': new ObjectPool(Missile, 30),
+            'missile': new ObjectPool(Missile, 40, this), // Fodder
+            'gummy_worm': new ObjectPool(Missile, 40, this), // Fodder
+            'donut': new ObjectPool(Missile, 30, this), // Elite
+            'component_enemy': new ObjectPool(Missile, 30, this), // Elite
+            'ice_cream': new ObjectPool(Missile, 30, this), // Elite
+            'marshmallow_medium': new ObjectPool(Missile, 30, this), // Elite
+            'marshmallow_small': new ObjectPool(Missile, 30, this), // Elite
+            'jelly_pudding': new ObjectPool(Missile, 15, this), // Heavy
+            'jaw_breaker': new ObjectPool(Missile, 15, this), // Heavy
+            'marshmallow_large': new ObjectPool(Missile, 15, this), // Heavy
+            'piggy': new ObjectPool(Missile, 10, this),
+            'heartenemy': new ObjectPool(Missile, 30, this),
+            'gummy_bear': new ObjectPool(GummyBear, 30),
         };
 
         this.levelingManager = new LevelingManager(this);
@@ -780,6 +789,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
             }
 
             // --- Game Actions (Only run if no modal is open) ---
+            if (k === 'p') {
+                this.debugMode = !this.debugMode;
+                console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
+            }
             if (k === 'f') {
                 this.modalManager.open('shop');
             }
@@ -1309,6 +1322,22 @@ Object.entries(colors).forEach(([name, rgb]) => {
         }
     }
 
+    static isMobileDevice() {
+        const toMatch = [
+            /Android/i,
+            /webOS/i,
+            /iPhone/i,
+            /iPad/i,
+            /iPod/i,
+            /BlackBerry/i,
+            /Windows Phone/i
+        ];
+        return toMatch.some((toMatchItem) => {
+            return navigator.userAgent.match(toMatchItem);
+        }) || window.innerWidth <= 768;
+    }
+
+
 
     updateStatsWindow() {
         document.getElementById('stat-shot-damage').innerText = this.stats.damage;
@@ -1402,6 +1431,12 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.player.update(tsf);
             this.towers.forEach(t => t.update(tsf));
 
+            // Logic to set isSugarRushed for towers
+            const isPlayerSugarRushing = this.player.sugarRushTimer > 0;
+            this.towers.forEach(tower => {
+                tower.isSugarRushed = isPlayerSugarRushing;
+            });
+
             // Update pooled objects
             this.particlePool.update(tsf);
             this.dropPool.update(tsf);
@@ -1447,20 +1482,69 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
 
 
-    static isMobileDevice() {
-        const toMatch = [
-            /Android/i,
-            /webOS/i,
-            /iPhone/i,
-            /iPad/i,
-            /iPod/i,
-            /BlackBerry/i,
-            /Windows Phone/i
+    drawDebugHUD(ctx) {
+        if (!this.debugMode) return;
+
+        const PADDING = 13;
+        const LINE_HEIGHT = 26;
+        const TEXT_SIZE = 18;
+        const BG_ALPHA = 0.6;
+        const TEXT_COLOR = 'white';
+
+        ctx.save();
+        ctx.font = `${TEXT_SIZE}px Arial`;
+        ctx.textBaseline = 'top';
+
+        // Calculate active entities
+        let activeEnemies = 0;
+        for (const type in this.enemyPools) {
+            activeEnemies += this.enemyPools[type].getActiveCount();
+        }
+        const activeProjectiles = this.projectilesPool.getActiveCount();
+        const activeSouls = this.soulPool.getActiveCount();
+        const totalActiveEntities = activeEnemies + activeProjectiles + activeSouls;
+        const activeParticles = this.particlePool.getActiveCount();
+        const totalParticles = this.particlePool.pool.length;
+        const activeFrostingParticles = this.frostingParticlePool.getActiveCount();
+        const totalFrostingParticles = this.frostingParticlePool.pool.length;
+        const activeDamageSpots = this.damageSpotPool.getActiveCount();
+        const totalDamageSpots = this.damageSpotPool.pool.length;
+        const activeFloatingTexts = this.floatingTextPool.getActiveCount();
+        const totalFloatingTexts = this.floatingTextPool.pool.length;
+
+        const debugInfo = [
+            `FPS: ${this.fps.toFixed(0)}`,
+            `Active Entities: ${totalActiveEntities} (E:${activeEnemies} P:${activeProjectiles} S:${activeSouls})`,
+            `Frame Time: ${this.frameTime.toFixed(2)} ms`,
+            `Particles: ${activeParticles}/${totalParticles}`,
+            `Frosting: ${activeFrostingParticles}/${totalFrostingParticles}`,
+            `Damage Spots: ${activeDamageSpots}/${totalDamageSpots}`,
+            `Floating Texts: ${activeFloatingTexts}/${totalFloatingTexts}`,
+            `Threat RPM: ${this.threatManager.threatRPM.toFixed(2)}`
         ];
-        return toMatch.some((toMatchItem) => {
-            return navigator.userAgent.match(toMatchItem);
-        }) || window.innerWidth <= 768;
+
+        // Determine background rectangle size
+        let maxWidth = 0;
+        debugInfo.forEach(line => {
+            maxWidth = Math.max(maxWidth, ctx.measureText(line).width);
+        });
+
+        const rectWidth = maxWidth + PADDING * 2;
+        const rectHeight = debugInfo.length * LINE_HEIGHT + PADDING * 2;
+
+        // Draw background
+        ctx.fillStyle = `rgba(0, 0, 0, ${BG_ALPHA})`;
+        ctx.fillRect(0, 0, rectWidth, rectHeight);
+
+        // Draw text
+        ctx.fillStyle = TEXT_COLOR;
+        debugInfo.forEach((line, index) => {
+            ctx.fillText(line, PADDING, PADDING + index * LINE_HEIGHT);
+        });
+        ctx.restore();
     }
+
+
 
 
     start() {
@@ -1536,7 +1620,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     this.keys['a'] = false;
                     this.keys['d'] = false; // Correctly stop movement
                 });
-                console.log("Joystick injected successfully. Nipple instance:", manager.get(0));
             } else { console.error("ERROR: nipplejs library is undefined."); }
 
             // --- JUMP BUTTON INJECTOR ---
@@ -1596,7 +1679,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 btn.addEventListener('mousedown', triggerJump);
                 btn.addEventListener('mouseup', releaseJump);
 
-                console.log("Jump button injected successfully.");
             })();
 
             // --- DASH BUTTON INJECTOR ---
@@ -1653,7 +1735,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 btn.addEventListener('mousedown', triggerDash);
                 btn.addEventListener('mouseup', releaseDash);
 
-                console.log("Dash button injected successfully.");
             })();
         }
     }

@@ -10,6 +10,17 @@ export default class GameLoop {
     }
 
     loop(currentTime) {
+        // --- Start Frame Timing ---
+        if (!this.game.lastTime) this.game.lastTime = currentTime;
+        const deltaTime = Math.min(100, currentTime - this.game.lastTime); // Prevent super large delta on tab switch
+        this.game.lastTime = currentTime;
+        const frameStartTime = currentTime; // Mark the beginning of the frame processing
+
+        let tsf = deltaTime / this.game.targetFrameTime;
+        if (this.game.isBuilding) {
+            tsf *= 0.05; // Game runs very slow in build mode
+        }
+
         if (!this.game.gameStarted) {
             this.game.drawing.drawTitleScreen(this.game.ctx);
             requestAnimationFrame((t) => this.loop(t));
@@ -18,7 +29,7 @@ export default class GameLoop {
 
         if (this.game.modalManager.isOpen()) {
             this.game.isPaused = true;
-            this.game.modalManager.update((currentTime - (this.game.lastTime || currentTime)) / this.game.targetFrameTime);
+            this.game.modalManager.update(deltaTime / this.game.targetFrameTime);
         } else if (this.game.isPaused && !this.game.sellModeActive && !this.game.levelingManager.isLevelingUp) {
             this.game.isPaused = false;
         }
@@ -28,14 +39,9 @@ export default class GameLoop {
             requestAnimationFrame((t) => this.loop(t));
             return;
         }
-        if (!this.game.lastTime) this.game.lastTime = currentTime;
-        const deltaTime = Math.min(100, currentTime - this.game.lastTime);
-        this.game.lastTime = currentTime;
-                let tsf = deltaTime / this.game.targetFrameTime;
-                if (this.game.isBuilding) {
-                    tsf *= 0.05;
-                }
-                this.game.update(tsf);
+        
+        this.game.update(tsf);
+
         
                 this.game.screenShake.update(tsf);
         
@@ -723,9 +729,19 @@ export default class GameLoop {
             bossPulseOverlay.style.display = 'none';
         }
 
-        if (this.game.modalManager.isOpen()) {
-            this.game.modalManager.draw(this.game.ctx);
+        // Calculate actual frame time and FPS
+        const frameEndTime = performance.now();
+        this.game.frameTime = frameEndTime - frameStartTime;
+
+        // Update FPS (average over ~1 second)
+        this.game.fpsHistory.push(1000 / deltaTime);
+        if (this.game.fpsHistory.length > 60) { // Keep last 60 delta times
+            this.game.fpsHistory.shift();
         }
+        this.game.fps = this.game.fpsHistory.reduce((a, b) => a + b) / this.game.fpsHistory.length;
+
+        // Draw Debug HUD last
+        this.game.drawDebugHUD(this.game.ctx);
 
         requestAnimationFrame((t) => this.loop(t));
     }

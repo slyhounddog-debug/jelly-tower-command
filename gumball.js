@@ -65,9 +65,8 @@ export default class Gumball {
                 }
                 this.game.screenShake.trigger(1, 5); // Small shake for gumball hits
 
-                // Add particles for impact
                 for (let i = 0; i < 5; i++) {
-                    this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'spark'));
+                    this.game.particlePool.get(this.game, this.x, this.y, this.color, 'spark');
                 }
                 
                 // Gumball damage counts towards sugar rush
@@ -91,7 +90,7 @@ export default class Gumball {
                 this.game.screenShake.trigger(1, 5);
 
                 for (let i = 0; i < 5; i++) {
-                    this.game.particles.push(new Particle(this.game, this.x, this.y, this.color, 'spark'));
+                    this.game.particlePool.get(this.game, this.x, this.y, this.color, 'spark');
                 }
 
                 if (this.game.player.upgrades['Sugar Rush'] > 0) {

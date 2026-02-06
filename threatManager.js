@@ -50,7 +50,6 @@ export default class ThreatManager {
                 .filter(enemy => this.threatRPM >= enemy.threshold)
                 .map(enemy => enemy.name)
                 .join(', ');
-            console.log(`ThreatRPM: ${this.threatRPM.toFixed(2)}, Unlocked Enemies: [${unlockedEnemies || 'None'}]`);
         }
 
         this.directorTimer += tsf;

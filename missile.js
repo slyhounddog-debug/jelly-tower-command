@@ -247,6 +247,7 @@ export default class Missile {
                 }
 
                 if (this.mass < 3) { // Launchable enemies
+                    knockbackAmount *= 1.5; // Apply additional multiplier for light enemies
                     this.kbVy -= knockbackAmount; // Apply full force upwards
                 } else { // Heavies
                     this.kbVy = Math.max(0.1, this.kbVy - knockbackAmount); // Dampen, but ensure minimum downward movement

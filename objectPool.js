@@ -1,12 +1,13 @@
 // JellyTowerCommand/objectPool.js
 
 export default class ObjectPool {
-    constructor(objectClass, size) {
+    constructor(objectClass, size, gameInstance = null) {
         this.pool = [];
         this.objectClass = objectClass;
+        this.gameInstance = gameInstance;
 
         for (let i = 0; i < size; i++) {
-            const obj = new this.objectClass();
+            const obj = new this.objectClass(this.gameInstance);
             obj.active = false;
             this.pool.push(obj);
         }
