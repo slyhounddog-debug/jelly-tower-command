@@ -401,6 +401,10 @@ export default class Missile {
         if (this.fireFlashTimer > 0) this.fireFlashTimer -= tsf;
         for (let i = this.fireStacks.length - 1; i >= 0; i--) {
             const stack = this.fireStacks[i];
+            if (!stack || typeof stack.timer === 'undefined') { // Defensive check for undefined or missing timer
+                this.fireStacks.splice(i, 1); // Remove the malformed element
+                continue; // Skip to the next iteration
+            }
             stack.timer -= tsf;
             if (stack.timer <= 0) {
                 this.fireStacks.splice(i, 1);
