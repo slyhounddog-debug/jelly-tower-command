@@ -32,6 +32,24 @@ export default class Projectile {
         this.active = false;
         this.x = 0;
         this.y = 0;
+        this.damage = 0;
+        this.range = 0;
+        this.origin = null;
+        this.vx = 0;
+        this.vy = 0;
+        this.angle = 0;
+        this.hp = 0;
+        this.hasHit = false;
+        this.rotation = 0;
+        this.radius = 0;
+        this.gummyImpactStacks = 0;
+        this.popRockStacks = 0;
+        this.bouncesLeft = 0;
+        this.fireDamageCount = 0;
+        this.chainBounceCount = 0;
+        this.isAutoTurret = false;
+        this.isCrit = false;
+        this.bounceDamageFalloff = []; // Or null, depending on how it's used
         this.hitEnemies = [];
         this.hasHitBoss = false;
     }

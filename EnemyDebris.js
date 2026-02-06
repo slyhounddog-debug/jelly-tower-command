@@ -64,11 +64,31 @@ export default class EnemyDebris {
 
     reset() {
         this.active = false;
+        this.game = null; // Clear game reference
+        this.image = null;
+        this.color = null;
+        this.collisionWidth = 0;
+        this.collisionHeight = 0;
+        this.enemySpeed = 0;
         this.x = 0;
         this.y = 0;
+        this.width = 0;
+        this.height = 0;
+        this.sx = 0;
+        this.sy = 0;
+        this.sWidth = 0;
+        this.sHeight = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.gravity = 0;
+        this.rotation = 0;
+        this.rotationSpeed = 0;
         this.lifespan = 0;
+        this.fadeStart = 0;
+        this.alpha = 1; // Reset alpha to full
         this.onGround = false;
-        this.image = null;
+        this.bounceCount = 0;
+        this.maxBounces = 0;
     }
 
     update(tsf) {

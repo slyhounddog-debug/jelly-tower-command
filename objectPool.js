@@ -5,6 +5,8 @@ export default class ObjectPool {
         this.pool = [];
         this.objectClass = objectClass;
         this.gameInstance = gameInstance;
+        this.poolSize = size; // Store size for modulo operator
+        this.poolPointer = 0; // Initialize pool pointer
 
         for (let i = 0; i < size; i++) {
             const obj = new this.objectClass(this.gameInstance);
@@ -14,18 +16,25 @@ export default class ObjectPool {
     }
 
     get(...args) {
-        for (let i = 0; i < this.pool.length; i++) {
-            if (!this.pool[i].active) {
-                const obj = this.pool[i];
-                obj.active = true;
-                if (typeof obj.init === 'function') {
-                    obj.init(...args);
-                }
-                return obj;
+        const obj = this.pool[this.poolPointer];
+        
+        // If the object is active, force-reset it (overwriting oldest)
+        if (obj.active) {
+            console.warn(`Pool for ${this.objectClass.name} is full, force-resetting oldest active object.`);
+            if (typeof obj.reset === 'function') {
+                obj.reset();
             }
         }
-        console.warn(`Pool of ${this.objectClass.name} is full. Consider increasing size.`);
-        return null;
+        
+        obj.active = true;
+        if (typeof obj.init === 'function') {
+            obj.init(...args);
+        }
+        
+        // Move pointer to the next position
+        this.poolPointer = (this.poolPointer + 1) % this.poolSize;
+        
+        return obj;
     }
 
     returnToPool(obj) {

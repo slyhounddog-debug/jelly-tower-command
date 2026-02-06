@@ -35,7 +35,17 @@ export default class Soul {
         this.active = false;
         this.x = 0;
         this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
         this.life = 0;
+        this.maxLife = 0;
+        this.decay = 0;
+        this.targetX = 0; // Or undefined
+        this.targetY = 0; // Or undefined
+        this.homingStrength = 0;
+        this.gracePeriod = 0;
+        this.size = 0;
+        this.emissionTimer = 0;
     }
 
     update(tsf) {

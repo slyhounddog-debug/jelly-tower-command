@@ -27,6 +27,12 @@ export default class FloatingText {
         this.contentString = '';
         this.life = 0;
         this.opacity = 0;
+        this.color = 'white'; // Default color
+        this.sizeIncrease = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.gravity = 0;
+        this.scale = 1.0; // Reset to default scale
         this.active = false;
     }
 

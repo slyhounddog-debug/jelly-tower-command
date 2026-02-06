@@ -23,6 +23,8 @@ export default class SwipeParticle {
         this.size = 0;
         this.speedX = 0;
         this.speedY = 0;
+        this.color = null; // Reset color
+        this.lifespan = 0; // Reset lifespan
         this.life = 0;
     }
 

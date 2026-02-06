@@ -53,6 +53,7 @@ export default class Particle {
         this.emissionTimer = 0; this.gracePeriod = 0;
         this.startRadius = 0; this.endRadius = 0; this.currentRadius = 0;
         this.size = 0;
+        this.emitter = null;
     }
 
     update(tsf) {

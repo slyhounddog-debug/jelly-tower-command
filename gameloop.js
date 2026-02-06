@@ -617,7 +617,7 @@ export default class GameLoop {
             const turretWidth = 137 * 0.9; // Scale down by 10%
             const turretHeight = 190 * 0.9;
             let drawX = this.game.mouse.x - (turretWidth / 2);
-            let drawY = this.game.mouse.aimY - (turretHeight / 2); // Use aimY to account for offset
+            let drawY = this.game.mouse.y - (turretHeight / 2); // Use y to account for offset
             let alpha = 0.5;
             let tintColor = null;
 

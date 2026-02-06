@@ -17,24 +17,39 @@ export default class Missile {
         this.game = game;
         this.x = x; 
         this.y = y + 90;
-        this.baseSpeed = (type === 'piggy') ? 0.5 : 1;
         this.type = type;
         this.groundProximity = false;
         this.active = true;
-        this.knockbackTimer = 0; // Initialize knockback timer
+        this.knockbackTimer = 0;
 
-        this.health = (45 + (this.game.currentRPM * 2.2) + (this.game.enemiesKilled * 0.1)) * hpMultiplier;
-
-        this.width = 70;
-        this.height = 70;
+        let baseWidth = 0;
+        let baseHeight = 0;
+        let baseHealth = 0;
+        let baseMass = 0;
+        let baseSpeed = 0;
+        let baseDamage = 0;
         this.image = null;
         this.sprite = null;
-        this.mass = 1; // Default mass
+        this.color = null;
 
-       if (type === 'missile') {
-            this.width = 70; 
-            this.health = (25 + (this.game.currentRPM * 2)) * hpMultiplier;
-            this.height = 70;
+        // Reset all special flags that might have been set in a previous life
+        this.isDonut = false;
+        this.isIceCream = false;
+        this.isJellyPudding = false;
+        this.isJawBreaker = false;
+        this.isComponentEnemy = false;
+        this.isHeartEnemy = false;
+        this.color1 = null; // Gummy worm specific
+        this.color2 = null; // Gummy worm specific
+        this.rotationSpeed = 0; // Marshmallow specific
+
+       if (type === 'missile') { // Jelly Bean
+            baseWidth = 70;
+            baseHeight = 75;
+            baseHealth = (25 + (this.game.currentRPM * 2)) * hpMultiplier;
+            baseMass = 1;
+            baseSpeed = 1;
+            baseDamage = 5;
             const variantIndex = Math.floor(Math.random() * 8);
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
@@ -46,125 +61,143 @@ export default class Missile {
             });
             this.sprite.currentFrame = variantIndex;
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
-            this.damage = 5;
-            this.mass = 1; // Missile (Jelly Bean): Mass 1
-        
         } else if (type === 'gummy_worm') {
-            this.health = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
-            this.width = 26;
-            this.height = 85;
+            baseWidth = 26;
+            baseHeight = 85;
+            baseHealth = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
+            baseMass = 1.2;
+            baseSpeed = 1.6;
+            baseDamage = 6;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1; 
-            this.baseSpeed = 1.6; 
-            this.damage = 6;
-            this.mass = 1.2; // Gummy Worm: Mass 1.2
         } else if (type === 'marshmallow_large') {
-            this.health = (150 + (this.game.currentRPM * 5.5)) * hpMultiplier;
-            this.width = 76.5 * 1.5;
-            this.height = 76.5 * 1.5;
-            this.color = '#fffaf2ff';
-            this.baseSpeed = 0.4;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            baseWidth = 76.5 * 1.5;
+            baseHeight = 76.5 * 1.5;
+            baseHealth = (150 + (this.game.currentRPM * 5.5)) * hpMultiplier;
+            baseMass = 10;
+            baseSpeed = 0.4;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
             this.image = this.game.marshmallowBigImage;
-            this.mass = 10; // Marshmallow (Large): Mass 10
+            this.color = '#fffaf2ff';
         } else if (type === 'marshmallow_medium') {
-            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
-            this.width = 45 * 1.6;
-            this.height = 45 * 1.6;
-            this.color = '#fffcf8ff';
-            this.baseSpeed = 0.7;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            baseWidth = 45 * 1.6;
+            baseHeight = 45 * 1.6;
+            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
+            baseMass = 6;
+            baseSpeed = 0.7;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
             this.image = this.game.marshmallowMediumImage;
-            this.mass = 6; // Marshmallow (Med): Mass 6
+            this.color = '#fffcf8ff';
         } else if (type === 'marshmallow_small') {
-            this.health = (10 + (this.game.currentRPM * .5)) * hpMultiplier;
-            this.width = 22 * 2.5;
-            this.height = 22 * 2.5;
-            this.color = '#fffdf8ff';
-            this.baseSpeed = 1;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            baseWidth = 22 * 2.5;
+            baseHeight = 22 * 2.5;
+            baseHealth = (10 + (this.game.currentRPM * .5)) * hpMultiplier;
+            baseMass = 2;
+            baseSpeed = 1;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
             this.image = this.game.marshmallowSmallImage;
-            this.mass = 2; // Marshmallow (Small): Mass 2
+            this.color = '#fffdf8ff';
         } else if (type === 'piggy') {
-            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
-            this.width = 84;
-            this.height = 86;
-            this.baseSpeed = 0.5;
+            baseWidth = 84;
+            baseHeight = 86;
+            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
+            baseMass = 6;
+            baseSpeed = 0.5;
             this.image = this.game.piggybankImage;
-            this.color = '#FFC0CB'; // Pink color for piggy bank
-            this.mass = 6; // Piggy is similar to component, giving it a mass of 3. User didn't specify.
+            this.color = '#FFC0CB';
         } else if (type === 'jaw_breaker') {
-            this.health = (200 + (this.game.currentRPM * 7)) * hpMultiplier;
-            this.width = 76.5 * 1.7;
-            this.height = 76.5 * 1.7;
-            this.baseSpeed = 0.6;
+            baseWidth = 76.5 * 1.7;
+            baseHeight = 76.5 * 1.7;
+            baseHealth = (200 + (this.game.currentRPM * 7)) * hpMultiplier;
+            baseMass = 999;
+            baseSpeed = 0.6;
+            baseDamage = 18;
             this.image = this.game.jawbreakerenemyImage;
             this.color = '#00ffd5ff';
-            this.isJawBreaker = true;
-            this.damage = 18;
-            this.mass = 999; // Jawbreaker: Mass 999
+            this.isJawBreaker = true; // Special flag
         } else if (type === 'jelly_pudding') {
-            this.health = (100 + (this.game.currentRPM * 5)) * hpMultiplier;
-            this.width = 95;
-            this.height = 95;
-            this.baseSpeed = 1;
+            baseWidth = 95;
+            baseHeight = 95;
+            baseHealth = (100 + (this.game.currentRPM * 5)) * hpMultiplier;
+            baseMass = 0.5;
+            baseSpeed = 1;
+            baseDamage = 14;
             this.image = this.game.jellypuddingenemyImage;
             this.color = '#d400ffff';
-            this.isJellyPudding = true;
-            this.damage = 14;
-            this.mass = 0.5; // Jelly Pudding: Mass 0.5
+            this.isJellyPudding = true; // Special flag
         } else if (type === 'donut') {
-            this.health = (80 + (this.game.currentRPM * 2.5)) * hpMultiplier;
-            this.width = 165;
-            this.height = 175;
-            this.baseSpeed = 1.2;
+            baseWidth = 90;
+            baseHeight = 90;
+            baseHealth = (80 + (this.game.currentRPM * 2.5)) * hpMultiplier;
+            baseMass = 1.5;
+            baseSpeed = 1.2;
+            baseDamage = 10;
             this.image = this.game.donutenemyImage;
             this.color = '#00e1ffff';
-            this.isDonut = true;
-            this.damage = 10;
-            this.mass = 1.5; // Donut: Mass 1.5
+            this.isDonut = true; // Special flag
         } else if (type === 'ice_cream') {
-            this.health = (120 + (this.game.currentRPM * 3)) * hpMultiplier;
-            this.width = 85;
-            this.height = 85;
-            this.baseSpeed = 0.8;
+            baseWidth = 85;
+            baseHeight = 85;
+            baseHealth = (120 + (this.game.currentRPM * 3)) * hpMultiplier;
+            baseMass = 5;
+            baseSpeed = 0.8;
+            baseDamage = 8;
             this.image = this.game.icecreamenemyImage;
             this.color = '#ffdbedff';
-            this.isIceCream = true;
-            this.damage = 8;
-            this.mass = 5; // Ice Cream: Mass 5
+            this.isIceCream = true; // Special flag
         } else if (type === 'component_enemy') {
-            this.health = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
-            this.width = 78;
-            this.height = 78;
-            this.baseSpeed = 0.6;
+            baseWidth = 78;
+            baseHeight = 78;
+            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
+            baseMass = 2.9;
+            baseSpeed = 0.6;
+            baseDamage = 9;
             this.image = this.game.componentenemyImage;
-            this.color = '#B03060'; // Light maroon color for component enemy
-            this.isComponentEnemy = true;
-            this.damage = 9;
-            this.mass = 2.9; // Component: Mass 3
+            this.color = '#B03060';
+            this.isComponentEnemy = true; // Special flag
         } else if (type === 'heartenemy') {
-            this.health = (50 + (this.game.currentRPM * 2.2)) * hpMultiplier;
-            this.width = 68;
-            this.height = 68;
-            this.baseSpeed = 1.4;
+            baseWidth = 68;
+            baseHeight = 68;
+            baseHealth = (50 + (this.game.currentRPM * 2.2)) * hpMultiplier;
+            baseMass = 2;
+            baseSpeed = 1.4;
+            baseDamage = 5;
             this.image = this.game.heartenemyImage;
             this.color = '#ff90acff';
-            this.isHeartEnemy = true;
-            this.damage = 5;
-            this.mass = 2; // Heart: Mass 2
+            this.isHeartEnemy = true; // Special flag
         } else if (type === 'gummy_bear') { // Assuming 'gummy_bear' is a type
-            this.health = (250 + (this.game.currentRPM * 8)) * hpMultiplier;
-            this.width = 100;
-            this.height = 100;
-            this.baseSpeed = 0.3;
-            this.image = this.game.gummybearImages[0]; // Assuming an array of gummy bear images
+            baseWidth = 100;
+            baseHeight = 100;
+            baseHealth = (250 + (this.game.currentRPM * 8)) * hpMultiplier;
+            baseMass = 6;
+            baseSpeed = 0.3;
+            this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
             this.color = 'brown'; // Placeholder color
-            this.mass = 6; // Gummy Bear: Mass 6
         }
-        this.speed = (this.baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
-        this.maxHealth = this.health;
+
+
+        // Calculate sizeScale and apply it to all relevant properties
+        if (type === 'missile' || type === 'gummy_worm') {
+            this.sizeScale = 0.75 + (Math.random() / 2); // User specified formula for 0.75 to 1.25 range
+            this.width = baseWidth * this.sizeScale;
+            this.height = baseHeight * this.sizeScale;
+            this.health = baseHealth * (this.sizeScale * this.sizeScale); // Health scales with size squared
+            this.mass = Math.max(0.5, baseMass * (this.sizeScale * this.sizeScale)); // Mass scales with size squared, with a minimum of 0.5
+            this.damage = baseDamage * this.sizeScale; // Damage scales with size
+        } else {
+            this.sizeScale = 1;
+            this.width = baseWidth;
+            this.height = baseHeight;
+            this.health = baseHealth;
+            this.mass = baseMass;
+            this.damage = baseDamage; // Set damage after type-specific assignments
+        }
+
+        this.baseHealth = baseHealth; // Store base health
+        this.baseMass = baseMass; // Store base mass
+        this.speed = (baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
+        this.maxHealth = this.health; // Max health is the scaled health
         this.kbVy = 0; 
         this.scale = 1;
         this.angle = 0;
@@ -205,12 +238,42 @@ export default class Missile {
         this.fireStacks = [];
         this.lastDamageSource = null;
         this.isJellyTagged = false;
-        this.sprite = null;
-        this.image = null;
+        this.sprite = null; // Missile uses sprite
+        this.image = null; // Other enemies use image
         this.knockbackTimer = 0; // Reset knockback timer
         this.isTeleporting = false; // Reset teleport flag
         this.teleportAnimTimer = 0; // Reset teleport animation timer
         this.scale = 1; // Reset scale
+        this.baseSpeed = 0; // Ensure speed is reset to a safe default
+        this.type = null; // Clear type
+        this.groundProximity = false;
+        this.damage = 0;
+        this.mass = 0;
+        this.hitTimer = 0;
+        this.stretch = 1;
+        this.squash = 1;
+        this.damageText = null;
+        this.damageTextTimer = 0;
+        this.criticalHitFlashTimer = 0;
+        this.shakeDuration = 0;
+        this.shakeMagnitude = 0;
+        this.healScale = 1;
+        this.auraSlowTimer = 0;
+        this.totalSlow = 0;
+        this.slowParticleTimer = 0;
+        this.slowTrailTimer = 0;
+        this.id = -1; // Reset ID, will be reassigned on init
+        this.knockbackImmunityTimer = 0;
+        this.speedBoostTimer = 0;
+        this.isDonut = false;
+        this.isIceCream = false;
+        this.isJellyPudding = false;
+        this.isJawBreaker = false;
+        this.isComponentEnemy = false;
+        this.isHeartEnemy = false;
+        this.color1 = null;
+        this.color2 = null;
+        this.sizeScale = 1; // Reset the sizeScale
     }
 
     applyFire(damage, stacks) {
@@ -789,75 +852,60 @@ export default class Missile {
 
         const soul = this.game.soulPool.get(this.game, spawnX + this.width / 2, spawnY + this.height / 2);
 
-        // --- Drop Logic ---
+        // --- New Drop Logic ---
+        const isMarshmallow = (this.type === 'marshmallow_large' || this.type === 'marshmallow_medium');
+        let dropMultiplier = (this.type === 'piggy') ? pStats.mult : 1;
+
+        // Piggy Bank specific bonus money
         if (this.type === 'piggy') {
-            // Piggy Bank specific drops
             const bonus = Math.floor(this.game.money * pStats.bonus);
             this.game.money += bonus;
             this.game.totalMoneyEarned += bonus;
             this.game.handlePiggyDeath(bonus);
+        }
 
-            // Apply Piggy Bank loot multiplier for XP, coins, and multiple chances for special drops
-            for (let i = 0; i < pStats.mult; i++) {
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained); // Multiplied XP
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'coin'); // Multiplied regular coins
-
-                // Multiple chances for lucky coin, heart, component based on luck
-                const randHeart = Math.random() * 100;
-                if (randHeart < this.game.stats.luckHeart) {
-                    this.game.dropPool.get(this.game, spawnX, spawnY, 'heart');
-                }
-
-                const randLuckyCoin = Math.random() * 100;
-                if (randLuckyCoin < this.game.stats.luckCoin) {
-                    this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin');
-                }
-                
-                // Chance for component drop (evaluated per multiplier iteration)
-                const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25); // Use the general formula
-                if (Math.random() * 100 < componentDropChance) {
-                    this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
-                }
+        for (let i = 0; i < dropMultiplier; i++) {
+            // Guaranteed Drops (Small Coin and XP Orb) for most enemies
+            if (!isMarshmallow) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'coin'); // One small coin
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained); // One XP orb
             }
 
-            // Ice Cream Scoop chance for Piggy Bank
-            const iceCreamChance = this.game.emporium.getIceCreamChance();
-            if (Math.random() * 100 < iceCreamChance[1]) { // Use piggy-specific ice cream chance
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
+            // Chance-based Drops (Lucky Coin, Heart, Component)
+            const randLuckyCoin = Math.random() * 100;
+            if (randLuckyCoin < this.game.stats.luckCoin) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin');
             }
 
-        } else { // For all other enemy types
-            // General drops for all non-piggy enemies
-            this.game.dropPool.get(this.game, spawnX, spawnY, 'xp_orb', xpGained); // One XP orb
-
-            const randHeart = Math.random() * 100;
-            if (randHeart < this.game.stats.luckHeart) {
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'heart'); // One heart chance
+            // Heart Drop Logic
+            let finalHeartChance = this.game.stats.luckHeart; // Base chance
+            if (this.type === 'heartenemy') { // Guaranteed drop for heartenemy
+                finalHeartChance = 100;
             }
-
-            const randCoin = Math.random() * 100;
-            if (randCoin < this.game.stats.luckCoin) {
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'lucky_coin'); // One lucky coin chance
-            } else if (randCoin < 40) { // 40% chance for a regular coin if lucky coin doesn't drop
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'coin'); // One regular coin chance
-            }
-
-            // Component Drop Logic for non-piggy enemies
-            if (this.type === 'component_enemy') {
-                this.game.dropPool.get(this.game, spawnX, spawnY, 'component'); // Guaranteed drop for component_enemy
-            } else { // Other regular enemies get a chance
-                const componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25); // Reverted to original formula
-                if (Math.random() * 100 < componentDropChance) {
-                    this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
-                }
+            if (Math.random() * 100 < finalHeartChance) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'heart');
             }
             
-            // Ice Cream Scoop chance for non-Piggy enemies
+            // Component Drop Logic
+            let componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
+            if (this.type === 'component_enemy') { // Guaranteed drop for component_enemy
+                 componentDropChance = 100; 
+            }
+            if (Math.random() * 100 < componentDropChance) {
+                this.game.dropPool.get(this.game, spawnX, spawnY, 'component');
+            }
+
+            // Ice Cream Scoop chance
             const iceCreamChance = this.game.emporium.getIceCreamChance();
-            if (Math.random() * 100 < iceCreamChance[0]) { // Use general ice cream chance
+            let finalIceCreamChance = (this.type === 'piggy') ? iceCreamChance[1] : iceCreamChance[0]; // Base chance
+            if (this.type === 'ice_cream') { // Guaranteed drop for ice_cream enemy
+                finalIceCreamChance = 100;
+            }
+            if (Math.random() * 100 < finalIceCreamChance) {
                 this.game.dropPool.get(this.game, spawnX, spawnY, 'ice_cream_scoop');
             }
         }
+
 
         this.reset();
     }

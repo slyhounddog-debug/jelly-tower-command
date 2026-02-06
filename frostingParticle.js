@@ -28,6 +28,19 @@ export default class FrostingParticle {
     reset() {
         this.active = false;
         this.history = [];
+        this.x = 0;
+        this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.radius = 0;
+        this.color = null;
+        this.lifespan = 0;
+        this.initialLifespan = 0;
+        this.gravity = 0;
+        this.dragY = 0;
+        this.type = null;
+        this.maxHistory = 0; // Reset maxHistory
+        this.isSplatting = false;
     }
 
     update(tsf) {

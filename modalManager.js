@@ -94,7 +94,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.piggyModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120,
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -110,7 +110,7 @@ export default class ModalManager {
                     x, y, width, height, image: this.componentModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120,
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -123,10 +123,10 @@ export default class ModalManager {
                 const buttonWidth = 116;
                 const buttonHeight = 75;
                 return { 
-                    x, y, width, height, image: this.bossModalImage,
+                    x: x, y: y, width: width, height: height, image: this.bossModalImage,
                     confirmButton: {
                         x: x + (width - buttonWidth) / 2,
-                        y: y + height - buttonHeight - 120,
+                        y: y + height - buttonHeight - 120 + 100, // Adjusted Y
                         width: buttonWidth,
                         height: buttonHeight
                     }
@@ -244,16 +244,16 @@ export default class ModalManager {
     handleInput() {
         if (!this.isOpen() || this.closeDelayTimer > 0) return;
         
+        const adjustedMouseX = this.game.mouse.x; // Mouse X is fine
+        const adjustedMouseY = this.game.mouse.y + 100; // Adjust mouse Y for global canvas translate offset
+        
         const config = this.getModalConfig(this.activeModal);
         
         // Handle confirm button click
         if (config && config.confirmButton) {
             const btn = config.confirmButton;
-            const mouseX = this.game.mouse.x;
-            const mouseY = this.game.mouse.y;
-
-            if (mouseX >= btn.x && mouseX <= btn.x + btn.width &&
-                mouseY >= btn.y && mouseY <= btn.y + btn.height) {
+            if (adjustedMouseX >= btn.x && adjustedMouseX <= btn.x + btn.width &&
+                adjustedMouseY >= btn.y && adjustedMouseY <= btn.y + btn.height) {
                 this.close();
                 return; // Consume the click
             }
@@ -261,11 +261,8 @@ export default class ModalManager {
 
         if (config) { // Only check if config exists for the active modal
             // Check if click is outside the modal's main content area
-            const mouseX = this.game.mouse.x;
-            const mouseY = this.game.mouse.y;
-
-            if (!(mouseX >= config.x && mouseX <= config.x + config.width &&
-                  mouseY >= config.y && mouseY <= config.y + config.height)) {
+            if (!(adjustedMouseX >= config.x && adjustedMouseX <= config.x + config.width &&
+                  adjustedMouseY >= config.y && adjustedMouseY <= config.y + config.height)) {
                 this.close(); // Clicked outside the modal
                 return; // Consume the click
             }
@@ -273,8 +270,8 @@ export default class ModalManager {
 
         // Check button clicks for modal navigation
         for (const button of this.buttons) {
-            if (this.game.mouse.x > button.x && this.game.mouse.x < button.x + button.width &&
-                this.game.mouse.y > button.y && this.game.mouse.y < button.y + button.height) {
+            if (adjustedMouseX > button.x && adjustedMouseX < button.x + button.width &&
+                adjustedMouseY > button.y && adjustedMouseY < button.y + button.height) {
                 button.isAnimating = true;
                 button.animTimer = 0;
                 this.toggle(button.name);
@@ -287,22 +284,22 @@ export default class ModalManager {
         switch (this.activeModal) {
             case 'shop':
                 if (this.game.shop && typeof this.game.shop.handleInput === 'function') {
-                    clickHandledByModal = this.game.shop.handleInput();
+                    clickHandledByModal = this.game.shop.handleInput(adjustedMouseX, adjustedMouseY);
                 }
                 break;
             case 'components':
                 if (this.componentQuarters && typeof this.componentQuarters.handleInput === 'function') {
-                    clickHandledByModal = this.componentQuarters.handleInput();
+                    clickHandledByModal = this.componentQuarters.handleInput(adjustedMouseX, adjustedMouseY);
                 }
                 break;
             case 'player':
                 if (this.game.levelUpManagerScreen && typeof this.game.levelUpManagerScreen.handleInput === 'function') {
-                    clickHandledByModal = this.game.levelUpManagerScreen.handleInput();
+                    clickHandledByModal = this.game.levelUpManagerScreen.handleInput(adjustedMouseX, adjustedMouseY);
                 }
                 break;
             case 'emporium':
                 if (this.game.emporium && typeof this.game.emporium.handleInput === 'function') {
-                    clickHandledByModal = this.game.emporium.handleInput();
+                    clickHandledByModal = this.game.emporium.handleInput(adjustedMouseX, adjustedMouseY);
                 }
                 break;
             // No specific input handling for piggy, component_modal, boss as they are simple display modals

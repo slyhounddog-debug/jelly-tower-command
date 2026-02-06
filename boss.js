@@ -66,15 +66,39 @@ export class GummyBear {
         this.active = false;
         this.x = 0;
         this.y = 0;
-        this.health = 0;
-        this.maxHealth = 0;
-        this.slowEffects = [];
-        this.fireStacks = [];
-        this.lastDamageSource = null;
-        this.isJellyTagged = false;
-        this.id = -1;
+        this.width = 60; // Base width
+        this.height = 80; // Base height
+        this.vy = -5;
+        this.vx = 0;
+        this.gravity = 0.3;
+        this.type = 'gummy_bear';
         this.kbVy = 0;
+        this.scale = 1;
+        this.angle = 0;
+        this.animationTimer = 0;
+        this.hitTimer = 0;
+        this.stretch = 1;
+        this.squash = 1;
+        this.damageText = null;
+        this.damageTextTimer = 0;
+        this.criticalHitFlashTimer = 0;
+        this.shakeDuration = 0;
+        this.shakeMagnitude = 0;
+        this.healScale = 1;
+        this.slowEffects = [];
+        this.auraSlowTimer = 0;
+        this.fireStacks = [];
+        this.fireFlashTimer = 0;
+        this.totalSlow = 0;
+        this.slowParticleTimer = 0;
+        this.isJellyTagged = false;
+        this.id = -1; // Reset ID, will be reassigned on init
+        this.mass = 6; // Base mass
         this.knockbackTimer = 0;
+        // Properties that are reassigned in init, but should have a default.
+        this.speed = 0;
+        this.image = null;
+        this.color = null;
     }
 
     applyFire(damage, stacks) {

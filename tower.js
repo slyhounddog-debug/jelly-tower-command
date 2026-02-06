@@ -116,9 +116,10 @@ export default class Tower extends BaseStructure {
 
                 const color = 'rgba(255, 255, 255, 0.7)'; // Bright white
                 const initialSize = Math.random() * 3 + 1; // Small size
-                const lifespan = 20 + Math.random() * 10; // Short lifespan
+                const lifespanFrames = 20 + Math.random() * 10; // Lifespan in frames
+                const lifespanSeconds = lifespanFrames / 60; // Convert to seconds
 
-                this.game.particlePool.get(this.game, visualCx, visualCy, color, 'spark', initialSize, vx, vy, lifespan);
+                this.game.particlePool.get(this.game, visualCx, visualCy, color, 'spark', initialSize, lifespanSeconds, vx, vy);
             }
         }
 

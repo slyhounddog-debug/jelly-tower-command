@@ -29,10 +29,17 @@ export default class Gumball {
         this.active = false;
         this.x = 0;
         this.y = 0;
+        this.width = 0; // Reset width
+        this.height = 0; // Reset height
         this.vx = 0;
         this.vy = 0;
+        this.gravity = 0.5; // Reset to default gravity
+        this.damage = 0; // Reset damage
+        this.color = null; // Reset color
         this.life = 0;
         this.spawner = null;
+        this.collisionDelay = 5; // Reset collision delay
+        this.canSpawn = true; // Reset canSpawn
         this.bossHit = false;
     }
 

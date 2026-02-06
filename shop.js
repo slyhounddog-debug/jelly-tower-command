@@ -75,12 +75,9 @@ export default class Shop {
         });
     }
 
-    handleInput() {
+    handleInput(mouseX, mouseY) {
         const modalConfig = this.game.modalManager.getModalConfig('shop');
         if (!modalConfig) return false; // Should not happen if this modal is active
-
-        const mouseX = this.game.mouse.x;
-        const mouseY = this.game.mouse.y;
 
         // Check if click is within the modal's drawing area
         if (!(mouseX >= modalConfig.x && mouseX <= modalConfig.x + modalConfig.width &&
