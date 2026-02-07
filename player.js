@@ -34,8 +34,7 @@ export default class Player {
         this.jumpSquash = 0;
         this.maxJumps = 2;
         this.firstComponentCollected = false;
-        this.collectedComponents = [];
-        this.equippedComponents = [];
+        this.components = {}; // New Object Map for component storage
         this.maxComponentPoints = 3;
         this.characterImage = new Image();
         this.characterImage.src = 'assets/Images/character.png';
@@ -57,8 +56,7 @@ export default class Player {
         this.jumpSquash = 0;
         this.maxJumps = 2;
         this.firstComponentCollected = false;
-        this.collectedComponents = [];
-        this.equippedComponents = [];
+        this.components = {}; // New Object Map for component storage
         this.maxComponentPoints = 3;
         
         // Leveling
@@ -607,7 +605,7 @@ export default class Player {
         }
     }
       getEquippedComponentCount(componentName) {
-          return this.equippedComponents.filter(c => c.name === componentName).length;
+          return this.components[componentName]?.active || 0;
       }
 
     spawnGumballs(x, y, spawner, count = 2, canSpawn = true) {

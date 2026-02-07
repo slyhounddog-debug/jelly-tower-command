@@ -16,8 +16,8 @@ export default class ThreatManager {
             { name: 'gummy_worm', cost: 3, threshold: 15, baseWeight: 80, weightModifier: -0.05 },
             { name: 'donut', cost: 6, threshold: 45, baseWeight: 20, weightModifier: 0.01 },
             { name: 'heartenemy', cost: 6, threshold: 30, baseWeight: 10, weightModifier: 0 },
-            { name: 'ice_cream', cost: 7, threshold: 35, baseWeight: 35, weightModifier: 0.15 },
-            { name: 'component_enemy', cost: 5, threshold: 25, baseWeight: 25, weightModifier: 0 },
+            { name: 'ice_cream', cost: 7, threshold: 35, baseWeight: 20, weightModifier: 0.1 },
+            { name: 'component_enemy', cost: 5, threshold: 25, baseWeight: 12, weightModifier: 0 },
             { name: 'marshmallow_large', cost: 11, threshold: 55, baseWeight: 15, weightModifier: 0.1 },
             { name: 'jelly_pudding', cost: 10, threshold: 70, baseWeight: 15, weightModifier: 0.2 },
             { name: 'jaw_breaker', cost: 15, threshold: 85, baseWeight: 10, weightModifier: 0.3 }

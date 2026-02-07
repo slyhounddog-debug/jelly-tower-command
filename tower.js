@@ -2,6 +2,7 @@ import BaseStructure from './baseStructure.js';
 import Projectile from './projectile.js';
 import Particle from './particle.js';
 import FrostingParticle from './frostingParticle.js';
+import { turretBag, getVariantFromBag } from './shuffleUtils.js';
 
 export default class Tower extends BaseStructure {
     static lastSpriteIndex = -1; // Add this line
@@ -31,12 +32,8 @@ export default class Tower extends BaseStructure {
         this.drawOffsetY = (this.height + 80 - Tower.SPRITE_FRAME_HEIGHT * 0.9);
         
         // Ensure the new sprite index is different from the last one
-        let newSpriteIndex;
-        do {
-            newSpriteIndex = Math.floor(Math.random() * 8);
-        } while (newSpriteIndex === Tower.lastSpriteIndex);
+        let newSpriteIndex = getVariantFromBag(turretBag, 8); // Use shuffle bag
         this.spriteIndex = newSpriteIndex;
-        Tower.lastSpriteIndex = newSpriteIndex;
 
         this.cooldown = 0;
         this.barrelAngle = Math.random() * Math.PI;

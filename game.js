@@ -39,6 +39,7 @@ import Projectile from './projectile.js';
 import FrostingParticle from './frostingParticle.js';
 import Gumball from './gumball.js';
 import Decal from './decal.js';
+import { jellyBeanBag, turretBag, shuffle, getVariantFromBag } from './shuffleUtils.js';
 
 class Game {
     constructor(canvas) {
@@ -1310,6 +1311,19 @@ Object.entries(colors).forEach(([name, rgb]) => {
         for (const type in this.enemyPools) {
             this.enemyPools[type].reset();
         }
+
+        // Initialize shuffle bags
+        jellyBeanBag.length = 0; // Clear existing bag
+        for (let i = 0; i < 8; i++) {
+            jellyBeanBag.push(i);
+        }
+        shuffle(jellyBeanBag);
+
+        turretBag.length = 0; // Clear existing bag
+        for (let i = 0; i < 8; i++) {
+            turretBag.push(i);
+        }
+        shuffle(turretBag);
 
         this.particles = []; this.drops = []; this.waveAttacks = [];
         this.particlesBehind = [];

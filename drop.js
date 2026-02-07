@@ -171,7 +171,12 @@ export default class Drop {
         }
         if (this.type === 'component') {
             const componentName = getRandomComponent();
-            this.game.player.collectedComponents.push({ name: componentName, id: this.game.getNewId() });
+            // Update the new components Object Map
+            if (this.game.player.components[componentName]) {
+                this.game.player.components[componentName].owned++;
+            } else {
+                this.game.player.components[componentName] = { owned: 1, active: 0 };
+            }
             this.game.lootPopupManager.addLoot('component', componentName, 1);
             this.game.audioManager.playSound('scoop');
             if (!this.game.player.firstComponentCollected) {

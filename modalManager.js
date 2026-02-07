@@ -170,6 +170,18 @@ export default class ModalManager {
         this.game.isPaused = true;
         this.game.audioManager.setMuffled(true);
         this.game.audioManager.playSound('purchase');
+
+        // --- NEW LOGIC FOR EMPORIUM ON GAME OVER ---
+        if (modalName === 'emporium' && this.game.isGameOver) {
+            // Hide game over elements when opening Emporium from game over screen
+            const openEmporiumBtn = document.getElementById('open-emporium-btn');
+            if (openEmporiumBtn) openEmporiumBtn.style.display = 'none';
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) restartBtn.style.display = 'none';
+            const gameOverStats = document.getElementById('game-over-stats');
+            if (gameOverStats) gameOverStats.style.display = 'none';
+        }
+        // --- END NEW LOGIC ---
         
         const config = this.getModalConfig(modalName); // Use the new getModalConfig
         if (!config) return;
@@ -336,6 +348,18 @@ export default class ModalManager {
                     if (closedModalName === 'player') {
                         this.game.levelUpManagerScreen.resetMagnifiedCard();
                     }
+
+                    // --- NEW LOGIC FOR EMPORIUM ON GAME OVER ---
+                    if (closedModalName === 'emporium' && this.game.isGameOver) {
+                        // Show game over elements again if game is still over and Emporium was closed
+                        const openEmporiumBtn = document.getElementById('open-emporium-btn');
+                        if (openEmporiumBtn) openEmporiumBtn.style.display = 'block';
+                        const restartBtn = document.getElementById('restart-btn');
+                        if (restartBtn) restartBtn.style.display = 'block';
+                        const gameOverStats = document.getElementById('game-over-stats');
+                        if (gameOverStats) gameOverStats.style.display = 'block';
+                    }
+                    // --- END NEW LOGIC ---
                 }
             }
         }

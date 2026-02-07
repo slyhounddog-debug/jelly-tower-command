@@ -7,6 +7,7 @@ import FrostingParticle from './frostingParticle.js';
 import Player from './player.js';
 import EnemyDebris from './EnemyDebris.js';
 import Soul from './Soul.js'; // Corrected placement
+import { jellyBeanBag, getVariantFromBag } from './shuffleUtils.js';
 
 export default class Missile {
     constructor() {
@@ -47,10 +48,10 @@ export default class Missile {
             baseWidth = 70;
             baseHeight = 75;
             baseHealth = (25 + (this.game.currentRPM * 2)) * hpMultiplier;
-            baseMass = 1;
+            baseMass = .5;
             baseSpeed = 1;
             baseDamage = 5;
-            const variantIndex = Math.floor(Math.random() * 8);
+            const variantIndex = getVariantFromBag(jellyBeanBag, 8); // Use shuffle bag
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
                 frameWidth: 165,
@@ -65,7 +66,7 @@ export default class Missile {
             baseWidth = 26;
             baseHeight = 85;
             baseHealth = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
-            baseMass = 1.2;
+            baseMass = 1;
             baseSpeed = 1.6;
             baseDamage = 6;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
@@ -149,7 +150,7 @@ export default class Missile {
         } else if (type === 'component_enemy') {
             baseWidth = 78;
             baseHeight = 78;
-            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
+            baseHealth = (50 + (this.game.currentRPM * 2.5)) * hpMultiplier;
             baseMass = 2.9;
             baseSpeed = 0.6;
             baseDamage = 9;
