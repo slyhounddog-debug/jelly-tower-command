@@ -99,13 +99,22 @@ export default class initLevel {
 
         // Cloud Platforms logic
         const floatingConfigs = [
-            { x: 80, y: game.PLAYABLE_AREA_HEIGHT - 580, width: 280, height: 75 },
-            { x: 750, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 320, height: 75 },
-            { x: 500, y: game.PLAYABLE_AREA_HEIGHT - 850, width: 300, height: 79 },
-            { x: 120, y: game.PLAYABLE_AREA_HEIGHT - 1050, width: 275, height: 70 },
-            { x: 810, y: game.PLAYABLE_AREA_HEIGHT - 1110, width: 285, height: 70 },
-            { x: 410, y: game.PLAYABLE_AREA_HEIGHT - 1400, width: 375, height: 88 }
-        ];
+    // ROW 1: Top Snipers (High and Wide)
+    { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 220, height: 70 }, 
+    { x: 860, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 220, height: 70 },
+
+    // ROW 2: Inner Guards (Mid-High, tucked in slightly)
+    { x: 250, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
+    { x: 630, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
+
+    // ROW 3: Outer Wing Catchers (Mid-Low, back to the edges)
+    { x: 80, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
+    { x: 840, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
+
+    // ROW 4: Final Gatekeepers (Low and Center-focused)
+    { x: 270, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 },
+    { x: 630, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 }
+];
 
         floatingConfigs.forEach(cfg => {
             const platform = { ...cfg, type: 'cloud', hitboxOffsetY: 15 };
