@@ -160,6 +160,16 @@ export class GummyBear {
         this.game.enemyPools['gummy_bear'].returnToPool(this);
         this.game.enemiesKilled++;
         
+        // --- Debris spawning for Gummy Bear ---
+        let numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
+        const numCols = 2; // Default 2x2 cut
+        const numRows = 2;
+
+        for (let i = 0; i < numDebris; i++) {
+            this.game.enemyDebrisPool.get(this.game, this, this.image, this.width, this.height, numCols, numRows);
+        }
+        // --- End Debris spawning ---
+        
         let lootMultiplier = 1;
         let luckMultiplier = 1;
         if (this.isJellyTagged && killedBy !== 'tongue') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
@@ -289,20 +299,20 @@ export class GummyBear {
 
         ctx.restore();
 
+        // Health bar drawing logic
         if (this.health < this.maxHealth) {
             const pct = Math.max(0, this.health / this.maxHealth);
             const isLow = pct < 0.25;
             
-            // Calculate size based on enemy type
             let sizeMult = 1.0;
             
-            // Pulsing effect for low health (under 25%)
             const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
             const finalMult = sizeMult * pulse;
             
             let offsetX = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
             let offsetY = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
             
+            // Calculate bar positions relative to the GummyBear's absolute position
             const barWidth = (this.width * 1.2) * finalMult;
             const barHeight = 18 * finalMult; 
             const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
@@ -310,23 +320,19 @@ export class GummyBear {
 
             const frameColor = darkenColor(this.color, 10);
 
-            // Glass Tube Background
             ctx.fillStyle = frameColor + '66'; 
             ctx.beginPath(); ctx.roundRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 10); ctx.fill();
             
-            // Inner Empty Tube
             ctx.fillStyle = darkenColor(frameColor, 30) + '99'; 
             ctx.beginPath(); ctx.roundRect(barX, barY, barWidth, barHeight, 8); ctx.fill();
 
-            // Health Fill Logic (Red < 25%, Yellow < 60%, Green otherwise)
-            let healthFillColor = '#2ecc71'; // Green
-            if (pct < 0.25) healthFillColor = '#ff3131'; // Red
-            else if (pct < 0.60) healthFillColor = '#f1c40f'; // Yellow
+            let healthFillColor = '#2ecc71';
+            if (pct < 0.25) healthFillColor = '#ff3131';
+            else if (pct < 0.60) healthFillColor = '#f1c40f';
             
             ctx.fillStyle = (this.hitTimer > 0) ? '#FFFFFF' : healthFillColor;
             ctx.beginPath(); ctx.roundRect(barX, barY, barWidth * pct, barHeight, 8); ctx.fill();
 
-            // Candy Glaze Shine
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.beginPath(); ctx.roundRect(barX + 2, barY + 2, barWidth - 4, barHeight / 3, 8); ctx.fill();
 
@@ -341,12 +347,10 @@ export class GummyBear {
                 const ty = barY + 5;
                 const val = Math.ceil(this.health);
 
-                // Add the gray border
-                ctx.strokeStyle = '#213625ff'; // Dark gray border
-                ctx.lineWidth = 3;           // Thickness of the border
+                ctx.strokeStyle = '#213625ff';
+                ctx.lineWidth = 3;
                 ctx.strokeText(val, tx, ty);
 
-                // Fill the white text
                 ctx.fillStyle = 'white';
                 ctx.fillText(val, tx, ty);
                 
@@ -454,13 +458,17 @@ export default class GummyCluster {
         this.game.screenShake.trigger(30, 60);
         this.game.currentRPM += 10;
 
-        // --- Debris spawning for Boss ---
-        let numDebris = 4 + Math.floor(Math.random() * 3); // 4-6 pieces
-        const numCols = 3; // 3x3 cuts for boss
-        const numRows = 3;
+        let image = this.game.gummyclusterImages[0];
+        const healthPercentage = this.health / this.maxHealth; // Recalculate if needed, or use a cached value
+        if (healthPercentage < 0.7) {
+            image = this.game.gummyclusterImages[1];
+        }
+        if (healthPercentage < 0.3) {
+            image = this.game.gummyclusterImages[2];
+        }
 
         for (let i = 0; i < numDebris; i++) {
-            this.game.enemyDebrisPool.get(this.game, this, this.width, this.height, numCols, numRows);
+            this.game.enemyDebrisPool.get(this.game, this, image, this.width, this.height, numCols, numRows);
         }
         // --- End Debris spawning ---
 

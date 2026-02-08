@@ -294,7 +294,7 @@ export default class Missile {
 
     takeDamage(amount, isCritical = false, source = null) {
         if (!this.active) return false;
-        if (this.isDonut && Math.random() < 0.5) {
+        if (this.isDonut && Math.random() < 0.33) {
             const ft = this.game.floatingTextPool.get(this.game, this.x + this.width / 2, this.y, 'Miss', 'white');
             return false;
         }
@@ -322,25 +322,6 @@ export default class Missile {
 
         if (this.isIceCream) {
             this.speedBoostTimer = 120;
-        }
-
-        if (this.isComponentEnemy) {
-            // Teleportation particles at old location
-            const teleportColors = ['#E0BBE4', '#957DAD', '#C7CEEA']; // Light magenta, lavender, light blue-purple
-            for (let i = 0; i < 15; i++) { // More particles for a noticeable puff
-                const color = teleportColors[Math.floor(Math.random() * teleportColors.length)];
-                const particle = this.game.particlePool.get();
-                if (particle) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 3 + 1;
-                    const vx = Math.cos(angle) * speed;
-                    const vy = Math.sin(angle) * speed;
-                    particle.init(this.game, oldX + this.width / 2, oldY + this.height / 2, color, 'spark', 0.6, vx, vy);
-                }
-            }
-
-            // Teleport to new random position
-            this.x = Math.random() * (this.game.width - this.width);
         }
 
         this.game.hitStopFrames = 0;
@@ -372,6 +353,26 @@ export default class Missile {
             this.kill(oldX, oldY);
             return true;
         }
+
+        if (this.isComponentEnemy) {
+            // Teleportation particles at old location
+            const teleportColors = ['#E0BBE4', '#957DAD', '#C7CEEA']; // Light magenta, lavender, light blue-purple
+            for (let i = 0; i < 15; i++) { // More particles for a noticeable puff
+                const color = teleportColors[Math.floor(Math.random() * teleportColors.length)];
+                const particle = this.game.particlePool.get();
+                if (particle) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 1;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    particle.init(this.game, oldX + this.width / 2, oldY + this.height / 2, color, 'spark', 0.6, vx, vy);
+                }
+            }
+
+            // Teleport to new random position
+            this.x = Math.random() * (this.game.width - this.width);
+        }
+
         return false;
     }
 
@@ -860,6 +861,11 @@ export default class Missile {
         // --- New Drop Logic ---
         const isMarshmallow = (this.type === 'marshmallow_large' || this.type === 'marshmallow_medium');
         let dropMultiplier = (this.type === 'piggy') ? pStats.mult : 1;
+
+        // Apply JellyTag effect to drop multiplier
+        if (this.isJellyTagged) {
+            dropMultiplier *= 2;
+        }
 
         // Piggy Bank specific bonus money
         if (this.type === 'piggy') {

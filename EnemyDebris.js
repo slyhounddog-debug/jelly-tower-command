@@ -3,9 +3,9 @@ export default class EnemyDebris {
         this.active = false;
     }
 
-    init(game, enemy, enemySpriteWidth = null, enemySpriteHeight = null, numCols = 2, numRows = 2) {
+    init(game, enemy, image, enemySpriteWidth = null, enemySpriteHeight = null, numCols = 2, numRows = 2) {
         this.game = game;
-        this.image = enemy.sprite ? enemy.sprite.image : enemy.image;
+        this.image = image;
         this.color = enemy.color;
         this.collisionWidth = enemy.width;
         this.collisionHeight = enemy.height;
@@ -170,8 +170,9 @@ export default class EnemyDebris {
                         this.vy = -this.vy * 0.19;
 
                         if (this.bounceCount === 1) {
-                            const decalSize = (this.width / 2) * 0.67; // 33% smaller
-                            this.game.decalManager.addDecal(this.x + this.width / 2, this.y + this.height, decalSize, this.color, Math.random() * Math.PI * 2);
+                            const decalSize = (this.width / 2) * 0.335; // Halved for "2x too big"
+                            const randomPastelColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+                            this.game.decalManager.addDecal(this.x + this.width / 2, this.y + this.height, decalSize, randomPastelColor, Math.random() * Math.PI * 2);
                         }
 
                         if (this.bounceCount > this.maxBounces || Math.abs(this.vy) < 0.5) {

@@ -67,13 +67,13 @@
             display: none;
             position: absolute;
             background-color: rgba(0, 0, 0, 0.8);
-            color: white;
+            color: #a9a9a9;
             padding: 10px;
             border-radius: 5px;
             z-index: 210; /* Above modal content */
             pointer-events: none; /* So it doesn't interfere with mouse events on components */
-            font-size: 14px;
-            max-width: 200px;
+            font-size: 18px;
+            max-width: 266px;
         }
 
         #game-wrapper {
@@ -189,11 +189,11 @@
         #component-quarters-overlay {
     display: none;
     position: absolute;
-    top: 50%;
+    top: 15%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 85%;
-    height: 80%;
+    transform: translate(-50%, 0);
+    width: 70%;
+    height: 45%;
     background-image: url('assets/Images/modal.png');
     background-size: 100% 100%;
     background-repeat: no-repeat;
@@ -271,11 +271,11 @@
         .modal {
             display: none;
             position: absolute;
-            top: 39.58%; /* Center relative to playable area (1900px / 2 = 950px, 950/2400 = 39.58%) */
+            top: 15%;
             left: 50%;
-            transform: translate(-50%, -50%); /* Maintain centering */
-            width: 70%; /* 70% of 75% */
-            height: 45%; /* 70% of 80% */
+            transform: translate(-50%, 0);
+            width: 70%;
+            height: 45%;
             background-image: url('assets/Images/modal.png');
             background-size: 100% 100%;
             background-repeat: no-repeat;
@@ -606,10 +606,11 @@
             position: relative;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* Softer shadow */
+            transform: scale(1.33);
         }
         .component-item:hover {
             border-color: #a0c4ff; /* Light blue on hover */
-            transform: translateY(-3px) scale(1.02);
+            transform: translateY(-3px) scale(1.35);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5), 0 0 15px rgba(160, 196, 255, 0.5); /* Blue glow */
         }
         .component-item.equipped {
@@ -618,7 +619,7 @@
             background-color: #2a505c; /* Slightly darker equipped background */
         }
         .component-name {
-            font-size: 1.1em;
+            font-size: 1.3em;
             color: #ecf0f1;
             margin-bottom: 5px;
             font-family: 'Fredoka One', sans-serif;
@@ -833,6 +834,10 @@
             box-shadow: 0 0 25px rgba(255, 0, 0, 1);
         }
 
+        .modal, #component-quarters-overlay, #shop-overlay, #stats-modal {
+            top: 15% !important;
+            transform: translate(-50%, 0) !important;
+        }
 
         </style>
     </head>
@@ -1064,6 +1069,6 @@
     <script type="module" src="emporium.js"></script>        <script type="module" src="levelUpScreen.js"></script>
         <script type="module" src="xpBar.js"></script>
         <script type="module" src="levelingManager.js"></script>
-        <script type="module" src="game.js?v=2"></script>
+        <script type="module" src="game.js?v=3"></script>
     </body>
     </html>

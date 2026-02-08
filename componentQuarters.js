@@ -14,13 +14,13 @@ export default class ComponentQuarters {
 
         this.componentSlots = []; // Will store UI data for each component type
 
-        const gridCols = 3; // Changed to 3 columns
-        const cardWidth = 180; // Increased card width
-        const cardHeight = 180; // Increased card height
+        const gridCols = 2; // Changed to 2 columns
+        const cardWidth = 240; // Increased card width by 33%
+        const cardHeight = 240; // Increased card height by 33%
         const horizontalSpacing = 20; // Gap between cards horizontally
         const verticalSpacing = 20; // Gap between cards vertically
-        const gridPaddingX = 80; // Padding from modal edges
-        const gridPaddingY = 320; // Moved down by 100 pixels (180 + 100)
+        const gridPaddingX = 40; // Padding from modal edges
+        const gridPaddingY = 200; // Moved down
 
         const startX = modalConfig.x + gridPaddingX;
         const startY = modalConfig.y + gridPaddingY;
@@ -251,62 +251,63 @@ export default class ComponentQuarters {
             // 1. Draw Cookie Container (upgradeSlotImage)
             const upgradeSlotImage = this.game.upgradeSlotImage;
             if (upgradeSlotImage && upgradeSlotImage.complete) {
-                // Using drawNineSlice to ensure the whole image is used and scaled properly
-                drawNineSlice(ctx, upgradeSlotImage, 0, 0, slot.width, slot.height, 30); // Assuming 30px border for 9-slice
+                drawNineSlice(ctx, upgradeSlotImage, 0, 0, slot.width, slot.height, 30);
             }
 
             // 2. Draw Green Glowing Border (if active)
             if (isEquipped) {
-                const pulse = (Math.sin(this.game.gameTime * 0.1) + 1) / 2; // 0 to 1 pulse
-                ctx.strokeStyle = `rgba(0, 255, 0, ${0.5 + pulse * 0.5})`; // Green pulsing alpha
-                ctx.lineWidth = 4 + pulse * 2; // Pulsing width
-            } else {
-                ctx.strokeStyle = `rgba(128, 128, 128, 0.5)`; // Neutral/gray border
-                ctx.lineWidth = 2;
+                const pulse = (Math.sin(this.game.gameTime * 0.1) + 1) / 2;
+                ctx.strokeStyle = `rgba(0, 255, 0, ${0.5 + pulse * 0.5})`;
+                ctx.lineWidth = 4 + pulse * 2;
+                ctx.beginPath();
+                ctx.roundRect(0, 0, slot.width, slot.height, 10);
+                ctx.stroke();
             }
-            // Draw the border here, after setting style
-            // REMOVING THE EXPLICIT BORDER DRAWING
-            // ctx.beginPath();
-            // ctx.roundRect(0, 0, slot.width, slot.height, 10);
-            // ctx.stroke();
 
-
-            // 3. Draw Component Title (Centered and wrapped)
-            const componentData = COMPONENTS[slot.name]; // Get global component data
+            // 3. Draw Component Title and Cost
+            const componentData = COMPONENTS[slot.name];
             const titleMaxWidth = slot.width * 0.9;
-            const titleLineHeight = 24;
-            // Vertically center the title within the top part of the card
-            const titleY = slot.height * 0.35; // Adjusted to be more central for a two-line title
+            const titleLineHeight = 36; // Increased line height
+            const titleY = slot.height * 0.15;
 
-            ctx.fillStyle = 'darkslategray'; // Dark gray title
-            ctx.font = '24px "VT323"'; // Apply VT323 font
+            ctx.fillStyle = 'darkslategray';
+            ctx.font = '36px "VT323"'; // Increased font size
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle'; // Center text vertically on titleY
-            // Use wrapText for the title, centered horizontally
-            this.wrapText(ctx, slot.name, slot.width / 2, titleY, titleMaxWidth, titleLineHeight);
+            ctx.textBaseline = 'middle';
+            const titleHeight = this.wrapText(ctx, slot.name, slot.width / 2, titleY, titleMaxWidth, titleLineHeight);
 
+            const cost = componentData.cost || 0;
+            ctx.font = '28px "VT323"'; // Increased font size
+            ctx.fillStyle = '#a9a9a9';
+            ctx.fillText(`Cost: ${cost}`, slot.width / 2, titleY + titleHeight + 10);
 
-            // 4. Draw Component Icon (Centered below title)
+            // 4. Draw Component Icon
             if (componentData && componentData.icon) {
-                ctx.font = '40px sans-serif'; // Slightly smaller to make room for text
+                ctx.font = '70px sans-serif'; // Increased font size
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'white'; // Icon color
-                ctx.fillText(componentData.icon, slot.width / 2, slot.height * 0.65); // Position below title
+                ctx.fillStyle = 'white';
+                ctx.fillText(componentData.icon, slot.width / 2, slot.height * 0.55);
             }
             
+            // 5. Draw Owned Count Circle (Top-left corner)
+            const ownedCircleRadius = 25;
+            const ownedCircleX = ownedCircleRadius + 10;
+            const ownedCircleY = ownedCircleRadius + 10;
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(ownedCircleX, ownedCircleY, ownedCircleRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = '28px "VT323"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(slot.owned, ownedCircleX, ownedCircleY);
 
-            // 5. Draw 'Owned' Count (Top-left corner)
-            ctx.font = '20px "VT323"'; // Increased font size
-            ctx.textAlign = 'left'; // Left aligned
-            ctx.textBaseline = 'top';
-            ctx.fillStyle = 'white'; // White for better visibility
-            ctx.fillText(`x${slot.owned}`, 10, 10); // 10px from left, 10px from top
-
-            // 6. Draw Quantity Stepper (Minus button, Active count, Plus button)
-            const btnColor = '#9c536cff'; // Button background color
+            // 6. Draw Quantity Stepper
+            const btnColor = '#9c536cff';
             const textColor = 'white';
-            const buttonFont = '28px "VT323"'; // Increased font size for active count
+            const buttonFont = '42px "VT323"'; // Increased font size
 
             // Minus Button
             ctx.fillStyle = btnColor;
@@ -383,8 +384,8 @@ export default class ComponentQuarters {
         const text = componentData.description;
         
         ctx.save();
-        const tooltipMaxWidth = 250; // Max width for the tooltip box
-        const lineHeight = 30; // Height per line of text, adjusted for VT323
+        const tooltipMaxWidth = 250 * 1.33; // Increased size
+        const lineHeight = 30 * 1.33; // Increased size
         const padding = 20;
 
         ctx.font = '26px "VT323"'; // Use VT323 font

@@ -58,6 +58,12 @@ export default class Drop {
         this.lickedByPlayer = null;
         this.spawnTime = this.game.gameTime;
         this.active = true; // Mark as active
+
+        // Magnetic loot properties
+        this.isFlying = false;
+        this.speed = 0;
+        this.lootAccelerationRate = 0.5;
+        this.maxLootSpeed = 22;
     }
 
     reset() {
@@ -70,6 +76,12 @@ export default class Drop {
         this.coinValue = 0; this.xpValue = 0; this.rotation = 0; this.rotationSpeed = 0;
         this.glow = 0; this.glowTimer = 0; this.pulseSpeed = 0; this.auraColor = '';
         this.id = 0; this.isBeingLicked = false; this.lickedByPlayer = null; this.spawnTime = 0;
+
+        // Reset magnetic loot properties
+        this.isFlying = false;
+        this.speed = 0;
+        this.lootAccelerationRate = 0;
+        this.maxLootSpeed = 0;
     }
 
     update(tsf) {
@@ -118,15 +130,33 @@ export default class Drop {
         const playerCenterY = this.game.player.y + this.game.player.height / 2;
         const dropCenterX = this.x + this.width / 2;
         const dropCenterY = this.y + this.width / 2;
-        if (Math.hypot(playerCenterX - dropCenterX, playerCenterY - dropCenterY) < this.game.player.pickupRange) {
-            this.collect();
-            for (let i = 0; i < 5; i++) {
-                const particle = this.game.particlePool.get();
-                if (particle) {
-                    particle.init(this.game, this.x, this.y, '#fff', 'spark', null, 0.5);
-                }
+
+        const dx = playerCenterX - dropCenterX;
+        const dy = playerCenterY - dropCenterY;
+        const distanceSquared = dx * dx + dy * dy;
+
+        if (this.isFlying) {
+            const targetAngle = Math.atan2(dy, dx);
+            this.rotation += (targetAngle - this.rotation) * 0.1; // Smooth rotation
+
+            this.speed = Math.min(this.maxLootSpeed, this.speed + this.lootAccelerationRate * tsf);
+            
+            this.vx = Math.cos(targetAngle) * this.speed;
+            this.vy = Math.sin(targetAngle) * this.speed;
+
+            // Trail particles
+            const particle = this.game.particlePool.get();
+            if (particle) {
+                particle.init(this.game, this.x + this.width / 2, this.y + this.width / 2, this.auraColor, 'spark', Math.random() * 2 + 1, 0.5);
             }
-            this.game.dropPool.returnToPool(this); // Return to pool when collected
+
+            if (distanceSquared < 100) { // 10 * 10
+                this.collect();
+                this.game.dropPool.returnToPool(this);
+            }
+        } else if (distanceSquared < this.game.player.pickupRange * this.game.player.pickupRange) {
+            this.isFlying = true;
+            this.gravity = 0; // No gravity when flying
         }
     }
 

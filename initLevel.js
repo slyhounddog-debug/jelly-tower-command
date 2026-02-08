@@ -37,7 +37,7 @@ export default class initLevel {
 
         const castlePlatforms = [
             { 
-                x: game.width - 1100, 
+                x: game.width - 1120, 
                 y: game.PLAYABLE_AREA_HEIGHT - 50, // Move castle up by 90px
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, 
@@ -57,7 +57,7 @@ export default class initLevel {
                 ]
             },
             { 
-                x: game.width - 425, 
+                x: game.width - 445, 
                 y: game.PLAYABLE_AREA_HEIGHT - 50, // Move castle up by 90px
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, 
@@ -76,7 +76,7 @@ export default class initLevel {
                 ]
             },
             { 
-                x: game.width - 760,
+                x: game.width - 780,
                 y: game.PLAYABLE_AREA_HEIGHT - 20, // Move castle up by 90px
                 hitboxOffsetX: 100,
                 hitboxOffsetY: -200, 
@@ -100,20 +100,20 @@ export default class initLevel {
         // Cloud Platforms logic
         const floatingConfigs = [
     // ROW 1: Top Snipers (High and Wide)
-    { x: 100, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 220, height: 70 }, 
-    { x: 860, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 220, height: 70 },
+    { x: 150, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 180, height: 70 }, 
+    { x: 830, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 180, height: 70 },
 
     // ROW 2: Inner Guards (Mid-High, tucked in slightly)
-    { x: 250, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
-    { x: 630, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
+    { x: 290, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
+    { x: 640, y: game.PLAYABLE_AREA_HEIGHT - 1120, width: 250, height: 75 },
 
     // ROW 3: Outer Wing Catchers (Mid-Low, back to the edges)
-    { x: 80, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
-    { x: 840, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
+    { x: 90, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
+    { x: 800, y: game.PLAYABLE_AREA_HEIGHT - 800, width: 260, height: 75 },
 
     // ROW 4: Final Gatekeepers (Low and Center-focused)
-    { x: 270, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 },
-    { x: 630, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 }
+    { x: 300, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 },
+    { x: 600, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 }
 ];
 
         floatingConfigs.forEach(cfg => {
