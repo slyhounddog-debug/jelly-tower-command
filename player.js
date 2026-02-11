@@ -774,7 +774,7 @@ export default class Player {
             ctx.scale(-1, 1);
         }
         
-        ctx.drawImage(this.characterImage, -this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.drawImage(this.characterImage, -this.width / 2 - 10, -this.height / 2, this.width, this.height);
 
         // --- 4. EYES AND MOUTH (within the transform) ---
         let mouseXForAngle = this.game.mouse.x;

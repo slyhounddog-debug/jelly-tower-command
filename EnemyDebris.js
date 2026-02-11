@@ -91,133 +91,257 @@ export default class EnemyDebris {
         this.maxBounces = 0;
     }
 
-    update(tsf) {
-        if (!this.active) return;
+        update(tsf) {
 
-        this.lifespan -= tsf;
+            if (!this.active) return;
 
-        if (!this.onGround) {
-            const particle = this.game.particlePool.get();
-            if (particle) {
-                const initialSize = (Math.random() * 8 + 4) * 1.25; // Base size 4-12, then 25% bigger
-                particle.init(this.game, this.x + this.width / 2, this.y + this.height / 2, this.color, 'trail', initialSize, 0.5, 0, 0);
-                particle.emitter = this;
-            }
+    
 
-            // Emit separate smoke particles
-            if (this.game.gameTime % 5 === 0) { // Throttle emission
-                const smokeParticle = this.game.particlePool.get();
-                if (smokeParticle) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 1 + 0.5;
-                    const vx = Math.cos(angle) * speed * 0.5;
-                    const vy = Math.sin(angle) * speed * 0.5;
-                    smokeParticle.init(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(100,100,100,0.5)', 'smoke', 2, vx, vy);
+            this.lifespan -= tsf;
+
+            this.onGround = false; // Reset onGround at the start of each update cycle
+
+    
+
+            // Emit particles only when not on ground, or if just starting to bounce
+
+            if (this.vy !== 0 || !this.onGround) { // Only emit particles if moving or not yet settled
+
+                const particle = this.game.particlePool.get();
+
+                if (particle) {
+
+                    const initialSize = (Math.random() * 8 + 4) * 1.25; // Base size 4-12, then 25% bigger
+
+                    particle.init(this.game, this.x + this.width / 2, this.y + this.height / 2, this.color, 'trail', initialSize, 0.5, 0, 0);
+
+                    particle.emitter = this;
+
                 }
-            }
-        }
 
-        if (this.lifespan <= 0) {
-            this.game.enemyDebrisPool.returnToPool(this);
-            return;
-        }
+    
 
-        if (this.lifespan <= this.fadeStart) {
-            this.alpha = this.lifespan / this.fadeStart;
-        }
+                // Emit separate smoke particles
 
-        if (!this.onGround) {
-            this.vy += this.gravity * tsf;
-        } else {
-            this.vx *= Math.pow(0.9, tsf);
-            this.rotationSpeed *= Math.pow(0.9, tsf);
-            if (Math.abs(this.vx) < 0.1) this.vx = 0;
-            if (Math.abs(this.rotationSpeed) < 0.01) this.rotationSpeed = 0;
-            if (this.vx === 0 && this.rotationSpeed === 0 && this.vy === 0) {
-                return;
-            }
-        }
+                if (this.game.gameTime % 5 === 0) { // Throttle emission
 
-        this.x += this.vx * tsf;
-        this.y += this.vy * tsf;
-        this.rotation += this.rotationSpeed * tsf;
+                    const smokeParticle = this.game.particlePool.get();
 
-        let collidedWithPlatformThisFrame = false;
-        const debrisBottom = this.y + this.height;
-        const debrisLeft = this.x;
-        const debrisRight = this.x + this.width;
+                    if (smokeParticle) {
 
-        this.game.platforms.forEach(p => {
-            if (p.type === 'ground' || p.type === 'castle' || (p.type !== 'cloud' && p.y)) {
-                const platformTop = p.y;
-                let collisionY;
+                        const angle = Math.random() * Math.PI * 2;
 
-                if (p.type === 'ground') {
-                    collisionY = this.game.PLAYABLE_AREA_HEIGHT - 50;
-                } else {
-                    collisionY = platformTop;
-                }
-                
-                const platformLeft = p.x;
-                const platformRight = p.x + p.width;
+                        const speed = Math.random() * 1 + 0.5;
 
-                if (debrisRight > platformLeft && debrisLeft < platformRight) {
-                    if (this.vy > 0 && debrisBottom - (this.vy * tsf) <= collisionY && debrisBottom >= collisionY) {
-                        this.y = collisionY - this.height;
-                        this.onGround = true;
-                        collidedWithPlatformThisFrame = true;
-                        this.bounceCount++;
-                        this.vy = -this.vy * 0.19;
+                        const vx = Math.cos(angle) * speed * 0.5;
 
-                        if (this.bounceCount === 1) {
-                            const decalSize = (this.width / 2) * 0.335; // Halved for "2x too big"
-                            const randomPastelColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-                            this.game.decalManager.addDecal(this.x + this.width / 2, this.y + this.height, decalSize, randomPastelColor, Math.random() * Math.PI * 2);
-                        }
+                        const vy = Math.sin(angle) * speed * 0.5;
 
-                        if (this.bounceCount > this.maxBounces || Math.abs(this.vy) < 0.5) {
-                            this.vy = 0;
-                            this.bounceCount = this.maxBounces;
-                        }
-                        this.vx *= 0.8;
+                        smokeParticle.init(this.game, this.x + this.width / 2, this.y + this.height / 2, 'rgba(100,100,100,0.5)', 'smoke', 2, vx, vy);
+
                     }
+
                 }
+
             }
-        });
 
-        if (!collidedWithPlatformThisFrame && debrisBottom > (this.game.PLAYABLE_AREA_HEIGHT - 50)) {
-            this.y = this.game.PLAYABLE_AREA_HEIGHT - 50 - this.height;
-            this.onGround = true;
-            collidedWithPlatformThisFrame = true;
-            this.bounceCount++;
-            this.vy = -this.vy * 0.1;
+    
 
-            if (this.bounceCount > this.maxBounces || Math.abs(this.vy) < 0.5) {
-                this.vy = 0;
-                this.bounceCount = this.maxBounces;
+            if (this.lifespan <= 0) {
+
+                this.game.enemyDebrisPool.returnToPool(this);
+
+                return;
+
             }
-            this.vx *= 0.8;
-        }
 
-        this.onGround = collidedWithPlatformThisFrame;
-        if (this.y > this.game.PLAYABLE_AREA_HEIGHT - 50 && !this.onGround) {
-            this.onGround = false;
-        }
+    
 
-        if (this.x < 0) {
-            this.x = 0;
-            this.vx *= -0.5;
-            this.rotationSpeed *= -0.5;
-        } else if (this.x + this.width > this.game.width) {
-            this.x = this.game.width - this.width;
-            this.vx *= -0.5;
-            this.rotationSpeed *= -0.5;
-        }
+            if (this.lifespan <= this.fadeStart) {
 
-        if (this.y > this.game.height + 50) {
-            this.game.enemyDebrisPool.returnToPool(this);
+                this.alpha = this.lifespan / this.fadeStart;
+
+            }
+
+    
+
+            // Apply gravity only if not currently considered on ground
+
+            if (!this.onGround) {
+
+                this.vy += this.gravity * tsf;
+
+            } else {
+
+                // Apply friction and rotational slowdown when on ground
+
+                this.vx *= Math.pow(0.9, tsf);
+
+                this.rotationSpeed *= Math.pow(0.9, tsf);
+
+                // Stop movement if very slow
+
+                if (Math.abs(this.vx) < 0.1) this.vx = 0;
+
+                if (Math.abs(this.rotationSpeed) < 0.01) this.rotationSpeed = 0;
+
+                if (this.vx === 0 && this.rotationSpeed === 0 && this.vy === 0) {
+
+                    // If completely stopped, no need to update position
+
+                    // This optimization is for debris that has settled
+
+                    return;
+
+                }
+
+            }
+
+    
+
+            this.x += this.vx * tsf;
+
+            this.y += this.vy * tsf;
+
+            this.rotation += this.rotationSpeed * tsf;
+
+    
+
+            const debrisBottom = this.y + this.height;
+
+            const debrisLeft = this.x;
+
+            const debrisRight = this.x + this.width;
+
+    
+
+            this.game.platforms.forEach(p => {
+
+                if (p.type === 'ground' || p.type === 'castle' || (p.type !== 'cloud' && p.y)) {
+
+                    const platformTop = p.y;
+
+                    let collisionY;
+
+    
+
+                    if (p.type === 'ground') {
+
+                        collisionY = this.game.PLAYABLE_AREA_HEIGHT - 50;
+
+                    } else {
+
+                        collisionY = platformTop;
+
+                    }
+
+                    
+
+                    const platformLeft = p.x;
+
+                    const platformRight = p.x + p.width;
+
+    
+
+                    if (debrisRight > platformLeft && debrisLeft < platformRight) {
+
+                        if (this.vy > 0 && debrisBottom - (this.vy * tsf) <= collisionY && debrisBottom >= collisionY) {
+
+                            this.y = collisionY - this.height;
+
+                            this.onGround = true; // Correctly set onGround to true
+
+                            this.bounceCount++;
+
+                            this.vy = -this.vy * 0.19;
+
+    
+
+                            if (this.bounceCount === 1) {
+
+                                const decalSize = (this.width / 2) * 0.67;
+
+                                const randomPastelColor = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
+
+                                this.game.decalManager.addDecal(this.x + this.width / 2, this.y + this.height, decalSize, randomPastelColor, Math.random() * Math.PI * 2);
+
+                            }
+
+    
+
+                            if (this.bounceCount > this.maxBounces || Math.abs(this.vy) < 0.5) {
+
+                                this.vy = 0;
+
+                                this.bounceCount = this.maxBounces;
+
+                            }
+
+                            this.vx *= 0.8;
+
+                        }
+
+                    }
+
+                }
+
+            });
+
+    
+
+            // Fallback ground collision
+
+            if (!this.onGround && debrisBottom > (this.game.PLAYABLE_AREA_HEIGHT - 50)) { // Only apply if not already collided with a platform
+
+                this.y = this.game.PLAYABLE_AREA_HEIGHT - 50 - this.height;
+
+                this.onGround = true;
+
+                this.bounceCount++;
+
+                this.vy = -this.vy * 0.1;
+
+                if (this.bounceCount > this.maxBounces || Math.abs(this.vy) < 0.5) {
+
+                    this.vy = 0;
+
+                    this.bounceCount = this.maxBounces;
+
+                }
+
+                this.vx *= 0.8;
+
+            }
+
+    
+
+            if (this.x < 0) {
+
+                this.x = 0;
+
+                this.vx *= -0.5;
+
+                this.rotationSpeed *= -0.5;
+
+            } else if (this.x + this.width > this.game.width) {
+
+                this.x = this.game.width - this.width;
+
+                this.vx *= -0.5;
+
+                this.rotationSpeed *= -0.5;
+
+            }
+
+    
+
+            if (this.y > this.game.height + 50) {
+
+                this.game.enemyDebrisPool.returnToPool(this);
+
+            }
+
         }
-    }
 
     draw(ctx) {
         if (!this.active) return;

@@ -156,45 +156,73 @@ export class GummyBear {
     }
 
     kill(killedBy = 'unknown') {
+        if (!this.active) return;
+    
         this.active = false;
         this.game.enemyPools['gummy_bear'].returnToPool(this);
         this.game.enemiesKilled++;
-        
+    
         // --- Debris spawning for Gummy Bear ---
         let numDebris = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
         const numCols = 2; // Default 2x2 cut
         const numRows = 2;
-
+    
         for (let i = 0; i < numDebris; i++) {
             this.game.enemyDebrisPool.get(this.game, this, this.image, this.width, this.height, numCols, numRows);
         }
-        // --- End Debris spawning ---
-        
-        let lootMultiplier = 1;
-        let luckMultiplier = 1;
-        if (this.isJellyTagged && killedBy !== 'tongue') { // Any kill not by tongue is considered a tower kill for Jelly Tag purposes
-            lootMultiplier = 2;
+    
+        // --- Particle spawning ---
+        const numParticles = Math.min(50, 10 + Math.floor(this.maxHealth / 30));
+        const source = this.lastDamageSource; // Assuming lastDamageSource is tracked
+    
+        for (let i = 0; i < numParticles; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 5 + 1;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const color = source && source.isCrit ? '#FFD700' : this.color;
+            this.game.particlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, color, 'spark', 0.75, vx, vy);
         }
-
-        for (let c = 0; c < lootMultiplier; c++) {
-            this.game.drops.push(new Drop(this.game, this.x, this.y, 'coin'));
-            this.game.levelingManager.addXp(this.x, this.y, 10); // Gummy bears give a base of 10 xp
-        }
+    
+        // --- Screen Shake ---
+        this.game.screenShake.trigger(4, 15);
+    
+        // --- XP and Souls ---
+        let xpGained = 10 + (this.maxHealth / 10);
+        const xpMultiplier = this.game.emporium.getEnemyXpMultiplier();
+        xpGained *= xpMultiplier;
         
-        for (let l = 0; l < luckMultiplier; l++) {
-            if (Math.random() * 100 < this.game.stats.luckHeart) this.game.drops.push(new Drop(this.game, this.x, this.y, 'heart'));
-            if (Math.random() * 100 < this.game.stats.luckCoin) this.game.drops.push(new Drop(this.game, this.x, this.y, 'lucky_coin'));
-
-            const iceCreamChanceLevel = this.game.emporiumUpgrades.ice_cream_chance.level;
-            const chances = this.game.emporiumUpgrades.ice_cream_chance.values[iceCreamChanceLevel];
-            const dropChance = chances[0];
-            if (Math.random() * 100 < dropChance) {
-                this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
+        this.game.soulPool.get(this.game, this.x + this.width / 2, this.y + this.height / 2);
+    
+        // --- Drop Logic ---
+        let dropMultiplier = 1;
+        if (this.isJellyTagged) {
+            dropMultiplier *= 2;
+        }
+    
+        for (let i = 0; i < dropMultiplier; i++) {
+            this.game.dropPool.get(this.game, this.x, this.y, 'coin');
+            this.game.dropPool.get(this.game, this.x, this.y, 'xp_orb', xpGained);
+    
+            const randLuckyCoin = Math.random() * 100;
+            if (randLuckyCoin < this.game.stats.luckCoin) {
+                this.game.dropPool.get(this.game, this.x, this.y, 'lucky_coin');
             }
-            if (this.game.player.upgrades['Twin Scoop'] > 0) {
-                if (Math.random() < 0.33) {
-                    this.game.drops.push(new Drop(this.game, this.x, this.y, 'ice_cream_scoop'));
-                }
+    
+            let finalHeartChance = this.game.stats.luckHeart;
+            if (Math.random() * 100 < finalHeartChance) {
+                this.game.dropPool.get(this.game, this.x, this.y, 'heart');
+            }
+    
+            let componentDropChance = 0.5 + (this.game.stats.luckLvl * 0.25);
+            if (Math.random() * 100 < componentDropChance) {
+                this.game.dropPool.get(this.game, this.x, this.y, 'component');
+            }
+    
+            const iceCreamChance = this.game.emporium.getIceCreamChance();
+            let finalIceCreamChance = iceCreamChance[0];
+            if (Math.random() * 100 < finalIceCreamChance) {
+                this.game.dropPool.get(this.game, this.x, this.y, 'ice_cream_scoop');
             }
         }
     }
@@ -466,6 +494,10 @@ export default class GummyCluster {
         if (healthPercentage < 0.3) {
             image = this.game.gummyclusterImages[2];
         }
+
+        const numDebris = 4 + Math.floor(Math.random() * 3);
+        const numCols = 3;
+        const numRows = 3;
 
         for (let i = 0; i < numDebris; i++) {
             this.game.enemyDebrisPool.get(this.game, this, image, this.width, this.height, numCols, numRows);

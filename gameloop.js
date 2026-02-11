@@ -526,10 +526,20 @@ export default class GameLoop {
             const scale = 1 - Math.sin(progress * Math.PI) * 0.2; 
             const squish = 1 + Math.sin(progress * Math.PI) * 0.1;
             ctx.scale(squish, scale);
+        } else if (shopBtn.isShaking) {
+            const progress = shopBtn.shakeTimer / shopBtn.shakeDuration;
+            const shakeOffset = Math.sin(progress * Math.PI * 4) * 8; // 4 shakes
+            ctx.translate(shakeOffset, 0);
         }
 
-        if (shopBtn.img.complete) {
-            ctx.drawImage(shopBtn.img, -shopButtonTotalWidth / 2, -shopButtonTotalWidth / 2, shopButtonTotalWidth, shopButtonTotalWidth);
+        const nextTurretCost = game.getNextTurretCost();
+        let buttonImage = shopBtn.img;
+        if (game.money < nextTurretCost) {
+            buttonImage = game.disabledButtonImage;
+        }
+
+        if (buttonImage.complete) {
+            ctx.drawImage(buttonImage, -shopButtonTotalWidth / 2, -shopButtonTotalWidth / 2, shopButtonTotalWidth, shopButtonTotalWidth);
         }
         ctx.restore();
         ctx.shadowBlur = 0;

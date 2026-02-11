@@ -795,7 +795,8 @@ export default class Missile {
                 spriteHeight = this.height * sizeMultiplier;
             }
             
-            const debris = this.game.enemyDebrisPool.get(this.game, this, spriteWidth, spriteHeight, numCols, numRows);
+            const imageForDebris = this.sprite ? this.sprite.image : this.image;
+            this.game.enemyDebrisPool.get(this.game, this, imageForDebris, spriteWidth, spriteHeight, numCols, numRows);
         }
         
         const numParticles = Math.min(50, 10 + Math.floor(this.maxHealth / 30));

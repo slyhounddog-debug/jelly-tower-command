@@ -100,7 +100,7 @@ export default class initLevel {
         // Cloud Platforms logic
         const floatingConfigs = [
     // ROW 1: Top Snipers (High and Wide)
-    { x: 150, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 180, height: 70 }, 
+    { x: 150, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 180, height: 70 },
     { x: 830, y: game.PLAYABLE_AREA_HEIGHT - 1450, width: 180, height: 70 },
 
     // ROW 2: Inner Guards (Mid-High, tucked in slightly)
@@ -116,12 +116,19 @@ export default class initLevel {
     { x: 600, y: game.PLAYABLE_AREA_HEIGHT - 500, width: 280, height: 80 }
 ];
 
-        floatingConfigs.forEach(cfg => {
+        floatingConfigs.forEach((cfg, index) => {
             const platform = { ...cfg, type: 'cloud', hitboxOffsetY: 15 };
-            platform.slots = [
-                { id: nextSlotId++, x: platform.x + (platform.width / 4), y: platform.y - 35.2, isOccupied: false },
-                { id: nextSlotId++, x: platform.x + (platform.width * 3 / 4), y: platform.y - 35.2, isOccupied: false }
-            ];
+            // For the first two platforms (top row), only create one slot
+            if (index < 2) { 
+                platform.slots = [
+                    { id: nextSlotId++, x: platform.x + (platform.width / 2), y: platform.y - 35.2, isOccupied: false }
+                ];
+            } else {
+                platform.slots = [
+                    { id: nextSlotId++, x: platform.x + (platform.width / 4), y: platform.y - 35.2, isOccupied: false },
+                    { id: nextSlotId++, x: platform.x + (platform.width * 3 / 4), y: platform.y - 35.2, isOccupied: false }
+                ];
+            }
             game.platforms.push(platform);
         });
 

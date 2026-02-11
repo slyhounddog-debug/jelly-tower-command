@@ -381,7 +381,10 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 x: 0, y: 0, width: 80, height: 80,
                 isAnimating: false,
                 animTimer: 0,
-                animDuration: 12
+                animDuration: 12,
+                isShaking: false,
+                shakeTimer: 0,
+                shakeDuration: 12 // Same duration as other button animations
             },
             settingsButton: {
                 img: this.settingButtonImage, // Added img property
@@ -889,10 +892,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const scaledShopBtnWidth = shopBtn.width * this.ui.uiScale;
             const scaledShopBtnHeight = shopBtn.height * this.ui.uiScale;
             if (this.mouse.x > shopBtn.x && this.mouse.x < shopBtn.x + (scaledShopBtnWidth * 1.2) && this.mouse.y > shopBtn.y && this.mouse.y < shopBtn.y + (scaledShopBtnHeight * 1.2)) {
-                this.modalManager.toggle(this.lastOpenedMenu);
-                shopBtn.isAnimating = true;
-                shopBtn.animTimer = 0;
-                this.audioManager.playSound('lick'); // Use a generic UI sound
+                const nextTurretCost = this.getNextTurretCost();
+                if (this.money < nextTurretCost) {
+                    shopBtn.isShaking = true;
+                    shopBtn.shakeTimer = 0;
+                    this.audioManager.playSound('pop');
+                } else {
+                    this.modalManager.toggle(this.lastOpenedMenu);
+                    shopBtn.isAnimating = true;
+                    shopBtn.animTimer = 0;
+                    this.audioManager.playSound('lick'); // Use a generic UI sound
+                }
                 return;
             }
             const buildBtn = this.ui.buildButton;
@@ -1452,6 +1462,18 @@ Object.entries(colors).forEach(([name, rgb]) => {
         updateButtonAnimation(this.ui.shopButton);
         updateButtonAnimation(this.ui.buildButton);
         updateButtonAnimation(this.ui.settingsButton);
+
+        // Shop button shake animation updater
+        const updateButtonShakeAnimation = (button) => {
+            if (button.isShaking) {
+                button.shakeTimer += tsf;
+                if (button.shakeTimer >= button.shakeDuration) {
+                    button.isShaking = false;
+                    button.shakeTimer = 0;
+                }
+            }
+        };
+        updateButtonShakeAnimation(this.ui.shopButton);
 
         // Only update game entities if the game is not paused for any reason.
         if (!this.isPaused) {
