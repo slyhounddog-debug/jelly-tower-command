@@ -355,8 +355,9 @@ export default class GameLoop {
                 // Increase all text sizes by 250% (multiplier of 2.5)
                 // Draw stats
                 ctx.font = 'bold ' + (30 * 2) + 'px "VT323"'; // Stats text
-                let currentY = drawY + (80 * 2 * 0.6) + (0.03 * game.PLAYABLE_AREA_HEIGHT); // Adjusted starting Y - further up since "Game Over" text is removed, and now moved down 3%
-                const lineHeight = 35 * 2; // Adjusted line height
+                let currentY = drawY + (0.1 * drawnHeight); // Start 3% down from the top of the drawn image
+                currentY += (80 * 2 * 0.6); // Original vertical offset from previous logic
+                const lineHeight = 40 * 2; // Adjusted line height
                 const contentX = game.width / 2;
                 
                 ctx.fillText(`Time Survived: ${(game.gameTime / 60).toFixed(1)}s`, contentX, currentY);
@@ -389,7 +390,7 @@ export default class GameLoop {
 
                 // Draw Emporium Button (now first)
                 const emporiumBtnX = game.width / 2 - buttonWidth / 2;
-                const emporiumBtnY = currentY + 130;
+                const emporiumBtnY = currentY + 50;
                 if (game.emporiumButtonImage && game.emporiumButtonImage.complete) {
                     ctx.drawImage(game.emporiumButtonImage, emporiumBtnX, emporiumBtnY, buttonWidth, buttonHeight);
                 }
@@ -397,7 +398,7 @@ export default class GameLoop {
 
                 // Draw Restart Button (now second)
                 const restartBtnX = game.width / 2 - buttonWidth / 2;
-                const restartBtnY = currentY + 80;
+                const restartBtnY = currentY;
                 if (game.restartButtonImage && game.restartButtonImage.complete) {
                     ctx.drawImage(game.restartButtonImage, restartBtnX, restartBtnY, buttonWidth, buttonHeight);
                 }

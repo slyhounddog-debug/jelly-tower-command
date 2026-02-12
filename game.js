@@ -1374,6 +1374,18 @@ Object.entries(colors).forEach(([name, rgb]) => {
         console.log('Forcing game over from console...');
         this.castleHealth = 0; // Setting health to 0 will trigger game over in gameloop.js
     }
+
+    // --- Debug Function to Add Ice Cream Scoops ---
+    addIceCreamScoop(amount = 1) {
+        console.log(`Adding ${amount} ice cream scoops...`);
+        this.iceCreamScoops += amount;
+        localStorage.setItem('iceCreamScoops', this.iceCreamScoops);
+        showNotification(`Added ${amount} 🍦`); // Provide visual feedback
+        // Optionally, trigger a refresh of the Emporium if it's open
+        if (this.modalManager.activeModal === 'emporium') {
+            this.modalManager.update(1); // Force a UI update for the emporium
+        }
+    }
     
     // New method to trigger dash action
     triggerDashAction() {
