@@ -1,7 +1,7 @@
 const allModals = [
     'start-game-modal', 'shop-overlay', 'guide-modal', 'stats-modal', 
     'piggy-modal', 'gummy-worm-modal', 'marshmallow-modal', 
-    'game-over-stats', 'emporium-overlay'
+    'gameOverModal', 'emporium-overlay'
 ];
 
 function showModal(modalId, callback) {

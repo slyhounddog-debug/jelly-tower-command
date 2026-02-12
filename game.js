@@ -155,6 +155,8 @@ class Game {
         this.componentenemyImage.src = 'assets/Images/componentenemy.png';
         this.heartenemyImage = new Image();
         this.heartenemyImage.src = 'assets/Images/heartenemy.png';
+        this.gameOverScreenImage = new Image(); // NEW: Image for the game over screen background
+        this.gameOverScreenImage.src = 'assets/Images/gameoverscreen.png';
 
         this.awaitingSellConfirmation = false; // New state variable
 
@@ -761,6 +763,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => { this.icecreamenemyImage.onload = r; this.icecreamenemyImage.onerror = r; }),
             new Promise(r => { this.componentenemyImage.onload = r; this.componentenemyImage.onerror = r; }),
             new Promise(r => { this.heartenemyImage.onload = r; this.heartenemyImage.onerror = r; }),
+            new Promise(r => { this.gameOverScreenImage.onload = r; this.gameOverScreenImage.onerror = r; }), // NEW: Game Over Screen Image
         ]).then(() => {
             this.assetsReady = true;
         }).catch(error => console.error("Failed to load game assets:", error));
@@ -887,6 +890,29 @@ Object.entries(colors).forEach(([name, rgb]) => {
                     return;
                 }
             }
+            // Handle game over button clicks if the game is over
+            if (this.isGameOver && this.gameOverButtonPositions) {
+                const restartBtn = this.gameOverButtonPositions.restart;
+                const emporiumBtn = this.gameOverButtonPositions.emporium;
+
+                // Adjusted mouse coordinates to match the drawing context
+                const adjustedMouseX = this.mouse.x;
+                const adjustedMouseY = this.mouse.aimY; // Corrected: Use aimY for adjusted mouse Y
+
+                // Check Restart button
+                if (adjustedMouseX >= restartBtn.x && adjustedMouseX <= restartBtn.x + restartBtn.width &&
+                    adjustedMouseY >= restartBtn.y && adjustedMouseY <= restartBtn.y + restartBtn.height) {
+                    this.resetGame(); // Reset the game
+                    return; // Consume the click
+                }
+                // Check Emporium button
+                if (adjustedMouseX >= emporiumBtn.x && adjustedMouseX <= emporiumBtn.x + emporiumBtn.width &&
+                    adjustedMouseY >= emporiumBtn.y && adjustedMouseY <= emporiumBtn.y + emporiumBtn.height) {
+                    this.modalManager.open('emporium'); // Open emporium
+                    return; // Consume the click
+                }
+            }
+            
             if (this.modalManager.isOpen()) { this.modalManager.handleInput(); return; } // Handle clicks within modals
             const shopBtn = this.ui.shopButton;
             const scaledShopBtnWidth = shopBtn.width * this.ui.uiScale;
@@ -1198,12 +1224,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
         const settingsCloseBtn = document.getElementById('settings-close-btn');
         if (settingsCloseBtn) { settingsCloseBtn.onclick = () => this.toggleSettings(); }
-
-        const restartBtn = document.getElementById('restart-btn');
-        if (restartBtn) { restartBtn.addEventListener('click', () => { this.resetGame(); }); }
-
-        const emporiumBtn = document.getElementById('open-emporium-btn');
-        if (emporiumBtn) { emporiumBtn.addEventListener('click', () => { this.emporium.toggle(); }); }
     }
 
     drawSwipeTrail(ctx) {
@@ -1343,14 +1363,17 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.player.maxComponentPoints = this.emporium.getStartingComponentPoints();
         this.levelingManager.initializePlayer(this.player);
         this.lastTime = 0;
-        document.getElementById('restart-btn').style.display = 'none';
-        document.getElementById('open-emporium-btn').style.display = 'none';
-        document.getElementById('game-over-stats').style.display = 'none';
                         this.levelManager = new initLevel(this);
                         this.threatManager.reset();
                         this.threatManager.debugSpawn();
                         this.background.init();
                     }
+    
+    // --- Debug Function to Force Game Over ---
+    forceGameOver() {
+        console.log('Forcing game over from console...');
+        this.castleHealth = 0; // Setting health to 0 will trigger game over in gameloop.js
+    }
     
     // New method to trigger dash action
     triggerDashAction() {

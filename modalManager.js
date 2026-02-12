@@ -33,6 +33,11 @@ export default class ModalManager {
         this.modalConfirmUpImage = new Image();
         this.modalConfirmUpImage.src = 'assets/Images/modalconfirmup.png';
 
+        this.gameOverButtons = { // NEW: To store positions and sizes of game over buttons for click detection
+            restart: { x: 0, y: 0, width: 0, height: 0 },
+            emporium: { x: 0, y: 0, width: 0, height: 0 }
+        };
+
         // Dynamically calculate MODAL_CONFIG based on game dimensions
         this.MODAL_CONFIG = {
             shop: {
@@ -62,6 +67,13 @@ export default class ModalManager {
                 x: (this.game.width - (this.game.width * 0.9)) / 2,
                 y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.8)) / 2,
                 image: this.levelUpManagerImage,
+            },
+            gameover: { // NEW: Game Over Modal Configuration
+                width: this.game.width * 0.8,
+                height: this.game.PLAYABLE_AREA_HEIGHT * 0.7,
+                x: (this.game.width - (this.game.width * 0.8)) / 2,
+                y: (this.game.PLAYABLE_AREA_HEIGHT - (this.game.PLAYABLE_AREA_HEIGHT * 0.7)) / 2,
+                image: this.game.gameOverScreenImage,
             }
         };
 
@@ -170,18 +182,6 @@ export default class ModalManager {
         this.game.isPaused = true;
         this.game.audioManager.setMuffled(true);
         this.game.audioManager.playSound('purchase');
-
-        // --- NEW LOGIC FOR EMPORIUM ON GAME OVER ---
-        if (modalName === 'emporium' && this.game.isGameOver) {
-            // Hide game over elements when opening Emporium from game over screen
-            const openEmporiumBtn = document.getElementById('open-emporium-btn');
-            if (openEmporiumBtn) openEmporiumBtn.style.display = 'none';
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) restartBtn.style.display = 'none';
-            const gameOverStats = document.getElementById('game-over-stats');
-            if (gameOverStats) gameOverStats.style.display = 'none';
-        }
-        // --- END NEW LOGIC ---
         
         const config = this.getModalConfig(modalName); // Use the new getModalConfig
         if (!config) return;
@@ -314,6 +314,24 @@ export default class ModalManager {
                     clickHandledByModal = this.game.emporium.handleInput(adjustedMouseX, adjustedMouseY);
                 }
                 break;
+            case 'gameover': // NEW CASE: Handle clicks for game over buttons
+                // Check Restart button
+                const restartBtn = this.gameOverButtons.restart;
+                if (adjustedMouseX >= restartBtn.x && adjustedMouseX <= restartBtn.x + restartBtn.width &&
+                    adjustedMouseY >= restartBtn.y && adjustedMouseY <= restartBtn.y + restartBtn.height) {
+                    this.close(); // Close modal first
+                    this.game.resetGame(); // Reset the game
+                    clickHandledByModal = true;
+                }
+                // Check Emporium button
+                const emporiumBtn = this.gameOverButtons.emporium;
+                if (!clickHandledByModal && adjustedMouseX >= emporiumBtn.x && adjustedMouseX <= emporiumBtn.x + emporiumBtn.width &&
+                    adjustedMouseY >= emporiumBtn.y && adjustedMouseY <= emporiumBtn.y + emporiumBtn.height) {
+                    this.close(); // Close modal first
+                    this.game.emporium.toggle(); // Open emporium
+                    clickHandledByModal = true;
+                }
+                break;
             // No specific input handling for piggy, component_modal, boss as they are simple display modals
         }
         if (clickHandledByModal) {
@@ -348,18 +366,6 @@ export default class ModalManager {
                     if (closedModalName === 'player') {
                         this.game.levelUpManagerScreen.resetMagnifiedCard();
                     }
-
-                    // --- NEW LOGIC FOR EMPORIUM ON GAME OVER ---
-                    if (closedModalName === 'emporium' && this.game.isGameOver) {
-                        // Show game over elements again if game is still over and Emporium was closed
-                        const openEmporiumBtn = document.getElementById('open-emporium-btn');
-                        if (openEmporiumBtn) openEmporiumBtn.style.display = 'block';
-                        const restartBtn = document.getElementById('restart-btn');
-                        if (restartBtn) restartBtn.style.display = 'block';
-                        const gameOverStats = document.getElementById('game-over-stats');
-                        if (gameOverStats) gameOverStats.style.display = 'block';
-                    }
-                    // --- END NEW LOGIC ---
                 }
             }
         }
@@ -502,6 +508,9 @@ export default class ModalManager {
                 case 'player':
                     this.game.levelUpManagerScreen.draw(ctx);
                     break;
+                case 'gameover': // NEW CASE: Draw game over content
+                    this.drawGameOverContent(ctx, config, currentX, currentY, currentWidth, currentHeight);
+                    break;
             }
 
             // Draw confirm button for specific modals
@@ -533,5 +542,96 @@ export default class ModalManager {
                 });
             }
         }
+    }
+
+    drawGameOverContent(ctx, config, modalX, modalY, modalWidth, modalHeight) {
+        ctx.save();
+
+        const paddingTop = modalHeight * 0.15; // 15% from top of modal's visible area
+        const contentX = modalX + modalWidth * 0.1; // Some horizontal padding
+        const contentY = modalY + paddingTop;
+        const contentWidth = modalWidth * 0.8; // Content takes 80% of modal width
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 32px "VT323"';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+
+        let currentY = contentY;
+        const lineHeight = 35; // Adjusted line height
+
+        // Time Survived
+        ctx.fillText('Time Survived:', contentX, currentY);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${(this.game.gameTime / 60).toFixed(1)}s`, contentX + contentWidth, currentY);
+        ctx.textAlign = 'left';
+        currentY += lineHeight;
+
+        // Enemies Killed
+        ctx.fillText('Enemies Killed:', contentX, currentY);
+        ctx.textAlign = 'right';
+        ctx.fillText(this.game.enemiesKilled.toLocaleString(), contentX + contentWidth, currentY);
+        ctx.textAlign = 'left';
+        currentY += lineHeight;
+
+        // Money Earned
+        ctx.fillText('Money Earned:', contentX, currentY);
+        ctx.textAlign = 'right';
+        ctx.fillText(`$${this.game.totalMoneyEarned.toLocaleString()}`, contentX + contentWidth, currentY);
+        ctx.textAlign = 'left';
+        currentY += lineHeight;
+
+        // Accuracy
+        const accuracy = (this.game.shotsFired > 0) ? (this.game.shotsHit / this.game.shotsFired) : 0;
+        ctx.fillText('Accuracy:', contentX, currentY);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${(accuracy * 100).toFixed(1)}%`, contentX + contentWidth, currentY);
+        ctx.textAlign = 'left';
+        currentY += lineHeight * 1.5; // Extra space before score
+
+        // SCORE
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 48px "VT323"';
+        const finalScore = (this.game.gameTime / 60 * 2) + (this.game.enemiesKilled * 50) + (this.game.totalMoneyEarned); // Re-calculate final score as it's not stored
+        ctx.fillText(`SCORE: ${Math.floor(finalScore).toLocaleString()}`, modalX + modalWidth / 2, currentY);
+        currentY += lineHeight * 1.5; // Extra space before high score
+
+        // High Score
+        let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+        ctx.font = 'bold 32px "VT323"';
+        ctx.textAlign = 'left';
+        ctx.fillText('High Score:', contentX, currentY);
+        ctx.textAlign = 'right';
+        ctx.fillText(highScore.toLocaleString(), contentX + contentWidth, currentY);
+        ctx.textAlign = 'left';
+        currentY += lineHeight * 2; // Space before buttons
+
+        // Buttons
+        const buttonWidth = 120;
+        const buttonHeight = 40;
+        const buttonSpacing = 20;
+
+        // Restart Button
+        this.gameOverButtons.restart.x = modalX + (modalWidth / 2) - (buttonWidth / 2);
+        this.gameOverButtons.restart.y = currentY;
+        this.gameOverButtons.restart.width = buttonWidth;
+        this.gameOverButtons.restart.height = buttonHeight;
+        
+        if (this.game.restartButtonImage && this.game.restartButtonImage.complete) {
+            ctx.drawImage(this.game.restartButtonImage, this.gameOverButtons.restart.x, this.gameOverButtons.restart.y, buttonWidth, buttonHeight);
+        }
+        currentY += buttonHeight + buttonSpacing;
+
+        // Emporium Button
+        this.gameOverButtons.emporium.x = modalX + (modalWidth / 2) - (buttonWidth / 2);
+        this.gameOverButtons.emporium.y = currentY;
+        this.gameOverButtons.emporium.width = buttonWidth;
+        this.gameOverButtons.emporium.height = buttonHeight;
+
+        if (this.game.emporiumButtonImage && this.game.emporiumButtonImage.complete) {
+            ctx.drawImage(this.game.emporiumButtonImage, this.gameOverButtons.emporium.x, this.gameOverButtons.emporium.y, buttonWidth, buttonHeight);
+        }
+
+        ctx.restore();
     }
 }

@@ -591,14 +591,15 @@ export default class Missile {
             if (this.type === 'piggy') sizeMult = 1.15;
             else if (this.type === 'marshmallow_large') sizeMult = 1.25;
             else if (this.type === 'marshmallow_small') sizeMult = 0.8;
-            
+            else if (this.type === 'gummy_worm') sizeMult = 1.33; // Gummy worms health bar 33% bigger
+
             const pulse = isLow ? 1 + Math.sin(this.game.gameTime * 0.2) * 0.1 : 1;
             const finalMult = sizeMult * pulse;
             
             let offsetX = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
             let offsetY = (this.shakeDuration > 0) ? (Math.random() - 0.5) * this.shakeMagnitude : 0;
             
-            const barWidth = (this.width * 1.2) * finalMult;
+            const barWidth = (this.width * finalMult); // Apply sizeMult directly here
             const barHeight = 18 * finalMult; 
             const barX = (this.x + this.width/2 - barWidth/2) + offsetX;
             const barY = this.y - 22 + offsetY;
@@ -625,7 +626,7 @@ export default class Missile {
                 const alpha = Math.sin((this.damageTextTimer / 30) * Math.PI);
                 ctx.save();
                 ctx.globalAlpha = alpha; 
-                ctx.font = 'bold 44px "VT323"';
+                ctx.font = 'bold 60px "VT323"';
                 ctx.textAlign = 'center';
                 
                 const tx = barX + barWidth / 2;

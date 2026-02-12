@@ -45,7 +45,7 @@ export default class Player {
         this.reset();
     }
     reset() {
-        this.x = this.game.width / 2; this.y = this.game.PLAYABLE_AREA_HEIGHT - 350; this.vx = 0; this.vy = 0;
+        this.x = (this.game.width / 2) - 30; this.y = this.game.PLAYABLE_AREA_HEIGHT - 350; this.vx = 0; this.vy = 0;
         this.isOnGround = false; this.isControlling = null;
         this.jumpsLeft = 2; this.jumpLock = false;
         this.isPassingThrough = false;
@@ -726,33 +726,47 @@ export default class Player {
             }
         });
 
-        if (closestPlatform) {
-            const hitboxY = closestPlatform.y + (closestPlatform.hitboxOffsetY || 0);
-            const maxShadowDistance = 400;
-            const distance = minDistance;
-            if (distance < maxShadowDistance) {
-                let pCol = {r: 0, g: 0, b: 0};
-                if (closestPlatform.type === 'cloud') {
-                    pCol = {r: 150, g: 150, b: 200};
-                } else if (closestPlatform.color) {
-                    const hex = closestPlatform.color.substring(1);
-                    pCol = {
-                        r: parseInt(hex.substring(0, 2), 16),
-                        g: parseInt(hex.substring(2, 4), 16),
-                        b: parseInt(hex.substring(4, 6), 16)
-                    };
-                }
-                const shadowFactor = 1 - (distance / maxShadowDistance);
-                let shadowY = hitboxY;
-                if (closestPlatform.type === 'ground') {
-                    shadowY -= 1; //player shadow offset
-                }
-                ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
-                ctx.beginPath();
-                ctx.ellipse(this.x + this.width / 2, shadowY -2, (this.width * this.scaleX * 0.5 / 1.2) * shadowFactor, (this.width * 0.12 / 1.2) * shadowFactor, 0, 0, Math.PI * 2);
-                ctx.fill();
+            // Calculate the visual X center of the player's body image
+            let visualPlayerCenterX = this.x + this.width / 2;
+            const bodyImageOffset = -10; // The fixed -10 in drawImage that gets flipped
+
+            // Check if the player is currently being mirrored for drawing
+            const isPlayerVisualMirrored = this.vx > 0; // Assuming positive VX means facing right, which triggers mirroring
+
+            if (isPlayerVisualMirrored) { // Player is facing right (was vx > 0), image is flipped by ctx.scale(-1,1)
+                visualPlayerCenterX -= bodyImageOffset; // Image's "center" shifts left visually because of the flip
+            } else { // Player is facing left (original orientation)
+                visualPlayerCenterX += bodyImageOffset; // Image's "center" shifts right visually because of the -10 in drawImage
             }
-        }
+
+            if (closestPlatform) {
+                const hitboxY = closestPlatform.y + (closestPlatform.hitboxOffsetY || 0);
+                const maxShadowDistance = 400;
+                const distance = minDistance;
+                if (distance < maxShadowDistance) {
+                    let pCol = {r: 0, g: 0, b: 0};
+                    if (closestPlatform.type === 'cloud') {
+                        pCol = {r: 150, g: 150, b: 200};
+                    } else if (closestPlatform.color) {
+                        const hex = closestPlatform.color.substring(1);
+                        pCol = {
+                            r: parseInt(hex.substring(0, 2), 16),
+                            g: parseInt(hex.substring(2, 4), 16),
+                            b: parseInt(hex.substring(4, 6), 16)
+                        };
+                    }
+                    const shadowFactor = 1 - (distance / maxShadowDistance);
+                    let shadowY = hitboxY;
+                    if (closestPlatform.type === 'ground') {
+                        shadowY -= 1; //player shadow offset
+                    }
+                    ctx.fillStyle = `rgba(${pCol.r*0.3}, ${pCol.g*0.3}, ${pCol.b*0.3}, ${0.4 * shadowFactor})`;
+                    ctx.beginPath();
+                    ctx.ellipse(visualPlayerCenterX, shadowY -2, (this.width * this.scaleX * 0.5 / 1.2) * shadowFactor, (this.width * 0.12 / 1.2) * shadowFactor, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
         
         // --- 2. PREPARE PLAYER TRANSFORM ---
         const cx = this.x + this.width / 2;
@@ -785,7 +799,7 @@ export default class Player {
         const pupilDist = 4.2;
         const eyeRadius = 12.6;
         const pupilRadius = 8.4;
-        const eyeXOffset = -(this.width * 0.05);
+        const eyeXOffset = -(this.width * 0.25); // Adjusted for a smaller offset
         const relativeEyeY = -this.height/2 + this.height * 0.58;
 
         ctx.fillStyle = 'white';
@@ -820,8 +834,17 @@ export default class Player {
 
         // --- 5. TONGUE ATTACK LOGIC (outside the transform) ---
         if (!this.isControlling && this.lickAnim > 0) {
-            const tongueOriginX = mouthX;
-            const tongueOriginY = scaledMouthY;
+            let tongueOriginX = this.x + this.width / 2; // Player center X
+            let tongueOriginY = scaledMouthY; // Already scaled and vertically positioned
+
+            // Apply the horizontal offset of the mouth, considering mirroring
+            const xOffsetFromCenter = this.width * 0.25; // Magnitude of horizontal offset (from eyeXOffset)
+            const directionMultiplier = this.vx > 0 ? 1 : -1; // +1 if facing right, -1 if facing left
+            tongueOriginX += xOffsetFromCenter * directionMultiplier;
+            
+            // Add the fixed vertical offset from the static mouth's drawing
+            tongueOriginY += 6; 
+
             const mouseAngle = this.lickAngle;
             const animPhase = (15 - this.lickAnim) / 15; 
             const animCurve = Math.sin(animPhase * Math.PI);
@@ -875,7 +898,7 @@ export default class Player {
             ctx.fillStyle = '#3a0014';
             ctx.beginPath();
             const mouthSize = 9.6 * this.scaleY; // Scale mouth hole with player
-            ctx.arc(mouthX, scaledMouthY + 6, mouthSize, 0, Math.PI * 2);
+            ctx.arc(tongueOriginX, tongueOriginY, mouthSize, 0, Math.PI * 2); // Use corrected tongueOriginX/Y
             ctx.fill();
         }
 

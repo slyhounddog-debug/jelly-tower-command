@@ -30,7 +30,7 @@ export default class GameLoop {
         if (this.game.modalManager.isOpen()) {
             this.game.isPaused = true;
             this.game.modalManager.update(deltaTime / this.game.targetFrameTime);
-        } else if (this.game.isPaused && !this.game.sellModeActive && !this.game.levelingManager.isLevelingUp) {
+        } else if (this.game.isPaused && !this.game.sellModeActive && !this.game.levelingManager.isLevelingUp && !this.game.isGameOver) {
             this.game.isPaused = false;
         }
 
@@ -61,9 +61,7 @@ export default class GameLoop {
                 this.game.isPaused = true;
                 this.game.audioManager.stopMusic('music');
                 this.game.audioManager.playMusic('gameOverMusic');
-                document.getElementById('open-emporium-btn').style.display = 'block';
-                document.getElementById('restart-btn').style.display = 'block';
-                document.getElementById('game-over-stats').style.display = 'block';
+                // this.game.modalManager.open('gameover'); // Removed: Game over screen now drawn directly in loop
                 this.game.emporium.saveEmporiumUpgrades(this.game.emporiumUpgrades);
                 localStorage.setItem('iceCreamScoops', this.game.iceCreamScoops);
                 
@@ -74,12 +72,6 @@ export default class GameLoop {
                 const finalScore = Math.floor(scoreBase * mult);
                 let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
                 if (finalScore > highScore) { highScore = finalScore; localStorage.setItem('myGameHighScore', highScore); }
-                document.getElementById('go-time').textContent = `${timeSec.toFixed(1)}s`;
-                document.getElementById('go-kills').textContent = this.game.enemiesKilled.toLocaleString();
-                document.getElementById('go-money').textContent = `$${this.game.totalMoneyEarned.toLocaleString()}`;
-                document.getElementById('go-acc').textContent = `${(accuracy * 100).toFixed(1)}%`;
-                document.getElementById('go-score').textContent = finalScore.toLocaleString();
-                document.getElementById('go-high-score').textContent = highScore.toLocaleString();
             }
         if (!this.game.isPaused) {
         this.game.gameTime += tsf;
@@ -326,6 +318,100 @@ export default class GameLoop {
         this.game.floatingTextPool.draw(this.game.ctx);
 
         this.game.lootPopupManager.draw(this.game.ctx);
+        
+        // --- Game Over Screen Drawing ---
+        if (this.game.isGameOver) {
+            const ctx = this.game.ctx;
+            const game = this.game;
+
+            // Darken the entire screen
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, game.width, game.height);
+
+            if (game.gameOverScreenImage && game.gameOverScreenImage.complete) {
+                const img = game.gameOverScreenImage;
+                const imgWidth = img.naturalWidth;
+                const imgHeight = img.naturalHeight;
+
+                // Scale image to be approximately 33% smaller than before
+                const targetHeight = game.PLAYABLE_AREA_HEIGHT * 0.45; // Adjusted from 0.7
+                const scale = targetHeight / imgHeight;
+                const drawnWidth = imgWidth * scale;
+                const drawnHeight = imgHeight * scale;
+
+                const drawX = (game.width - drawnWidth) / 2;
+                const drawY = (game.PLAYABLE_AREA_HEIGHT - drawnHeight) / 2;
+
+                ctx.drawImage(img, drawX, drawY, drawnWidth, drawnHeight);
+
+                // Draw "Game Over" text
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#FFF'; // White text
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 5;
+
+                // Increase all text sizes by 250% (multiplier of 2.5)
+                // Draw stats
+                ctx.font = 'bold ' + (30 * 2) + 'px "VT323"'; // Stats text
+                let currentY = drawY + (80 * 2 * 0.6) + (0.03 * game.PLAYABLE_AREA_HEIGHT); // Adjusted starting Y - further up since "Game Over" text is removed, and now moved down 3%
+                const lineHeight = 35 * 2; // Adjusted line height
+                const contentX = game.width / 2;
+                
+                ctx.fillText(`Time Survived: ${(game.gameTime / 60).toFixed(1)}s`, contentX, currentY);
+                currentY += lineHeight;
+                ctx.fillText(`Enemies Killed: ${game.enemiesKilled.toLocaleString()}`, contentX, currentY);
+                currentY += lineHeight;
+                ctx.fillText(`Money Earned: $${game.totalMoneyEarned.toLocaleString()}`, contentX, currentY);
+                currentY += lineHeight;
+                const accuracy = (game.shotsFired > 0) ? (game.shotsHit / game.shotsFired) : 0;
+                ctx.fillText(`Accuracy: ${(accuracy * 100).toFixed(1)}%`, contentX, currentY);
+                currentY += lineHeight * 1.5;
+
+                const finalScore = (game.gameTime / 60 * 2) + (game.enemiesKilled * 50) + (game.totalMoneyEarned);
+                ctx.font = 'bold ' + (48 * 2) + 'px "VT323"'; // Score text
+                ctx.fillText(`SCORE: ${Math.floor(finalScore).toLocaleString()}`, contentX, currentY);
+                currentY += lineHeight * 1.5;
+
+                let highScore = parseInt(localStorage.getItem('myGameHighScore')) || 0;
+                ctx.font = 'bold ' + (30 * 2) + 'px "VT323"'; // High Score text
+                ctx.fillText(`High Score: ${highScore.toLocaleString()}`, contentX, currentY);
+                currentY += lineHeight * 2;
+
+                // Buttons: Emporium then Restart
+                // 20% narrower, same height, reduced spacing
+                const buttonScaleFactor = 5; // To maintain previous scaling
+                const narrowerFactor = 0.8; // 20% narrower
+                const buttonWidth = (120 * buttonScaleFactor) * narrowerFactor;
+                const buttonHeight = 40 * buttonScaleFactor;
+                const buttonSpacing = 20 * 0.5; // Reduced spacing by 50%
+
+                // Draw Emporium Button (now first)
+                const emporiumBtnX = game.width / 2 - buttonWidth / 2;
+                const emporiumBtnY = currentY + 130;
+                if (game.emporiumButtonImage && game.emporiumButtonImage.complete) {
+                    ctx.drawImage(game.emporiumButtonImage, emporiumBtnX, emporiumBtnY, buttonWidth, buttonHeight);
+                }
+                currentY += buttonHeight + buttonSpacing;
+
+                // Draw Restart Button (now second)
+                const restartBtnX = game.width / 2 - buttonWidth / 2;
+                const restartBtnY = currentY + 80;
+                if (game.restartButtonImage && game.restartButtonImage.complete) {
+                    ctx.drawImage(game.restartButtonImage, restartBtnX, restartBtnY, buttonWidth, buttonHeight);
+                }
+
+                // Store button positions for click handling in game.js (updated order)
+                game.gameOverButtonPositions = {
+                    emporium: { x: emporiumBtnX, y: emporiumBtnY, width: buttonWidth, height: buttonHeight },
+                    restart: { x: restartBtnX, y: restartBtnY, width: buttonWidth, height: buttonHeight }
+                };
+
+                ctx.restore();
+            }
+        }
+
         this.game.modalManager.draw(this.game.ctx);
 
         if (this.game.levelingManager.isLevelingUp) {
@@ -534,9 +620,10 @@ export default class GameLoop {
 
         const nextTurretCost = game.getNextTurretCost();
         let buttonImage = shopBtn.img;
-        if (game.money < nextTurretCost) {
-            buttonImage = game.disabledButtonImage;
-        }
+        // The shop button should not be grayed out, so remove this conditional logic.
+        // if (game.money < nextTurretCost) {
+        //     buttonImage = game.disabledButtonImage;
+        // }
 
         if (buttonImage.complete) {
             ctx.drawImage(buttonImage, -shopButtonTotalWidth / 2, -shopButtonTotalWidth / 2, shopButtonTotalWidth, shopButtonTotalWidth);

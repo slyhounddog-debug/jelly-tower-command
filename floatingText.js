@@ -14,10 +14,11 @@ export default class FloatingText {
         this.sizeIncrease = sizeIncrease;
         
         // Physics for the "Pop" effect
-        this.vx = (Math.random() - 0.5) * 2; // Random left/right burst
-        this.vy = -5 - Math.random() * 3;    // Initial upward burst
-        this.gravity = 0.6;                  // Pulls the number down slightly
-        this.scale = 1.6;                    // Start big for "impact"
+        this.vx = (Math.random() - 0.5) * 10; // Random left/right burst
+        this.vy = -8 - Math.random() * 4;    // Increased initial upward burst for more pop
+        this.gravity = 0.0;                    // No gravity, text floats up/away
+        this.deceleration = 0.84;             // Adjusted: Deceleration factor to slow down quicker
+        this.scale = 1.8;                    // Start big for "impact"
         this.active = true;
     }
 
@@ -32,6 +33,7 @@ export default class FloatingText {
         this.vx = 0;
         this.vy = 0;
         this.gravity = 0;
+        this.deceleration = 0; // Reset deceleration
         this.scale = 1.0; // Reset to default scale
         this.active = false;
     }
@@ -41,8 +43,20 @@ export default class FloatingText {
         // Apply physics
         this.x += this.vx * tsf;
         this.y += this.vy * tsf;
-        this.vy += this.gravity * tsf;
         
+        // Apply deceleration
+        this.vx *= this.deceleration;
+        this.vy *= this.deceleration;
+
+        // NEW: Enforce minimum speed
+        const minSpeed = 0.1;
+        if (Math.abs(this.vx) < minSpeed) {
+            this.vx = Math.sign(this.vx) * minSpeed;
+        }
+        if (Math.abs(this.vy) < minSpeed) {
+            this.vy = Math.sign(this.vy) * minSpeed;
+        }
+
         this.life -= 2 * tsf;
         if (this.life <= 0) {
             this.reset();
@@ -63,7 +77,7 @@ export default class FloatingText {
         ctx.translate(this.x, this.y);
         ctx.scale(this.scale, this.scale);
 
-        ctx.font = `bold ${28 + this.sizeIncrease}px 'VT323'`;
+        ctx.font = `bold ${32 + this.sizeIncrease}px 'VT323'`; // Increased base font size by 4px
         ctx.textAlign = 'center';
 
         // 1. Draw thick outer stroke for readability (The "Gamey" look)

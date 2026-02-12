@@ -838,6 +838,23 @@
             top: 15% !important;
             transform: translate(-50%, 0) !important;
         }
+        /* Ensure game over buttons are always displayed */
+        #gameOverModal .game-over-buttons .modal-confirm-button-wrapper {
+            display: block !important; /* Force block display */
+            margin: 10px auto; /* Add some vertical margin for spacing */
+        }
+        #gameOverModal .game-over-buttons .modal-confirm-button {
+            display: block !important; /* Ensure image buttons are block */
+        }
+
+        /* Override the background for gameOverModal to ensure gameoverscreen.png is used */
+        #gameOverModal.game-over-modal-background {
+            background-image: url('assets/Images/gameoverscreen.png') !important; /* Force this image */
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            background-color: black !important; /* Add a solid background color */
+        }
 
         </style>
     </head>
@@ -865,52 +882,6 @@
             <!-- Mobile Controls -->
             <div id="joystick-zone"></div>
             <div id="jump-button"></div>
-
-            <div id="game-over-stats" style="display: none;">
-                <h1>Mission Failed</h1>
-                <div class="stat-row">
-                    <span>Time Survived:</span>
-                    <span>
-                        <span id="go-time">0s</span>
-                        <span id="go-time-points" class="stat-points-value"></span>
-                    </span>
-                </div>
-                <div class="stat-row">
-                    <span>Enemies Killed:</span>
-                    <span>
-                        <span id="go-kills">0</span>
-                        <span id="go-kills-points" class="stat-points-value"></span>
-                    </span>
-                </div>
-                <div class="stat-row">
-                    <span>Money Earned:</span>
-                    <span>
-                        <span id="go-money">$0</span>
-                        <span id="go-money-points" class="stat-points-value"></span>
-                    </span>
-                </div>
-                <div class="stat-row">
-                    <span>Accuracy:</span>
-                    <span>
-                        <span id="go-acc">0%</span>
-                        <span id="go-mult-display" class="stat-points-value">(1.0x)</span>
-                    </span>
-                </div>
-                <div class="final-score">SCORE: <span id="go-score">0</span></div>
-                <div id="high-score-display" class="stat-row">
-                <span>High Score:</span>
-                <span id="go-high-score">0</span>
-            </div>
-            <div class="game-over-buttons">
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/restartbutton.png" id="restart-btn" class="modal-confirm-button">
-            </div>
-            <div class="modal-confirm-button-wrapper">
-            <img src="assets/Images/emporiumbutton.png" id="open-emporium-btn" class="modal-confirm-button">
-            </div>
-            </div>
-            </div>
-
             <div id="component-quarters-overlay" class="modal" style="display: none;">
                 <div class="modal-title">
                     <h2 id="component-quarters-header-plate">Component Quarters</h2>
