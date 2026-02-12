@@ -291,24 +291,37 @@ export default class Player {
                     if (hit && !this.hitEnemies.includes(m.id)) {
                         this.game.hitStopFrames = 0;
                         this.hitEnemies.push(m.id);
-                        if (this.upgrades['Jelly Tag'] > 0) {
-                            m.isJellyTagged = true;
+
+                        // Special handling for Taffy Wrapper and Cotton Cloud
+                        if (m.type === 'taffy_wrapper' || m.type === 'cotton_cloud') {
+                            // Call takeDamage with a special source type to trigger their specific lick logic
+                            if (m.takeDamage(this.game.stats.lickDamage, false, { type: 'player_lick' })) {
+                                // If takeDamage returns true, it means the enemy was defeated/removed
+                                // For cotton cloud, this would be instant destruction.
+                                // For taffy, it's typically unwrapped first, then possibly damaged further.
+                                // The kill() call is handled inside missile.takeDamage for specific types.
+                            }
+                        } else {
+                            // Existing logic for other enemies
+                            if (this.upgrades['Jelly Tag'] > 0) {
+                                m.isJellyTagged = true;
+                            }
+                            this.game.wasLickKill = true;
+                            if (m.takeDamage(this.game.stats.lickDamage, false, this)) {
+                                m.kill();
+                            }
+                            this.game.wasLickKill = false;
+                            if (this.upgrades['Ice Tongue'] > 0) {
+                                m.applySlow(300, 0.5, 'tongue');
+                            }
+                            m.kbVy = -this.game.stats.lickKnockback * 0.2;
+                            this.game.screenShake.trigger(2, 10);
+                            for (let i = 0; i < 15; i++) {
+                                this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark', null, 0.5);
+                                if (i < 5) this.game.particlePool.get(this.game, m.x, m.y, '#fff', 'smoke', null, 0.5);
+                            }
+                            this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
                         }
-                        this.game.wasLickKill = true;
-                        if (m.takeDamage(this.game.stats.lickDamage, false, this)) {
-                            m.kill();
-                        }
-                        this.game.wasLickKill = false;
-                        if (this.upgrades['Ice Tongue'] > 0) {
-                            m.applySlow(300, 0.5, 'tongue');
-                        }
-                        m.kbVy = -this.game.stats.lickKnockback * 0.2;
-                        this.game.screenShake.trigger(2, 10);
-                        for (let i = 0; i < 15; i++) {
-                            this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark', null, 0.5);
-                            if (i < 5) this.game.particlePool.get(this.game, m.x, m.y, '#fff', 'smoke', null, 0.5);
-                        }
-                        this.spawnGumballs(m.x + m.width / 2, m.y + m.height / 2, m, 2, false);
                     }
                 });
             }

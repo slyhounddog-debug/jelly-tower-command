@@ -172,8 +172,22 @@ export default class Tower extends BaseStructure {
 
         for (const type in this.game.enemyPools) {
             this.game.enemyPools[type].forEach(m => {
-                const dist = Math.hypot((m.x + m.width / 2) - (cx + this.drawOffsetX), (m.y + m.height / 2) - (cy + this.drawOffsetY - 30));
-                if (dist < minDist) { minDist = dist; target = m; }
+                // Ignore inactive enemies
+                if (!m.active) return; // Added safety check
+
+                // NEW: Taffy Wrapper specific: Ignore if wrapped
+                if (m.type === 'taffy_wrapper' && m.isWrapped) {
+                    return; // Skip this enemy as a target
+                }
+
+                const dx = (m.x + m.width / 2) - (cx + this.drawOffsetX);
+                const dy = (m.y + m.height / 2) - (cy + this.drawOffsetY - 30);
+                const distSq = dx * dx + dy * dy; // Use squared distance for optimization
+
+                if (distSq < minDist * minDist) { // Compare squared distance with squared range
+                    minDist = Math.sqrt(distSq); // Only take sqrt if it's the closest to store actual distance
+                    target = m;
+                }
             });
         }
         if (target) {

@@ -83,7 +83,18 @@ export default class Particle {
         this.y += this.vy * tsf;
         this.life -= this.decay * tsf;
 
-        if (this.life <= 0) { // Return to pool when life expires
+        // NEW: Off-screen check for returning particles to pool
+        const screenMargin = 100; // Pixels outside screen bounds
+        if (this.x < -screenMargin || this.x > this.game.width + screenMargin ||
+            this.y < -screenMargin || this.y > this.game.height + screenMargin) {
+            this.active = false;
+            if (this.game && this.game.particlePool) {
+                this.game.particlePool.returnToPool(this);
+            }
+            return; // Immediately return from update, as it's now pooled
+        }
+
+        if (this.life <= 0) { // Existing check
             this.active = false;
             if (this.game && this.game.particlePool) { // Ensure pool exists
                 this.game.particlePool.returnToPool(this);
@@ -96,8 +107,12 @@ export default class Particle {
         else if (this.type === 'trail') {
             // Check if emitter is still active. If not, terminate this trail particle.
             if (this.emitter && !this.emitter.active) {
-                this.life = 0; // Set life to 0 to trigger return to pool
-                return; // Skip further updates for this particle
+                // Immediately return to pool if emitter is inactive
+                this.active = false; // Mark as inactive
+                if (this.game && this.game.particlePool) {
+                    this.game.particlePool.returnToPool(this);
+                }
+                return; // Exit this update cycle cleanly
             }
 
             if (this.emitter && this.emitter.onGround) {

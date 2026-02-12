@@ -129,8 +129,7 @@ export default class GameLoop {
                             const vy = -Math.random() * 10 - 2;
                             const radius = Math.random() * 5 + 2;
                             const lifespan = 40 + Math.random() * 20;
-
-                            this.game.frostingParticlePool.get(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan, 0.15, 'enemy');
+                            this.game.frostingParticlePool.get(this.game, m.x + m.width / 2, m.y + m.height, vx, vy, radius, color, lifespan, 0.15, 'enemy'); // Already correct, my mistake in analysis. No change needed here.
                         }
                         this.game.damageSpotPool.get(this.game, m.x + m.width / 2, m.y + m.height / 2, m.width * 0.5);
                         this.game.enemyPools[type].returnToPool(m); 
@@ -300,6 +299,8 @@ export default class GameLoop {
         this.game.soulPool.draw(this.game.ctx);
         // Draw particles from pool
         this.game.particlePool.draw(this.game.ctx);
+        // Draw sugar particles from pool
+        this.game.sugarParticlePool.draw(this.game.ctx);
         // Draw debris from pool
         this.game.enemyDebrisPool.draw(this.game.ctx);
         // Draw frosting particles from pool

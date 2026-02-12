@@ -39,10 +39,28 @@ export default class Missile {
         this.isJellyPudding = false;
         this.isJawBreaker = false;
         this.isComponentEnemy = false;
+        this.isVulnerable = true; // Donut specific
+        this.vulnerabilityTimer = 0; // Donut specific
+        this.vulnerabilityDuration = 0; // Donut specific
         this.isHeartEnemy = false;
+        this.isWrapped = false; // Taffy Wrapper specific
+        this.isEscaping = false; // Cotton Cloud specific
+        this.targetLoot = null; // Cotton Cloud specific
+        this.lootParented = false; // Cotton Cloud specific
+        this.lootOffsetX = 0; // Cotton Cloud specific
+        this.lootOffsetY = 0; // Cotton Cloud specific
+        this.lootBounceOffset = 0; // Cotton Cloud specific
         this.color1 = null; // Gummy worm specific
         this.color2 = null; // Gummy worm specific
         this.rotationSpeed = 0; // Marshmallow specific
+        this.pulseTimer = 0; // Cotton Cloud specific
+        this.pulseDuration = 0.4; // Cotton Cloud specific
+        this.scaleX = 1; // Cotton Cloud specific
+        this.scaleY = 1; // Cotton Cloud specific
+        this.driftOffset = 0; // Cotton Cloud specific
+        this.targetingTimer = 0; // Cotton Cloud specific
+        this.TARGETING_INTERVAL = 60; // Cotton Cloud specific
+        this.unwrappedTimer = 0; // Taffy Wrapper specific
 
        if (type === 'missile') { // Jelly Bean
             baseWidth = 70;
@@ -62,7 +80,65 @@ export default class Missile {
             });
             this.sprite.currentFrame = variantIndex;
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
-        } else if (type === 'gummy_worm') {
+        } else if (type === 'cotton_cloud') { // Cotton Candy Cloud
+            const stats = this.game.enemyStats.cottonCloud;
+            const missileJellyBeanHealth = this.game.enemyStats.jellyBean.missile.health;
+            const missileJellyBeanSpeed = this.game.enemyStats.jellyBean.missile.speed;
+
+            this.image = this.game.cloudMainImage;
+            baseWidth = stats.width;
+            baseHeight = stats.height;
+            baseHealth = missileJellyBeanHealth * stats.healthMultiplier;
+            baseMass = stats.mass;
+            baseSpeed = missileJellyBeanSpeed * 2; // 2x missile speed
+            baseDamage = 0; // No direct damage, it steals loot
+
+            this.color = '#FFFFFF'; // White for cloud
+
+            // Initial position: upper corners
+            this.x = (Math.random() < 0.5 ? -baseWidth : this.game.canvas.width);
+            this.y = Math.random() * (this.game.canvas.height / 4);
+
+            this.isEscaping = false;
+            this.targetLoot = null;
+            this.lootParented = false;
+            this.lootOffsetX = 0;
+            this.lootOffsetY = 0;
+            this.lootBounceOffset = 0;
+            this.scaleX = 1.0;
+            this.scaleY = 1.0;
+            this.pulseTimer = 0;
+            this.pulseDuration = 0.4;
+            this.driftOffset = Math.random() * Math.PI * 2; // Random start for sin wave
+            this.targetingTimer = 0;
+            // Initial velocity for diagonal descent with drifting
+            // Aiming towards the center-bottom, but with initial drift
+            const angleToCenter = Math.atan2(this.game.PLAYABLE_AREA_HEIGHT - this.y, (this.game.canvas.width / 2) - this.x);
+            this.vx = Math.cos(angleToCenter) * baseSpeed * 0.5;
+            this.vy = Math.sin(angleToCenter) * baseSpeed * 0.5;
+
+            // Trigger initial target search
+            // this.searchForTarget(); // Will call this in update loop
+        } else if (type === 'taffy_wrapper') { // Taffy Wrapper
+            const stats = this.game.enemyStats.taffyWrapper;
+            const missileJellyBeanHealth = this.game.enemyStats.jellyBean.missile.health;
+            const missileJellyBeanSpeed = this.game.enemyStats.jellyBean.missile.speed;
+
+            this.image = this.game.taffyWrappedImage; // Starts wrapped
+            baseWidth = stats.width;
+            baseHeight = stats.height;
+            baseHealth = missileJellyBeanHealth * stats.healthMultiplier;
+            baseMass = stats.mass;
+            baseSpeed = missileJellyBeanSpeed * 1; // Standard missile speed
+            baseDamage = 0; // No direct damage when wrapped
+
+            this.color = '#FFAACC'; // Placeholder color for taffy
+
+            this.isWrapped = true;
+            this.unwrappedTimer = 0;
+            // Position and velocity will follow standard missile logic for now.
+        }
+        else if (type === 'gummy_worm') {
             baseWidth = 26;
             baseHeight = 85;
             baseHealth = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
@@ -71,7 +147,7 @@ export default class Missile {
             baseDamage = 6;
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
-            this.color = this.color1; 
+            this.color = this.color1;
         } else if (type === 'marshmallow_large') {
             baseWidth = 76.5 * 1.5;
             baseHeight = 76.5 * 1.5;
@@ -136,6 +212,10 @@ export default class Missile {
             baseDamage = 10;
             this.image = this.game.donutenemyImage;
             this.color = '#00e1ffff';
+            this.isVulnerable = true;
+            this.vulnerabilityDuration = 120; // 2 seconds vulnerable
+            this.invulnerabilityDuration = 90; // 1.5 seconds invulnerable
+            this.vulnerabilityTimer = this.vulnerabilityDuration;
             this.isDonut = true; // Special flag
         } else if (type === 'ice_cream') {
             baseWidth = 85;
@@ -271,7 +351,24 @@ export default class Missile {
         this.isJellyPudding = false;
         this.isJawBreaker = false;
         this.isComponentEnemy = false;
+        this.isVulnerable = true;
+        this.vulnerabilityTimer = 0;
+        this.vulnerabilityDuration = 0;
         this.isHeartEnemy = false;
+        this.isWrapped = false; // Taffy Wrapper specific
+        this.isEscaping = false; // Cotton Cloud specific
+        this.targetLoot = null; // Cotton Cloud specific
+        this.lootParented = false; // Cotton Cloud specific
+        this.lootOffsetX = 0; // Cotton Cloud specific
+        this.lootOffsetY = 0; // Cotton Cloud specific
+        this.lootBounceOffset = 0; // Cotton Cloud specific
+        this.pulseTimer = 0; // Cotton Cloud specific
+        this.pulseDuration = 0.4; // Cotton Cloud specific
+        this.scaleX = 1; // Cotton Cloud specific
+        this.scaleY = 1; // Cotton Cloud specific
+        this.driftOffset = 0; // Cotton Cloud specific
+        this.targetingTimer = 0; // Cotton Cloud specific
+        this.unwrappedTimer = 0; // Taffy Wrapper specific
         this.color1 = null;
         this.color2 = null;
         this.sizeScale = 1; // Reset the sizeScale
@@ -294,7 +391,40 @@ export default class Missile {
 
     takeDamage(amount, isCritical = false, source = null) {
         if (!this.active) return false;
-        if (this.isDonut && Math.random() < 0.33) {
+
+        // Taffy Wrapper specific: Turrets ignore when wrapped, projectiles deal zero damage
+        if (this.type === 'taffy_wrapper' && this.isWrapped) {
+            // Player lick can unwrap it
+            // Player lick can unwrap it, but it takes no damage from the lick itself
+            if (source && source.type === 'player_lick') {
+                this.isWrapped = false;
+                this.image = this.game.taffyUnwrappedImage;
+                this.unwrappedTimer = 0; // Start pop animation
+                this.spawnSugarParticles(); // Spawn sugar particles
+                this.spawnSugarParticles(25); // Spawn a burst of sugar particles
+                this.game.audioManager.playSound('pop'); // Play a pop sound
+                // Optionally, add damage now that it's unwrapped
+                this.health -= amount;
+
+                // Release a slowing goo burst
+                for (let i = 0; i < 15; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 4 + 2;
+                    this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 4 + 2, '#a29bfe', 120, 0.05, 'enemy');
+                }
+                return false; // The unwrapping lick does no damage
+            } else {
+                return false; // Turrets and projectiles do no damage when wrapped
+            }
+        }
+
+        // Cotton Cloud specific: If licked, destroy and drop loot
+        if (this.type === 'cotton_cloud' && source && source.type === 'player_lick') {
+            this.health = 0; // Instantly destroy
+            // Loot dropping handled in kill method
+        }
+
+        if (this.isDonut && !this.isVulnerable) {
             const ft = this.game.floatingTextPool.get(this.game, this.x + this.width / 2, this.y, 'Miss', 'white');
             return false;
         }
@@ -395,6 +525,126 @@ export default class Missile {
                 this.scale = 1;
             }
             return; // Prevent other updates during teleport animation
+        }
+        
+        // Donut specific update logic for vulnerability phasing
+        if (this.type === 'donut') {
+            this.vulnerabilityTimer -= tsf;
+            if (this.vulnerabilityTimer <= 0) {
+                this.isVulnerable = !this.isVulnerable;
+                if (this.isVulnerable) {
+                    this.vulnerabilityTimer = this.vulnerabilityDuration;
+                } else {
+                    this.vulnerabilityTimer = this.invulnerabilityDuration;
+                }
+            }
+        }
+
+
+        // Cotton Cloud specific update logic
+        if (this.type === 'cotton_cloud') {
+            this.targetingTimer += tsf;
+            // Search for target on spawn, target loss, or every 60 frames
+            if (this.targetingTimer >= this.TARGETING_INTERVAL || !this.targetLoot || !this.targetLoot.active) {
+                this.searchForTarget();
+                this.targetingTimer = 0;
+            }
+            
+            // Animation Logic (Pulsing)
+            this.pulseTimer += tsf;
+            const currentPulseDuration = this.isEscaping ? 0.2 : this.pulseDuration;
+            const pulseProgress = (this.pulseTimer % (currentPulseDuration * 60)) / (currentPulseDuration * 60); // 60 for frames
+            
+            this.scaleY = 0.9 + Math.sin(pulseProgress * Math.PI * 2) * 0.1; // Scale Y between 0.9 and 1.1
+            this.scaleX = 1.0 + (1.0 - this.scaleY); // Counter-scale X to maintain volume
+
+            let currentSpeed = this.speed; // Base speed for cotton cloud
+            if (this.isEscaping) {
+                currentSpeed *= 0.5; // 0.5x standard speed
+                this.y -= currentSpeed * tsf; // Move upwards
+                // If it escapes off screen, return to pool
+                if (this.y + this.height < 0) {
+                    if (this.lootParented && this.targetLoot) {
+                        this.targetLoot.active = false; // Destroy loot if stolen
+                        if (this.targetLoot.despawnTimer) {
+                            this.targetLoot.despawnTimer.reset(); // Reset timer to prevent immediate despawn
+                        }
+                    }
+                    this.game.enemyPools['cotton_cloud'].returnToPool(this);
+                }
+            } else if (this.targetLoot && this.targetLoot.active) {
+                // Move at 2x standard jelly bean "missile" speed diagonally toward target
+                const targetCenterX = this.targetLoot.x + this.targetLoot.width / 2;
+                const targetCenterY = this.targetLoot.y + this.targetLoot.height / 2;
+                const myCenterX = this.x + this.width / 2;
+                const myCenterY = this.y + this.height / 2;
+
+                const dx = targetCenterX - myCenterX;
+                const dy = targetCenterY - myCenterY;
+                const distSq = dx * dx + dy * dy; // Use squared distance for optimization
+
+                // Collision detection with loot
+                const collisionThresholdSq = (this.width / 3 + this.targetLoot.width / 3) ** 2; // Reduced threshold to make collision more precise
+                if (distSq < collisionThresholdSq) {
+                    this.lootParented = true;
+                    // Calculate offset from cloud center
+                    this.lootOffsetX = targetCenterX - myCenterX;
+                    this.lootOffsetY = targetCenterY - myCenterY;
+                    this.isEscaping = true; // Once loot is snatched, start escaping
+                    // Immediately change direction to aim upwards
+                    this.vy = -currentSpeed;
+                    this.vx = (Math.random() - 0.5) * currentSpeed * 0.2; // Small random horizontal for escape
+                    if (this.targetLoot.despawnTimer) {
+                        this.targetLoot.despawnTimer.pause();
+                    }
+                } else {
+                    const angle = Math.atan2(dy, dx);
+                    this.vx = Math.cos(angle) * currentSpeed * tsf;
+                    this.vy = Math.sin(angle) * currentSpeed * tsf;
+                    
+                    // Cloud Flight: X-axis drifting with Math.sin()
+                    this.driftOffset += 0.05 * tsf; // Adjust drift speed
+                    this.vx += Math.sin(this.driftOffset) * currentSpeed * 0.1;
+                }
+                this.x += this.vx;
+                this.y += this.vy;
+            } else { // No target or target lost, just drift and descend
+                this.driftOffset += 0.05 * tsf; // Adjust drift speed
+                this.vx = Math.sin(this.driftOffset) * 0.5 * tsf; // Gentle X-axis drifting
+                this.vy = (this.game.enemyStats.jellyBean.missile.speed * 0.1) * tsf; // Slow descent
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // If it drifts off screen without loot, return to pool
+                if (this.y > this.game.canvas.height + this.height) { 
+                    this.game.enemyPools['cotton_cloud'].returnToPool(this);
+                }
+            }
+            
+            if (this.lootParented && this.targetLoot) {
+                // Slight bouncing movement for loot inside the cloud
+                this.lootBounceOffset = Math.sin(this.game.gameTime * 0.2) * 5; // Adjust amplitude and frequency
+                this.targetLoot.x = this.x + this.width / 2 - this.targetLoot.width / 2 + this.lootOffsetX;
+                this.targetLoot.y = this.y + this.height / 2 - this.targetLoot.height / 2 + this.lootOffsetY + this.lootBounceOffset;
+            }
+            return; // Cotton cloud has its own movement and update cycle
+        }
+        
+        // Taffy Wrapper specific update logic
+        if (this.type === 'taffy_wrapper') {
+            if (!this.isWrapped) {
+                this.unwrappedTimer += tsf;
+                // Pop animation: scale up to 1.25x then back to 1.0
+                const popDuration = 10; // Frames for pop animation
+                if (this.unwrappedTimer < popDuration) {
+                    this.scale = 1 + (0.25 * (this.unwrappedTimer / popDuration));
+                } else {
+                    this.scale = 1 + (0.25 * (1 - ((this.unwrappedTimer - popDuration) / popDuration)));
+                    if (this.scale <= 1) {
+                        this.scale = 1;
+                    }
+                }
+            }
         }
         
         if (this.knockbackTimer > 0) this.knockbackTimer -= tsf; // Decrement knockback timer
@@ -510,6 +760,72 @@ export default class Missile {
         }
     }
 
+    // Cotton Cloud specific: Searches for loot based on weighted system
+    searchForTarget() {
+        if (!this.game || !this.game.drops || this.game.drops.length === 0) {
+            this.targetLoot = null;
+            return;
+        }
+
+        // Weighted random selection based on user requirements
+        const lootWeights = {
+            'ice_cream_scoop': 10,
+            'component': 10,
+            'heart': 5,
+            'coin': 1
+        };
+
+        let totalWeight = 0;
+        const availableLootWithWeights = [];
+
+        // Filter for active drops and assign weights
+        for (const drop of this.game.dropPool.pool) { // Access the raw pool to check activity
+            if (drop.active && drop.y < this.game.PLAYABLE_AREA_HEIGHT) { // Only target active drops that are above ground
+                const weight = lootWeights[drop.type] || 0; // Get weight, default to 0 if type not listed
+                if (weight > 0) {
+                    totalWeight += weight;
+                    availableLootWithWeights.push({ drop, weight });
+                }
+            }
+        }
+
+        if (totalWeight === 0) {
+            this.targetLoot = null;
+            return;
+        }
+
+        let randomWeight = Math.random() * totalWeight;
+        for (const entry of availableLootWithWeights) {
+            randomWeight -= entry.weight;
+            if (randomWeight <= 0) {
+                this.targetLoot = entry.drop;
+                // Pause despawn timer for targetLoot
+                if (this.targetLoot.despawnTimer) {
+                    this.targetLoot.despawnTimer.pause();
+                }
+                break;
+            }
+        }
+    }
+
+    // Taffy Wrapper specific: Spawns sugar particles on unwrap
+    spawnSugarParticles(count = 5) { // Corrected: Single function declaration with default parameter
+        if (!this.game || !this.game.sugarParticlePool) return;
+
+        for (let i = 0; i < count; i++) {
+            const particle = this.game.sugarParticlePool.get();
+            if (particle) {
+                // Spawn from the center of the taffy
+                particle.init(this.game, this.x + this.width / 2, this.y + this.height / 2, {
+                    color: '#ffc1cc', // Pink sugar (removed duplicate)
+                    size: Math.random() * 3 + 1,
+                    lifespan: Math.random() * 0.8 + 0.7,
+                    speed: Math.random() * 3 + 1
+                });
+            }
+        }
+    }
+
     draw(ctx) {
         if (!this.active) return;
         ctx.save();
@@ -566,6 +882,12 @@ export default class Missile {
         }
         ctx.shadowColor = color;
         ctx.fillStyle = color;
+
+        // Donut phasing effect
+        if (this.isDonut && !this.isVulnerable) {
+            const phaseAlpha = 0.3 + Math.sin(this.game.gameTime * 0.2) * 0.2; // Pulse between 0.1 and 0.5
+            ctx.globalAlpha = phaseAlpha;
+        }
 
         this.drawEnemy(ctx);
 
@@ -732,6 +1054,24 @@ export default class Missile {
                 ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
             }
             ctx.restore();
+        } else if (this.type === 'cotton_cloud') {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(this.scaleX, this.scaleY);
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+            }
+            ctx.restore();
+        } else if (this.type === 'taffy_wrapper') {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(this.scale, this.scale); // Apply pop animation scale
+            if (this.isWrapped && this.game.taffyWrappedImage && this.game.taffyWrappedImage.complete) {
+                ctx.drawImage(this.game.taffyWrappedImage, -this.width / 2, -this.height / 2, this.width, this.height);
+            } else if (!this.isWrapped && this.game.taffyUnwrappedImage && this.game.taffyUnwrappedImage.complete) {
+                ctx.drawImage(this.game.taffyUnwrappedImage, -this.width / 2, -this.height / 2, this.width, this.height);
+            }
+            ctx.restore();
         }
        else {
             const cx = this.x + this.width / 2;
@@ -859,6 +1199,20 @@ export default class Missile {
         }
 
         const soul = this.game.soulPool.get(this.game, spawnX + this.width / 2, spawnY + this.height / 2);
+
+        // Cotton Cloud specific: Drop loot if it was stolen
+        if (this.type === 'cotton_cloud' && this.lootParented && this.targetLoot) {
+            this.targetLoot.x = spawnX + this.width / 2 - this.targetLoot.width / 2;
+            this.targetLoot.y = spawnY + this.height / 2 - this.targetLoot.height / 2;
+            this.targetLoot.vx = (Math.random() - 0.5) * 5; // Random horizontal velocity
+            this.targetLoot.vy = (Math.random() * -3); // Upward initial velocity
+            this.targetLoot.applyGravity = true; // Assuming loot objects have this
+            this.targetLoot.active = true; // Ensure loot is active and independent
+            if (this.targetLoot.despawnTimer) {
+                this.targetLoot.despawnTimer.unpause();
+                this.targetLoot.despawnTimer.reset();
+            }
+        }
 
         // --- New Drop Logic ---
         const isMarshmallow = (this.type === 'marshmallow_large' || this.type === 'marshmallow_medium');

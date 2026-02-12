@@ -39,6 +39,7 @@ import Projectile from './projectile.js';
 import FrostingParticle from './frostingParticle.js';
 import Gumball from './gumball.js';
 import Decal from './decal.js';
+import SugarParticle from './sugarParticle.js';
 import { jellyBeanBag, turretBag, shuffle, getVariantFromBag } from './shuffleUtils.js';
 
 class Game {
@@ -155,6 +156,12 @@ class Game {
         this.componentenemyImage.src = 'assets/Images/componentenemy.png';
         this.heartenemyImage = new Image();
         this.heartenemyImage.src = 'assets/Images/heartenemy.png';
+        this.cloudMainImage = new Image();
+        this.cloudMainImage.src = 'assets/Images/cloud_main.png';
+        this.taffyWrappedImage = new Image();
+        this.taffyWrappedImage.src = 'assets/Images/taffy_wrapped.png';
+        this.taffyUnwrappedImage = new Image();
+        this.taffyUnwrappedImage.src = 'assets/Images/taffy_unwrapped.png';
         this.gameOverScreenImage = new Image(); // NEW: Image for the game over screen background
         this.gameOverScreenImage.src = 'assets/Images/gameoverscreen.png';
 
@@ -320,6 +327,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.gumballPool = new ObjectPool(Gumball, 100);
         this.decalPool = new ObjectPool(Decal, 100);
         this.swipeParticlePool = new ObjectPool(SwipeParticle, 100);
+        this.sugarParticlePool = new ObjectPool(SugarParticle, 125); // New sugar particle pool
         this.currentRPM = 9.25; // Moved this line up
         this.currentId = 0;
         this.particlesBehind = [];
@@ -330,6 +338,42 @@ Object.entries(colors).forEach(([name, rgb]) => {
         // this.debris = []; // Replaced by enemyDebrisPool
         // this.debris = []; // Replaced by enemyDebrisPool
         this.enemyDebrisPool = new ObjectPool(EnemyDebris, 100);
+
+        this.enemyStats = {
+            jellyBean: {
+                health: 25,
+                mass: 0.5,
+                speed: 1,
+                damage: 5,
+                width: 70,
+                height: 75,
+                missile: { // Specific stats for the 'missile' type jelly bean
+                    health: 25,
+                    speed: 1,
+                    damage: 5,
+                }
+            },
+            cottonCloud: {
+                healthMultiplier: 2, // 2x missile jelly bean health
+                baseWeight: 15,
+                weightModifier: 0.05,
+                threshold: 55,
+                cost: 5,
+                mass: 3,
+                width: 100, // Placeholder, will be updated by sprite
+                height: 70, // Placeholder, will be updated by sprite
+            },
+            taffyWrapper: {
+                healthMultiplier: 1.5, // 1.5x missile jelly bean health
+                baseWeight: 55,
+                weightModifier: 0.01,
+                threshold: 45,
+                cost: 3,
+                mass: 4,
+                width: 70, // Placeholder, will be updated by sprite
+                height: 75, // Placeholder, will be updated by sprite
+            }
+        };
 
         // Enemy Pools
         this.enemyPools = {
@@ -345,6 +389,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
             'marshmallow_large': new ObjectPool(Missile, 15, this), // Heavy
             'piggy': new ObjectPool(Missile, 10, this),
             'heartenemy': new ObjectPool(Missile, 30, this),
+            'cotton_cloud': new ObjectPool(Missile, 10, this), // New cotton cloud pool
+            'taffy_wrapper': new ObjectPool(Missile, 25, this), // New taffy wrapper pool
             'gummy_bear': new ObjectPool(GummyBear, 30),
         };
 
@@ -763,6 +809,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             new Promise(r => { this.icecreamenemyImage.onload = r; this.icecreamenemyImage.onerror = r; }),
             new Promise(r => { this.componentenemyImage.onload = r; this.componentenemyImage.onerror = r; }),
             new Promise(r => { this.heartenemyImage.onload = r; this.heartenemyImage.onerror = r; }),
+            new Promise(r => { this.cloudMainImage.onload = r; this.cloudMainImage.onerror = r; }),
+            new Promise(r => { this.taffyWrappedImage.onload = r; this.taffyWrappedImage.onerror = r; }),
+            new Promise(r => { this.taffyUnwrappedImage.onload = r; this.taffyUnwrappedImage.onerror = r; }),
             new Promise(r => { this.gameOverScreenImage.onload = r; this.gameOverScreenImage.onerror = r; }), // NEW: Game Over Screen Image
         ]).then(() => {
             this.assetsReady = true;
@@ -1169,7 +1218,9 @@ Object.entries(colors).forEach(([name, rgb]) => {
             const { x, y } = getCanvasCoords(e);
             if (Date.now() - swipeStartTime <= 1500) {
                 this.swipeTrail.push({ x, y: y + 100, life: 60 });
-                for (let i = 0; i < 2; i++) { this.swipeParticles.push(new SwipeParticle(this, x, y + 100)); }
+                for (let i = 0; i < 2; i++) { 
+                    this.swipeParticlePool.get(this, x, y + 100);
+                }
                 if (swipePath) { swipePath.push({ x, y }); }
             }
         };
@@ -1523,6 +1574,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
 
             // Update pooled objects
             this.particlePool.update(tsf);
+            this.sugarParticlePool.update(tsf); // Update sugar particle pool
             this.dropPool.update(tsf);
             this.waveAttackPool.update(tsf);
             this.synergyLinePool.update(tsf);
@@ -1836,3 +1888,56 @@ window.addEventListener('DOMContentLoaded', () => {
         window.gameInstance = game;
     }
 });
+window.stressTest = (enemyCount = 50, particleBurst = 100) => {
+    const game = window.gameInstance;
+    if (!game) {
+        console.error("Game instance not found. Ensure the game is loaded.");
+        return;
+    }
+    console.log(`%c Starting Stress Test: ${enemyCount} enemies + ${particleBurst} particles/sec`, "color: #ff00ff; font-weight: bold;");
+
+    // 1. Spawn a wave of enemies instantly
+    // Using 'missile' type enemies from the existing pool
+    for (let i = 0; i < enemyCount; i++) {
+        const x = Math.random() * game.canvas.width;
+        // Spawn enemies slightly above the playable area so they fall in naturally
+        const y = -(Math.random() * 200 + 50); 
+        game.enemyPools['missile'].get(game, x, 'missile', y); 
+    }
+
+    // 2. Continuous Particle Flood
+    const floodInterval = setInterval(() => {
+        if (game.isGameOver) {
+            clearInterval(floodInterval);
+            console.log("Stress test halted due to game over.");
+            return;
+        }
+        if (game.isPaused) {
+            // Do not spawn particles if game is paused
+            return;
+        }
+
+        for (let i = 0; i < particleBurst; i++) {
+            // Correct arguments for game.particlePool.get()
+            game.particlePool.get(
+                game, // Pass the game instance
+                Math.random() * game.canvas.width,
+                Math.random() * game.canvas.height,
+                'rgba(255, 255, 255, 0.7)', // Default color for particles
+                'trail', // Forcing trail type since that was your leak point
+                null, // initialSize
+                1.0,  // lifespan
+                (Math.random() - 0.5) * 5, // vx
+                (Math.random() - 0.5) * 5  // vy
+            );
+        }
+        
+        console.log(`Active Particles: ${game.particlePool.getActiveCount()} | Pool Total Size: ${game.particlePool.pool.length}`);
+    }, 100);
+
+    // Provide a way to stop it
+    window.stopStressTest = () => {
+        clearInterval(floodInterval);
+        console.log("Stress test halted.");
+    };
+};

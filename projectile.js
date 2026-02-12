@@ -83,7 +83,16 @@ export default class Projectile {
 
         for (let i = allEnemies.length - 1; i >= 0; i--) {
             const m = allEnemies[i];
+            // Ensure this.hitEnemies is an array before calling .includes()
+            if (!Array.isArray(this.hitEnemies)) {
+                this.hitEnemies = []; // Re-initialize if for some reason it's not an array
+            }
             if (this.hitEnemies.includes(m.id)) continue;
+
+            // Taffy Wrapper specific: Turrets ignore when wrapped, projectiles deal zero damage
+            if (m.type === 'taffy_wrapper' && m.isWrapped) {
+                continue; // Skip this enemy if it's a wrapped taffy
+            }
 
             const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
             if (dist < this.radius + m.width / 2) {
