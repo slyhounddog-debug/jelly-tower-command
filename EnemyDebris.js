@@ -3,7 +3,7 @@ export default class EnemyDebris {
         this.active = false;
     }
 
-    init(game, enemy, image, enemySpriteWidth = null, enemySpriteHeight = null, numCols = 2, numRows = 2) {
+    init(game, enemy, image, enemySpriteWidth = null, enemySpriteHeight = null, numCols = 2, numRows = 2, targetCol = null, targetRow = null) {
         this.game = game;
         this.image = image;
         this.color = enemy.color;
@@ -21,15 +21,15 @@ export default class EnemyDebris {
         const chunkWidth = baseWidth / numCols;
         const chunkHeight = baseHeight / numRows;
 
-        let randomCol = Math.floor(Math.random() * numCols);
-        let randomRow = Math.floor(Math.random() * numRows);
+        let selectedCol = targetCol !== null ? targetCol : Math.floor(Math.random() * numCols);
+        let selectedRow = targetRow !== null ? targetRow : Math.floor(Math.random() * numRows);
 
         this.width = chunkWidth;
         this.height = chunkHeight;
 
         if (enemy.sprite) {
-            const spriteCol = randomCol;
-            const spriteRow = randomRow;
+            const spriteCol = selectedCol;
+            const spriteRow = selectedRow;
             const spriteChunkWidth = visualSpriteWidth / numCols;
             const spriteChunkHeight = visualSpriteHeight / numRows;
 
@@ -38,14 +38,14 @@ export default class EnemyDebris {
             this.sWidth = spriteChunkWidth;
             this.sHeight = spriteChunkHeight;
         } else {
-            this.sx = randomCol * chunkWidth;
-            this.sy = randomRow * chunkHeight;
+            this.sx = selectedCol * chunkWidth;
+            this.sy = selectedRow * chunkHeight;
             this.sWidth = chunkWidth;
             this.sHeight = chunkHeight;
         }
 
-        this.x = (enemy.x + randomCol * chunkWidth) + (Math.random() - 0.5) * 5;
-        this.y = (enemy.y + randomRow * chunkHeight) + (Math.random() - 0.5) * 5;
+        this.x = (enemy.x + selectedCol * chunkWidth) + (Math.random() - 0.5) * 5;
+        this.y = (enemy.y + selectedRow * chunkHeight) + (Math.random() - 0.5) * 5;
 
         this.vx = (Math.random() - 0.5) * 8;
         this.vy = (enemy.speed * 0.5) - (Math.random() * 5);
@@ -91,6 +91,8 @@ export default class EnemyDebris {
         this.onGround = false;
         this.bounceCount = 0;
         this.maxBounces = 0;
+        this.targetCol = null; // Reset targetCol
+        this.targetRow = null; // Reset targetRow
     }
 
     update(tsf) {
@@ -133,11 +135,13 @@ export default class EnemyDebris {
         // Apply global deceleration to rotation speed
         this.rotationSpeed *= Math.pow(this.rotationDecelFactor, tsf);
 
-        // Apply gravity only if not currently considered on ground
-        if (!this.onGround) {
-            this.vy += this.gravity * tsf;
-        } else {
-            // Apply friction and rotational slowdown when on ground
+                    // Apply gravity only if not currently considered on ground
+                    if (!this.onGround) {
+                        this.vy += this.gravity * tsf;
+                        // Apply air drag
+                        this.vx *= Math.pow(0.97, tsf); // Gentle air drag (adjust as needed)
+                        this.vy *= Math.pow(0.97, tsf); // Gentle air drag (adjust as needed)
+                    } else {            // Apply friction and rotational slowdown when on ground
             this.vx *= Math.pow(0.9, tsf);
             // rotationSpeed is now decelerated globally, no need to do it again here
         }

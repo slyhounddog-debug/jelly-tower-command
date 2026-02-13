@@ -104,7 +104,7 @@ export default class Projectile {
                 if (this.popRockStacks > 0) this.createExplosion();
                 if (this.fireDamageCount > 0) m.applyFire(damage, this.fireDamageCount);
                 if (this.gummyImpactStacks > 0) {
-                    m.kbVy -= this.game.stats.lickKnockback * 0.1 * this.gummyImpactStacks;
+                    m.kbVy -= this.game.stats.lickKnockback * 0.05 * this.gummyImpactStacks;
                 }
                 
                 if (this.popRockStacks <= 0) {

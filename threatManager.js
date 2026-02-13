@@ -20,7 +20,9 @@ export default class ThreatManager {
             { name: 'component_enemy', cost: 5, threshold: 20, baseWeight: 5, weightModifier: 0.1 },
             { name: 'marshmallow_large', cost: 12, threshold: 95, baseWeight: 15, weightModifier: 0.15 },
             { name: 'jelly_pudding', cost: 10, threshold: 35, baseWeight: 15, weightModifier: 0.2 },
-            { name: 'jaw_breaker', cost: 15, threshold: 85, baseWeight: 10, weightModifier: 0.25 }
+            { name: 'jaw_breaker', cost: 15, threshold: 85, baseWeight: 10, weightModifier: 0.25 },
+            { name: 'cotton_cloud', cost: 5, threshold: 55, baseWeight: 15, weightModifier: 0.05 }, 
+            { name: 'taffy_wrapper', cost: 3, threshold: 45, baseWeight: 50, weightModifier: -0.05 }
         ];
 
         this.reset();
@@ -85,6 +87,7 @@ export default class ThreatManager {
         }
         
         // Target Enemy Spawning Logic
+        // Target Enemy Spawning Logic
         if (this.targetEnemy === null) {
             this.targetEnemy = this.getRandomEnemy();
         }
@@ -92,7 +95,7 @@ export default class ThreatManager {
         if (this.targetEnemy && this.threatWallet >= this.targetEnemy.cost) {
             this.threatWallet -= this.targetEnemy.cost;
             const spawnX = Math.random() * (this.game.width - 350) + 175;
-           const enemy = this.game.enemyPools[this.targetEnemy.name].get(this.game, spawnX, this.targetEnemy.name, undefined, 1);
+           const enemy = this.game.enemyPools[this.targetEnemy.name].get(this.game, spawnX, this.targetEnemy.name, undefined); // Removed '1'
             if (this.targetEnemy.name === 'missile') { // Specific to missile type, ensures 8-frame sprite assignment
                 enemy.sprite.currentFrame = Math.floor(Math.random() * 8);
             }
@@ -134,7 +137,7 @@ export default class ThreatManager {
             if (debugFlag) {
                 const enemyData = this.enemyData.find(e => e.name === enemyName);
                 if (enemyData) {
-                    const enemy = this.game.enemyPools[enemyName].get(this.game, spawnX, enemyName, undefined, enemyData. calculltiplier);
+                    const enemy = this.game.enemyPools[enemyName].get(this.game, spawnX, enemyName, undefined); // Removed 'enemyData. calculltiplier'
                     if (enemyName === 'missile') { // Specific to missile type, ensures 8-frame sprite assignment
                         enemy.sprite.currentFrame = Math.floor(Math.random() * 8);
                     }

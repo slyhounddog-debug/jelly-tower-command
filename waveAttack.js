@@ -64,7 +64,7 @@ export default class WaveAttack {
                 const dist = Math.hypot(this.x - (m.x + m.width / 2), this.y - (m.y + m.height / 2));
                 if (dist < this.arcs[this.arcs.length - 1].radius + m.width / 2) {
                     m.takeDamage(this.game.stats.lickDamage * this.damageMultiplier, false, this);
-                    m.kbVy = -this.game.stats.lickKnockback * 0.15; // Half knockback
+                    m.kbVy = - (this.game.stats.lickKnockback * 1.5) / m.mass; // Half knockback
                     this.hitEnemies.push(m);
                 }
             });

@@ -126,16 +126,6 @@ export class GummyBear {
             }
         }
         
-        if (source && source.gummyImpactStacks > 0 && this.knockbackTimer <= 0 && this.mass < 999) {
-            const knockbackAmount = (this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks) / this.mass;
-            if (this.mass < 3) { // Launchable enemies
-                this.kbVy -= knockbackAmount; // Apply full force upwards
-            } else { // Heavies
-                this.kbVy = Math.max(0.1, this.kbVy - knockbackAmount); // Dampen, but ensure minimum downward movement
-            }
-            this.knockbackTimer = 15; // 0.25 seconds * 60 frames/sec
-        }
-
         this.game.audioManager.playSound('towerHit');
         const roundedAmount = amount;
         this.health -= roundedAmount;

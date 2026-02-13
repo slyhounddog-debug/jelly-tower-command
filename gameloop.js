@@ -178,7 +178,6 @@ export default class GameLoop {
                                 m.applySlow(300, 0.1 * p.freezeStacks);
                             }
                             if (m.takeDamage(dmg, isCrit, p)) m.kill();
-                            m.kbVy = -2;
                             this.game.particlePool.get(this.game, p.x, p.y, '#fff', 'spark', null, 0.5);
                             if (!p.hasHit) { p.hasHit = true; this.game.shotsHit++; }
                             if (p.popRockStacks > 0) {
@@ -303,6 +302,10 @@ export default class GameLoop {
         this.game.sugarParticlePool.draw(this.game.ctx);
         // Draw debris from pool
         this.game.enemyDebrisPool.draw(this.game.ctx);
+        // Draw taffy spark particles from pool
+        this.game.taffySparkParticlePool.draw(this.game.ctx);
+        // Draw taffy unwrap slices from pool
+        this.game.taffyUnwrapSlicePool.draw(this.game.ctx);
         // Draw frosting particles from pool
         this.game.frostingParticlePool.draw(this.game.ctx);
         // Draw damage spots from pool

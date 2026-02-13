@@ -9,12 +9,186 @@ import EnemyDebris from './EnemyDebris.js';
 import Soul from './Soul.js'; // Corrected placement
 import { jellyBeanBag, getVariantFromBag } from './shuffleUtils.js';
 
+const enemyDefinitions = {
+    missile: { // Jelly Bean
+        baseHealth: 25,
+        baseMass: 0.5,
+        baseSpeed: 1,
+        baseDamage: 5,
+        baseWidth: 70,
+        baseHeight: 75,
+        hpMultiplier: 1, // Added
+    },
+    gummy_worm: {
+        baseHealth: 20,
+        baseMass: 1,
+        baseSpeed: 1.6,
+        baseDamage: 6,
+        baseWidth: 26,
+        baseHeight: 85,
+        hpMultiplier: 1, // Added
+    },
+    marshmallow_large: {
+        baseHealth: 150,
+        baseMass: 10,
+        baseSpeed: 0.4,
+        baseDamage: 10, 
+        baseWidth: 76.5 * 1.5,
+        baseHeight: 76.5 * 1.5,
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
+        imageKey: 'marshmallowBigImage', 
+        color: '#fffaf2ff',
+        hpMultiplier: 1, // Added
+    },
+    marshmallow_medium: {
+        baseHealth: 50,
+        baseMass: 6,
+        baseSpeed: 0.7,
+        baseDamage: 7, 
+        baseWidth: 45 * 1.6,
+        baseHeight: 45 * 1.6,
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
+        imageKey: 'marshmallowMediumImage',
+        color: '#fffcf8ff',
+        hpMultiplier: 1, // Added
+    },
+    marshmallow_small: {
+        baseHealth: 10,
+        baseMass: 2,
+        baseSpeed: 1,
+        baseDamage: 4, 
+        baseWidth: 22 * 2.5,
+        baseHeight: 22 * 2.5,
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
+        imageKey: 'marshmallowSmallImage',
+        color: '#fffdf8ff',
+        hpMultiplier: 1, // Added
+    },
+    piggy: {
+        baseHealth: 50,
+        baseMass: 6,
+        baseSpeed: 0.5,
+        baseDamage: 5, 
+        baseWidth: 84,
+        baseHeight: 86,
+        imageKey: 'piggybankImage',
+        color: '#FFC0CB',
+        hpMultiplier: 1, // Added
+    },
+    jaw_breaker: {
+        baseHealth: 200,
+        baseMass: 999,
+        baseSpeed: 0.6,
+        baseDamage: 15,
+        baseWidth: 76.5 * 1.7,
+        baseHeight: 76.5 * 1.7,
+        imageKey: 'jawbreakerenemyImage',
+        color: '#00ffd5ff',
+        isJawBreaker: true,
+        hpMultiplier: 1, // Added
+    },
+    jelly_pudding: {
+        baseHealth: 100,
+        baseMass: 0.001,
+        baseSpeed: .6,
+        baseDamage: 12,
+        baseWidth: 95,
+        baseHeight: 95,
+        imageKey: 'jellypuddingenemyImage',
+        color: '#d400ffff',
+        isJellyPudding: true,
+        hpMultiplier: 1, // Added
+    },
+    donut: {
+        baseHealth: 80,
+        baseMass: 1.5,
+        baseSpeed: .7,
+        baseDamage: 9,
+        baseWidth: 90,
+        baseHeight: 90,
+        imageKey: 'donutenemyImage',
+        color: '#00e1ffff',
+        isDonut: true,
+        isVulnerable: true,
+        vulnerabilityDuration: 120,
+        invulnerabilityDuration: 90,
+        hpMultiplier: 1, // Added
+    },
+    ice_cream: {
+        baseHealth: 120,
+        baseMass: 5,
+        baseSpeed: 1.2,
+        baseDamage: 8,
+        baseWidth: 85,
+        baseHeight: 85,
+        imageKey: 'icecreamenemyImage',
+        color: '#ffdbedff',
+        isIceCream: true,
+        hpMultiplier: 1, // Added
+    },
+    component_enemy: {
+        baseHealth: 50,
+        baseMass: 2.9,
+        baseSpeed: 0.6,
+        baseDamage: 7,
+        baseWidth: 78,
+        baseHeight: 78,
+        imageKey: 'componentenemyImage',
+        color: '#B03060',
+        isComponentEnemy: true,
+        hpMultiplier: 1, // Added
+    },
+    heartenemy: {
+        baseHealth: 40,
+        baseMass: 2,
+        baseSpeed: 1.5,
+        baseDamage: 5,
+        baseWidth: 68,
+        baseHeight: 68,
+        imageKey: 'heartenemyImage',
+        color: '#ff90acff',
+        isHeartEnemy: true,
+        hpMultiplier: 1, // Added
+    },
+    cotton_cloud: {
+        baseHealth: 50, 
+        baseMass: 3,
+        baseSpeed: 2, 
+        baseDamage: 0, 
+        baseWidth: 100,
+        baseHeight: 70,
+        imageKey: 'cloudMainImage',
+        color: '#FFFFFF',
+        hpMultiplier: 1, // Added
+    },
+    taffy_wrapper: {
+        baseHealth: 37.5, 
+        baseMass: 4,
+        baseSpeed: 1, 
+        baseDamage: 4, 
+        baseWidth: 70,
+        baseHeight: 105,
+        imageKey: 'taffyWrappedImage',
+        color: '#FFF5F5', // Lighter, almost white pink
+        hpMultiplier: 1, // Added
+    },
+    gummy_bear: {
+        baseHealth: 25, 
+        baseMass: 6,
+        baseSpeed: 1.9, 
+        baseDamage: 7, 
+        baseWidth: 100,
+        baseHeight: 100,
+        color: 'brown',
+        hpMultiplier: 1, // Added
+    },
+};
 export default class Missile {
     constructor() {
         this.active = false;
     }
 
-    init(game, x, type = 'missile', y = -50, hpMultiplier = 1) {
+    init(game, x, type = 'missile', y = -50) { // hpMultiplier parameter removed
         this.game = game;
         this.x = x; 
         this.y = y + 90;
@@ -23,52 +197,58 @@ export default class Missile {
         this.active = true;
         this.knockbackTimer = 0;
 
-        let baseWidth = 0;
-        let baseHeight = 0;
-        let baseHealth = 0;
-        let baseMass = 0;
-        let baseSpeed = 0;
-        let baseDamage = 0;
-        this.image = null;
-        this.sprite = null;
-        this.color = null;
+        // Retrieve base stats from centralized definitions
+        const definition = enemyDefinitions[type];
+        if (!definition) {
+            console.error(`Unknown enemy type: ${type}`);
+            this.active = false;
+            return;
+        }
+
+        // Apply base stats
+        let baseWidth = definition.baseWidth;
+        let baseHeight = definition.baseHeight;
+        let baseHealth = definition.baseHealth;
+        let baseMass = definition.baseMass;
+        let baseSpeed = definition.baseSpeed;
+        let baseDamage = definition.baseDamage;
 
         // Reset all special flags that might have been set in a previous life
-        this.isDonut = false;
-        this.isIceCream = false;
-        this.isJellyPudding = false;
-        this.isJawBreaker = false;
-        this.isComponentEnemy = false;
-        this.isVulnerable = true; // Donut specific
-        this.vulnerabilityTimer = 0; // Donut specific
-        this.vulnerabilityDuration = 0; // Donut specific
-        this.isHeartEnemy = false;
-        this.isWrapped = false; // Taffy Wrapper specific
-        this.isEscaping = false; // Cotton Cloud specific
+        this.isDonut = definition.isDonut || false;
+        this.isIceCream = definition.isIceCream || false;
+        this.isJellyPudding = definition.isJellyPudding || false;
+        this.isJawBreaker = definition.isJawBreaker || false;
+        this.isComponentEnemy = definition.isComponentEnemy || false;
+        this.isHeartEnemy = definition.isHeartEnemy || false;
+        this.isWrapped = this.type === 'taffy_wrapper'; // Taffy Wrapper specific, starts wrapped if type matches
+        this.isEscaping = false; // Cotton Cloud specific, always starts not escaping
         this.targetLoot = null; // Cotton Cloud specific
         this.lootParented = false; // Cotton Cloud specific
         this.lootOffsetX = 0; // Cotton Cloud specific
         this.lootOffsetY = 0; // Cotton Cloud specific
         this.lootBounceOffset = 0; // Cotton Cloud specific
-        this.color1 = null; // Gummy worm specific
-        this.color2 = null; // Gummy worm specific
-        this.rotationSpeed = 0; // Marshmallow specific
         this.pulseTimer = 0; // Cotton Cloud specific
-        this.pulseDuration = 0.4; // Cotton Cloud specific
+        this.pulseDuration = definition.pulseDuration || 0.4; // Cotton Cloud specific
         this.scaleX = 1; // Cotton Cloud specific
         this.scaleY = 1; // Cotton Cloud specific
-        this.driftOffset = 0; // Cotton Cloud specific
+        this.driftOffset = definition.driftOffset || Math.random() * Math.PI * 2; // Cotton Cloud specific
         this.targetingTimer = 0; // Cotton Cloud specific
-        this.TARGETING_INTERVAL = 60; // Cotton Cloud specific
+        this.TARGETING_INTERVAL = definition.TARGETING_INTERVAL || 60; // Cotton Cloud specific
         this.unwrappedTimer = 0; // Taffy Wrapper specific
 
-       if (type === 'missile') { // Jelly Bean
-            baseWidth = 70;
-            baseHeight = 75;
-            baseHealth = (25 + (this.game.currentRPM * 2)) * hpMultiplier;
-            baseMass = .5;
-            baseSpeed = 1;
-            baseDamage = 5;
+        // Donut specific properties
+        this.isVulnerable = definition.isVulnerable || true;
+        this.vulnerabilityDuration = definition.vulnerabilityDuration || 0;
+        this.invulnerabilityDuration = definition.invulnerabilityDuration || 0;
+        this.vulnerabilityTimer = this.isDonut ? this.vulnerabilityDuration : 0;
+
+        // General properties
+        this.image = definition.imageKey ? this.game[definition.imageKey] : null;
+        this.sprite = null;
+        this.color = definition.color;
+
+        // Handle type-specific initializations
+        if (this.type === 'missile') { // Jelly Bean
             const variantIndex = getVariantFromBag(jellyBeanBag, 8); // Use shuffle bag
             this.sprite = new SpriteAnimation({
                 src: 'assets/Images/jellybeans.png',
@@ -80,191 +260,33 @@ export default class Missile {
             });
             this.sprite.currentFrame = variantIndex;
             this.color = this.game.PASTEL_COLORS[variantIndex % this.game.PASTEL_COLORS.length];
-        } else if (type === 'cotton_cloud') { // Cotton Candy Cloud
-            const stats = this.game.enemyStats.cottonCloud;
-            const missileJellyBeanHealth = this.game.enemyStats.jellyBean.missile.health;
-            const missileJellyBeanSpeed = this.game.enemyStats.jellyBean.missile.speed;
-
-            this.image = this.game.cloudMainImage;
-            baseWidth = stats.width;
-            baseHeight = stats.height;
-            baseHealth = missileJellyBeanHealth * stats.healthMultiplier;
-            baseMass = stats.mass;
-            baseSpeed = missileJellyBeanSpeed * 2; // 2x missile speed
-            baseDamage = 0; // No direct damage, it steals loot
-
-            this.color = '#FFFFFF'; // White for cloud
-
-            // Initial position: upper corners
-            this.x = (Math.random() < 0.5 ? -baseWidth : this.game.canvas.width);
-            this.y = Math.random() * (this.game.canvas.height / 4);
-
-            this.isEscaping = false;
-            this.targetLoot = null;
-            this.lootParented = false;
-            this.lootOffsetX = 0;
-            this.lootOffsetY = 0;
-            this.lootBounceOffset = 0;
-            this.scaleX = 1.0;
-            this.scaleY = 1.0;
-            this.pulseTimer = 0;
-            this.pulseDuration = 0.4;
-            this.driftOffset = Math.random() * Math.PI * 2; // Random start for sin wave
-            this.targetingTimer = 0;
-            // Initial velocity for diagonal descent with drifting
-            // Aiming towards the center-bottom, but with initial drift
-            const angleToCenter = Math.atan2(this.game.PLAYABLE_AREA_HEIGHT - this.y, (this.game.canvas.width / 2) - this.x);
-            this.vx = Math.cos(angleToCenter) * baseSpeed * 0.5;
-            this.vy = Math.sin(angleToCenter) * baseSpeed * 0.5;
-
-            // Trigger initial target search
-            // this.searchForTarget(); // Will call this in update loop
-        } else if (type === 'taffy_wrapper') { // Taffy Wrapper
-            const stats = this.game.enemyStats.taffyWrapper;
-            const missileJellyBeanHealth = this.game.enemyStats.jellyBean.missile.health;
-            const missileJellyBeanSpeed = this.game.enemyStats.jellyBean.missile.speed;
-
-            this.image = this.game.taffyWrappedImage; // Starts wrapped
-            baseWidth = stats.width;
-            baseHeight = stats.height;
-            baseHealth = missileJellyBeanHealth * stats.healthMultiplier;
-            baseMass = stats.mass;
-            baseSpeed = missileJellyBeanSpeed * 1; // Standard missile speed
-            baseDamage = 0; // No direct damage when wrapped
-
-            this.color = '#FFAACC'; // Placeholder color for taffy
-
-            this.isWrapped = true;
-            this.unwrappedTimer = 0;
-            // Position and velocity will follow standard missile logic for now.
-        }
-        else if (type === 'gummy_worm') {
-            baseWidth = 26;
-            baseHeight = 85;
-            baseHealth = (20 + (this.game.currentRPM * 1.8)) * hpMultiplier;
-            baseMass = 1;
-            baseSpeed = 1.6;
-            baseDamage = 6;
+        } else if (this.type === 'gummy_worm') {
             this.color1 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color2 = this.game.PASTEL_COLORS[Math.floor(Math.random() * this.game.PASTEL_COLORS.length)];
             this.color = this.color1;
-        } else if (type === 'marshmallow_large') {
-            baseWidth = 76.5 * 1.5;
-            baseHeight = 76.5 * 1.5;
-            baseHealth = (150 + (this.game.currentRPM * 5.5)) * hpMultiplier;
-            baseMass = 10;
-            baseSpeed = 0.4;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
-            this.image = this.game.marshmallowBigImage;
-            this.color = '#fffaf2ff';
-        } else if (type === 'marshmallow_medium') {
-            baseWidth = 45 * 1.6;
-            baseHeight = 45 * 1.6;
-            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
-            baseMass = 6;
-            baseSpeed = 0.7;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
-            this.image = this.game.marshmallowMediumImage;
-            this.color = '#fffcf8ff';
-        } else if (type === 'marshmallow_small') {
-            baseWidth = 22 * 2.5;
-            baseHeight = 22 * 2.5;
-            baseHealth = (10 + (this.game.currentRPM * .5)) * hpMultiplier;
-            baseMass = 2;
-            baseSpeed = 1;
-            this.rotationSpeed = (Math.random() - 0.5) * 0.02; // Special property
-            this.image = this.game.marshmallowSmallImage;
-            this.color = '#fffdf8ff';
-        } else if (type === 'piggy') {
-            baseWidth = 84;
-            baseHeight = 86;
-            baseHealth = (50 + (this.game.currentRPM * 3)) * hpMultiplier;
-            baseMass = 6;
-            baseSpeed = 0.5;
-            this.image = this.game.piggybankImage;
-            this.color = '#FFC0CB';
-        } else if (type === 'jaw_breaker') {
-            baseWidth = 76.5 * 1.7;
-            baseHeight = 76.5 * 1.7;
-            baseHealth = (200 + (this.game.currentRPM * 7)) * hpMultiplier;
-            baseMass = 999;
-            baseSpeed = 0.6;
-            baseDamage = 18;
-            this.image = this.game.jawbreakerenemyImage;
-            this.color = '#00ffd5ff';
-            this.isJawBreaker = true; // Special flag
-        } else if (type === 'jelly_pudding') {
-            baseWidth = 95;
-            baseHeight = 95;
-            baseHealth = (100 + (this.game.currentRPM * 5)) * hpMultiplier;
-            baseMass = 0.5;
-            baseSpeed = 1;
-            baseDamage = 14;
-            this.image = this.game.jellypuddingenemyImage;
-            this.color = '#d400ffff';
-            this.isJellyPudding = true; // Special flag
-        } else if (type === 'donut') {
-            baseWidth = 90;
-            baseHeight = 90;
-            baseHealth = (80 + (this.game.currentRPM * 2.5)) * hpMultiplier;
-            baseMass = 1.5;
-            baseSpeed = 1.2;
-            baseDamage = 10;
-            this.image = this.game.donutenemyImage;
-            this.color = '#00e1ffff';
-            this.isVulnerable = true;
-            this.vulnerabilityDuration = 120; // 2 seconds vulnerable
-            this.invulnerabilityDuration = 90; // 1.5 seconds invulnerable
-            this.vulnerabilityTimer = this.vulnerabilityDuration;
-            this.isDonut = true; // Special flag
-        } else if (type === 'ice_cream') {
-            baseWidth = 85;
-            baseHeight = 85;
-            baseHealth = (120 + (this.game.currentRPM * 3)) * hpMultiplier;
-            baseMass = 5;
-            baseSpeed = 0.8;
-            baseDamage = 8;
-            this.image = this.game.icecreamenemyImage;
-            this.color = '#ffdbedff';
-            this.isIceCream = true; // Special flag
-        } else if (type === 'component_enemy') {
-            baseWidth = 78;
-            baseHeight = 78;
-            baseHealth = (50 + (this.game.currentRPM * 2.5)) * hpMultiplier;
-            baseMass = 2.9;
-            baseSpeed = 0.6;
-            baseDamage = 9;
-            this.image = this.game.componentenemyImage;
-            this.color = '#B03060';
-            this.isComponentEnemy = true; // Special flag
-        } else if (type === 'heartenemy') {
-            baseWidth = 68;
-            baseHeight = 68;
-            baseHealth = (50 + (this.game.currentRPM * 2.2)) * hpMultiplier;
-            baseMass = 2;
-            baseSpeed = 1.4;
-            baseDamage = 5;
-            this.image = this.game.heartenemyImage;
-            this.color = '#ff90acff';
-            this.isHeartEnemy = true; // Special flag
-        } else if (type === 'gummy_bear') { // Assuming 'gummy_bear' is a type
-            baseWidth = 100;
-            baseHeight = 100;
-            baseHealth = (250 + (this.game.currentRPM * 8)) * hpMultiplier;
-            baseMass = 6;
-            baseSpeed = 0.3;
+        } else if (this.type.includes('marshmallow')) {
+            this.rotationSpeed = definition.rotationSpeed; // From definition
+        } else if (this.type === 'cotton_cloud') {
+            // Initial position: upper corners for cotton cloud
+            this.x = (Math.random() < 0.5 ? -baseWidth : this.game.canvas.width);
+            this.y = Math.random() * (this.game.canvas.height / 4);
+            // Initial velocity for diagonal descent with drifting
+            const angleToCenter = Math.atan2(this.game.PLAYABLE_AREA_HEIGHT - this.y, (this.game.canvas.width / 2) - this.x);
+            this.vx = Math.cos(angleToCenter) * baseSpeed * 0.5;
+            this.vy = Math.sin(angleToCenter) * baseSpeed * 0.5;
+        } else if (this.type === 'gummy_bear') {
             this.image = this.game.gummybearImages[Math.floor(Math.random() * this.game.gummybearImages.length)];
-            this.color = 'brown'; // Placeholder color
         }
 
 
         // Calculate sizeScale and apply it to all relevant properties
-        if (type === 'missile' || type === 'gummy_worm') {
+        // Only jellyBean and gummyWorm have sizeScale variation
+        if (this.type === 'missile' || this.type === 'gummy_worm') {
             this.sizeScale = 0.75 + (Math.random() / 2); // User specified formula for 0.75 to 1.25 range
             this.width = baseWidth * this.sizeScale;
             this.height = baseHeight * this.sizeScale;
             this.health = baseHealth * (this.sizeScale * this.sizeScale); // Health scales with size squared
-            this.mass = Math.max(0.5, baseMass * (this.sizeScale * this.sizeScale)); // Mass scales with size squared, with a minimum of 0.5
+            this.mass = baseMass * (this.sizeScale * this.sizeScale); // Mass scales with size squared, no minimum
             this.damage = baseDamage * this.sizeScale; // Damage scales with size
         } else {
             this.sizeScale = 1;
@@ -272,13 +294,19 @@ export default class Missile {
             this.height = baseHeight;
             this.health = baseHealth;
             this.mass = baseMass;
-            this.damage = baseDamage; // Set damage after type-specific assignments
+            this.damage = baseDamage; 
         }
+
+        // Apply health multiplier and RPM scaling
+        this.health = (this.health + (this.game.currentRPM * 0.1 * baseHealth / 25)) * definition.hpMultiplier; // Using definition.hpMultiplier
+        this.maxHealth = this.health; // Max health is the scaled health
+        
+        this.speed = (baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
+
 
         this.baseHealth = baseHealth; // Store base health
         this.baseMass = baseMass; // Store base mass
-        this.speed = (baseSpeed + (this.game.currentRPM * 0.002)) * 0.5;
-        this.maxHealth = this.health; // Max health is the scaled health
+        
         this.kbVy = 0; 
         this.scale = 1;
         this.angle = 0;
@@ -392,31 +420,26 @@ export default class Missile {
     takeDamage(amount, isCritical = false, source = null) {
         if (!this.active) return false;
 
-        // Taffy Wrapper specific: Turrets ignore when wrapped, projectiles deal zero damage
-        if (this.type === 'taffy_wrapper' && this.isWrapped) {
-            // Player lick can unwrap it
-            // Player lick can unwrap it, but it takes no damage from the lick itself
-            if (source && source.type === 'player_lick') {
-                this.isWrapped = false;
-                this.image = this.game.taffyUnwrappedImage;
-                this.unwrappedTimer = 0; // Start pop animation
-                this.spawnSugarParticles(); // Spawn sugar particles
-                this.spawnSugarParticles(25); // Spawn a burst of sugar particles
-                this.game.audioManager.playSound('pop'); // Play a pop sound
-                // Optionally, add damage now that it's unwrapped
-                this.health -= amount;
-
-                // Release a slowing goo burst
-                for (let i = 0; i < 15; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 4 + 2;
-                    this.game.frostingParticlePool.get(this.game, this.x + this.width / 2, this.y + this.height / 2, Math.cos(angle) * speed, Math.sin(angle) * speed, Math.random() * 4 + 2, '#a29bfe', 120, 0.05, 'enemy');
+        // --- Taffy Wrapper specific: ---
+        if (this.type === 'taffy_wrapper') {
+            if (this.isWrapped) { // Currently wrapped
+                if (source && source.type === 'player_lick') {
+                    // Unwrap it!
+                    this.isWrapped = false;
+                    this.image = this.game.taffyUnwrappedImage; // Switch image (will be drawn by drawEnemy)
+                    this.triggerTaffyUnwrapAnimation(); // NEW: Spawn debris pieces for unwrapping
+                    this.game.audioManager.playSound('pop');
+                    // No damage from this lick hit, just unwraps.
+                    return false; // Stop further damage/knockback processing for THIS hit
+                } else {
+                    // Hit by non-lick source (e.g., turret) while wrapped
+                    return false; // No damage/knockback when wrapped from non-lick sources
                 }
-                return false; // The unwrapping lick does no damage
-            } else {
-                return false; // Turrets and projectiles do no damage when wrapped
             }
+            // If taffy is unwrapped (this.isWrapped is false), it falls through to general logic.
+            // If taffy is wrapped but hit by non-lick, it returned false above.
         }
+        // --- END Taffy Wrapper specific ---
 
         // Cotton Cloud specific: If licked, destroy and drop loot
         if (this.type === 'cotton_cloud' && source && source.type === 'player_lick') {
@@ -434,17 +457,17 @@ export default class Missile {
 
         if (source) {
             this.lastDamageSource = source;
-            if (source.gummyImpactStacks > 0 && this.knockbackTimer <= 0 && this.mass < 999) { // Jawbreakers and Bosses are immune to knockback (mass 999)
-                let knockbackAmount = (this.game.stats.lickKnockback * 0.1 * source.gummyImpactStacks) / this.mass;
+            if (source && source.gummyImpactStacks > 0 && this.knockbackTimer <= 0 && this.mass < 999) { // Jawbreakers and Bosses are immune to knockback (mass 999)
+                let directKnockbackForce = 100 / this.mass; // Force a strong inverse relationship with mass
                 if (this.isJellyPudding) {
-                    knockbackAmount *= 2; // Jelly Puddings are extra bouncy
+                    directKnockbackForce *= 2; // Jelly Puddings are extra bouncy
                 }
 
                 if (this.mass < 3) { // Launchable enemies
-                    knockbackAmount *= 1.5; // Apply additional multiplier for light enemies
-                    this.kbVy -= knockbackAmount; // Apply full force upwards
+                    directKnockbackForce *= 1.5; // Apply additional multiplier for light enemies
+                    this.kbVy -= directKnockbackForce; // Apply full force upwards
                 } else { // Heavies
-                    this.kbVy = Math.max(0.1, this.kbVy - knockbackAmount); // Dampen, but ensure minimum downward movement
+                    this.kbVy -= directKnockbackForce; // Apply full force upwards
                 }
                 this.knockbackTimer = 15; // Set ICD to 0.25 seconds (15 frames)
             }
@@ -608,17 +631,47 @@ export default class Missile {
                 }
                 this.x += this.vx;
                 this.y += this.vy;
-            } else { // No target or target lost, just drift and descend
-                this.driftOffset += 0.05 * tsf; // Adjust drift speed
-                this.vx = Math.sin(this.driftOffset) * 0.5 * tsf; // Gentle X-axis drifting
-                this.vy = (this.game.enemyStats.jellyBean.missile.speed * 0.1) * tsf; // Slow descent
-                this.x += this.vx;
-                this.y += this.vy;
+            } else { // No target or target lost, implement patrolling behavior
+                const ground = this.game.platforms.find(p => p.type === 'ground');
+                const groundY = ground ? ground.y : this.game.PLAYABLE_AREA_HEIGHT; // Approximate ground level
+                const hoverHeight = 200; // Hover 200 pixels above ground
+                const targetHoverY = groundY - hoverHeight;
 
-                // If it drifts off screen without loot, return to pool
-                if (this.y > this.game.canvas.height + this.height) { 
-                    this.game.enemyPools['cotton_cloud'].returnToPool(this);
+                // Vertical floating (sine wave)
+                this.verticalFloatTimer = (this.verticalFloatTimer || 0) + tsf;
+                const floatAmplitude = 10; // Pixels it floats up and down
+                const floatSpeed = 0.05; // How fast it floats
+                this.vy = Math.sin(this.verticalFloatTimer * floatSpeed) * floatAmplitude * 0.1; // Reduced magnitude for slow float
+
+                // Slowly move towards the target hover height
+                if (this.y < targetHoverY) {
+                    this.vy += 0.05 * tsf; // Gently float down
+                } else if (this.y > targetHoverY + floatAmplitude) { // Avoid going too far below target
+                    this.vy -= 0.05 * tsf; // Gently float up
                 }
+
+                // Horizontal patrolling (sine wave across screen width)
+                this.horizontalPatrolTimer = (this.horizontalPatrolTimer || 0) + tsf;
+                const patrolAmplitude = (this.game.canvas.width / 2) - this.width; // Half screen width
+                const patrolSpeed = 0.005; // Slower patrol speed
+                this.vx = Math.sin(this.horizontalPatrolTimer * patrolSpeed) * patrolAmplitude * 0.01; // Slower horizontal movement
+
+                // Apply movement
+                this.x += this.vx * tsf;
+                this.y += this.vy * tsf;
+
+                // Keep within screen bounds horizontally (gentle bounce off edges)
+                if (this.x < 0) {
+                    this.x = 0;
+                    this.horizontalPatrolTimer += Math.PI; // Reverse direction
+                }
+                if (this.x + this.width > this.game.canvas.width) {
+                    this.x = this.game.canvas.width - this.width;
+                    this.horizontalPatrolTimer += Math.PI; // Reverse direction
+                }
+
+                // If it accidentally drifts too high, gently pull it down
+                if (this.y < 0) this.vy += 0.1 * tsf;
             }
             
             if (this.lootParented && this.targetLoot) {
@@ -630,22 +683,7 @@ export default class Missile {
             return; // Cotton cloud has its own movement and update cycle
         }
         
-        // Taffy Wrapper specific update logic
-        if (this.type === 'taffy_wrapper') {
-            if (!this.isWrapped) {
-                this.unwrappedTimer += tsf;
-                // Pop animation: scale up to 1.25x then back to 1.0
-                const popDuration = 10; // Frames for pop animation
-                if (this.unwrappedTimer < popDuration) {
-                    this.scale = 1 + (0.25 * (this.unwrappedTimer / popDuration));
-                } else {
-                    this.scale = 1 + (0.25 * (1 - ((this.unwrappedTimer - popDuration) / popDuration)));
-                    if (this.scale <= 1) {
-                        this.scale = 1;
-                    }
-                }
-            }
-        }
+
         
         if (this.knockbackTimer > 0) this.knockbackTimer -= tsf; // Decrement knockback timer
         if (this.auraSlowTimer > 0) this.auraSlowTimer -= tsf;
@@ -826,6 +864,81 @@ export default class Missile {
         }
     }
 
+    // New method for Taffy Unwrapping Animation
+    triggerTaffyUnwrapAnimation() {
+        const image = this.game.taffyWrappedImage;
+        if (!image || !image.complete) return;
+
+        // Apply the 33% size reduction here
+        const originalSliceWidth = image.width / 2;    // Source width on image
+        const originalSliceHeight = image.height / 3;   // Source height on image
+        const displaySliceWidth = originalSliceWidth * 0.67; // 33% smaller for display
+        const displaySliceHeight = originalSliceHeight * 0.67; // 33% smaller for display
+
+        // Define the 4 corner slices (source rectangle on the wrapped image)
+        const cornerSlices = [
+            { sx: 0, sy: 0, dx: -1, dy: -3, col: 0, row: 0 }, // Top-left (more upward)
+            { sx: originalSliceWidth, sy: 0, dx: 1, dy: -3, col: 1, row: 0 }, // Top-right (more upward)
+            { sx: 0, sy: 2 * originalSliceHeight, dx: -1, dy: 0.3, col: 0, row: 2 }, // Bottom-left
+            { sx: originalSliceWidth, sy: 2 * originalSliceHeight, dx: 1, dy: 0.3, col: 1, row: 2 } // Bottom-right
+        ];
+
+        cornerSlices.forEach(slice => {
+            // Initial position for slice to originate from enemy's current x,y + width/height/2
+            const sliceInitialX = this.x + (this.width / 2);
+            const sliceInitialY = this.y + (this.height / 2);
+
+            // Initial velocity for outward diagonal movement
+            const speed = Math.random() * 5 + 3; // Random speed for outward burst
+            const vx = slice.dx * speed;
+            const vy = slice.dy * speed;
+
+            const rotationSpeed = (Math.random() - 0.5) * 0.3; // Random spin direction and speed
+
+            // Custom properties for taffy unwrap slices
+            const sliceGravity = 0.5; // Stronger gravity
+            const sliceLifespan = 90; // 1.5 seconds at 60 FPS
+            const sliceFadeStart = sliceLifespan * 0.75; // Start fading over the last 0.375 seconds
+
+            // Pass all the init arguments directly to taffyUnwrapSlicePool.get()
+            const sliceObj = this.game.taffyUnwrapSlicePool.get(
+                this.game,       // game
+                image,           // image
+                slice.sx,        // sx
+                slice.sy,        // sy
+                originalSliceWidth,      // sSourceWidth (source width from original image)
+                originalSliceHeight,     // sSourceHeight (source height from original image)
+                sliceInitialX - (displaySliceWidth / 2), // x (display position)
+                sliceInitialY - (displaySliceHeight / 2),// y (display position)
+                displaySliceWidth,       // sDisplayWidth
+                displaySliceHeight,      // sDisplayHeight
+                vx,              // vx
+                vy,              // vy
+                sliceGravity,    // gravity
+                rotationSpeed,   // rotationSpeed
+                sliceLifespan,   // lifespan
+                sliceFadeStart,  // fadeStart
+                '#FFF5F5'        // color for sparks or internal use
+            );
+
+            if (sliceObj) {
+                // Add spark particles to each corner slice
+                for (let i = 0; i < 4; i++) { // More sparks per corner
+                    const spark = this.game.taffySparkParticlePool.get(); // Use new pool
+                    if (spark) {
+                        const sparkSpeed = Math.random() * 3 + 2; // Bigger speed
+                        const sparkAngle = Math.atan2(slice.dy, slice.dx) + (Math.random() - 0.5) * Math.PI * 0.5;
+                        const sparkVx = Math.cos(sparkAngle) * sparkSpeed;
+                        const sparkVy = Math.sin(sparkAngle) * sparkSpeed;
+                        // Use sliceObj's position for sparks, pass to TaffySparkParticle.init
+                        // TaffySparkParticle.init(game, x, y, color, size, vx, vy, lifespan)
+                        spark.init(this.game, sliceObj.x + sliceObj.sDisplayWidth / 2, sliceObj.y + sliceObj.sDisplayHeight / 2, 'white', 0.8, sparkVx * 2, sparkVy * 2, 25); // Bigger and longer lifespan, new init signature
+                    }
+                }
+            }
+        });
+    }
+
     draw(ctx) {
         if (!this.active) return;
         ctx.save();
@@ -972,6 +1085,9 @@ export default class Missile {
         const shadowOffset = 5;
         const shadowDarkness = 20;
         const shadowColor = darkenColor(this.color, shadowDarkness);
+
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
 
         if (this.type === 'piggy') {
             const piggyLevel = this.game.stats.piggyLvl;

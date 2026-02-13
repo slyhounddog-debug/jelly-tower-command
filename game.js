@@ -40,6 +40,8 @@ import FrostingParticle from './frostingParticle.js';
 import Gumball from './gumball.js';
 import Decal from './decal.js';
 import SugarParticle from './sugarParticle.js';
+import TaffyUnwrapSlice from './taffyUnwrapSlice.js';
+import TaffySparkParticle from './taffySparkParticle.js';
 import { jellyBeanBag, turretBag, shuffle, getVariantFromBag } from './shuffleUtils.js';
 
 class Game {
@@ -319,7 +321,7 @@ Object.entries(colors).forEach(([name, rgb]) => {
         this.soulPool = new ObjectPool(Soul, 50);
         this.synergyLinePool = new ObjectPool(SynergyLine, 200);
         this.frostingParticlePool = new ObjectPool(FrostingParticle, 400);
-        this.dropPool = new ObjectPool(Drop, 50);
+        this.dropPool = new ObjectPool(Drop, 250);
         this.floatingTextPool = new ObjectPool(FloatingText, 200);
         this.damageSpotPool = new ObjectPool(DamageSpot, 50);
         this.waveAttackPool = new ObjectPool(WaveAttack, 20);
@@ -338,19 +340,15 @@ Object.entries(colors).forEach(([name, rgb]) => {
         // this.debris = []; // Replaced by enemyDebrisPool
         // this.debris = []; // Replaced by enemyDebrisPool
         this.enemyDebrisPool = new ObjectPool(EnemyDebris, 100);
+        this.taffyUnwrapSlicePool = new ObjectPool(TaffyUnwrapSlice, 50);
+        this.taffySparkParticlePool = new ObjectPool(TaffySparkParticle, 300); // Pool for non-gravitational taffy sparks
 
         this.enemyStats = {
             jellyBean: {
-                health: 25,
-                mass: 0.5,
-                speed: 1,
-                damage: 5,
-                width: 70,
-                height: 75,
                 missile: { // Specific stats for the 'missile' type jelly bean
-                    health: 25,
-                    speed: 1,
-                    damage: 5,
+                    health: 25, 
+                    speed: 1,   
+                    damage: 5,  
                 }
             },
             cottonCloud: {
@@ -359,9 +357,6 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 weightModifier: 0.05,
                 threshold: 55,
                 cost: 5,
-                mass: 3,
-                width: 100, // Placeholder, will be updated by sprite
-                height: 70, // Placeholder, will be updated by sprite
             },
             taffyWrapper: {
                 healthMultiplier: 1.5, // 1.5x missile jelly bean health
@@ -369,29 +364,26 @@ Object.entries(colors).forEach(([name, rgb]) => {
                 weightModifier: 0.01,
                 threshold: 45,
                 cost: 3,
-                mass: 4,
-                width: 70, // Placeholder, will be updated by sprite
-                height: 75, // Placeholder, will be updated by sprite
             }
         };
 
         // Enemy Pools
         this.enemyPools = {
-            'missile': new ObjectPool(Missile, 40, this), // Fodder
-            'gummy_worm': new ObjectPool(Missile, 40, this), // Fodder
+            'missile': new ObjectPool(Missile, 60, this), // Fodder
+            'gummy_worm': new ObjectPool(Missile, 50, this), // Fodder
             'donut': new ObjectPool(Missile, 30, this), // Elite
-            'component_enemy': new ObjectPool(Missile, 30, this), // Elite
-            'ice_cream': new ObjectPool(Missile, 30, this), // Elite
+            'component_enemy': new ObjectPool(Missile, 20, this), // Elite
+            'ice_cream': new ObjectPool(Missile, 20, this), // Elite
             'marshmallow_medium': new ObjectPool(Missile, 30, this), // Elite
-            'marshmallow_small': new ObjectPool(Missile, 30, this), // Elite
+            'marshmallow_small': new ObjectPool(Missile, 40, this), // Elite
             'jelly_pudding': new ObjectPool(Missile, 15, this), // Heavy
             'jaw_breaker': new ObjectPool(Missile, 15, this), // Heavy
             'marshmallow_large': new ObjectPool(Missile, 15, this), // Heavy
             'piggy': new ObjectPool(Missile, 10, this),
-            'heartenemy': new ObjectPool(Missile, 30, this),
+            'heartenemy': new ObjectPool(Missile, 10, this),
             'cotton_cloud': new ObjectPool(Missile, 10, this), // New cotton cloud pool
-            'taffy_wrapper': new ObjectPool(Missile, 25, this), // New taffy wrapper pool
-            'gummy_bear': new ObjectPool(GummyBear, 30),
+            'taffy_wrapper': new ObjectPool(Missile, 45, this), // New taffy wrapper pool
+            'gummy_bear': new ObjectPool(GummyBear, 10),
         };
 
         this.levelingManager = new LevelingManager(this);
@@ -1588,6 +1580,8 @@ Object.entries(colors).forEach(([name, rgb]) => {
             this.decalPool.update(tsf);
             this.swipeParticlePool.update(tsf);
             this.enemyDebrisPool.update(tsf);
+            this.taffyUnwrapSlicePool.update(tsf);
+            this.taffySparkParticlePool.update(tsf);
             for (const type in this.enemyPools) {
                 this.enemyPools[type].update(tsf);
             }
@@ -1940,4 +1934,26 @@ window.stressTest = (enemyCount = 50, particleBurst = 100) => {
         clearInterval(floodInterval);
         console.log("Stress test halted.");
     };
+};
+
+window.spawnEnemies = (enemyType, count = 1) => {
+    const game = window.gameInstance;
+    if (!game) {
+        console.error("Game instance not found. Ensure the game is loaded.");
+        return;
+    }
+    if (!game.enemyPools[enemyType]) {
+        console.error(`Unknown enemy type: "${enemyType}". Available types: ${Object.keys(game.enemyPools).join(', ')}`);
+        return;
+    }
+    
+    console.log(`%c Spawning ${count} x ${enemyType}`, "color: #00ffff; font-weight: bold;");
+
+    for (let i = 0; i < count; i++) {
+        const spawnX = Math.random() * (game.width - 350) + 175; // Similar spawn X to ThreatManager
+        // For cotton_cloud, spawn it slightly higher as it has its own movement logic.
+        const spawnY = (enemyType === 'cotton_cloud') ? Math.random() * -100 - 50 : -50; 
+        
+        game.enemyPools[enemyType].get(game, spawnX, enemyType, spawnY); 
+    }
 };

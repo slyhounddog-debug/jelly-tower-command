@@ -314,7 +314,7 @@ export default class Player {
                             if (this.upgrades['Ice Tongue'] > 0) {
                                 m.applySlow(300, 0.5, 'tongue');
                             }
-                            m.kbVy = -this.game.stats.lickKnockback * 0.2;
+                            m.kbVy = - (this.game.stats.lickKnockback * 1.5) / m.mass;
                             this.game.screenShake.trigger(2, 10);
                             for (let i = 0; i < 15; i++) {
                                 this.game.particlePool.get(this.game, m.x, m.y, this.color, 'spark', null, 0.5);
@@ -521,7 +521,7 @@ export default class Player {
                                 const dist = Math.hypot(this.x - m.x, this.y - m.y);
                                 if (dist < shockwaveRange) {
                                     m.takeDamage(this.game.stats.lickDamage, false, this);
-                                    m.kbVy = -this.game.stats.lickKnockback * .1;
+                                    m.kbVy = - (this.game.stats.lickKnockback * 1.5) / m.mass;
                                 }
                             });
                         }
